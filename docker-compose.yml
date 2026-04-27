@@ -1,0 +1,40 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_OPENAI_URL=http://ollama:11434/v1
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - ollama
+    networks:
+      - ai_network
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      # Model sẽ lưu tại folder 'ollama_storage' ngay trong dự án (thuộc /home)
+      - ./ollama_storage:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    networks:
+      - ai_network
+    restart: unless-stopped
+
+networks:
+  ai_network:
+    driver: bridge

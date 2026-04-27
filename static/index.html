@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemma AI Chatbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .chat-container { height: calc(100vh - 180px); }
+        .message-bubble { max-width: 85%; word-wrap: break-word; }
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans">
+    <div class="container mx-auto p-4 max-w-2xl h-screen flex flex-col">
+        <header class="flex items-center justify-between mb-4 bg-white p-4 rounded-xl shadow-sm">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800">Gemma AI Hub</h1>
+                <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Local Model Performance Test</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="api-key-btn" class="text-xs font-semibold py-2 px-3 rounded-lg border transition-all cursor-pointer" title="Click to change API key">No Key</button>
+                <div id="current-user-badge" class="hidden text-xs bg-slate-100 text-slate-600 font-semibold py-2 px-3 rounded-lg border border-slate-200"></div>
+                <div class="flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">
+                    <button id="mode-normal" class="text-xs font-bold py-1 px-3 rounded-md transition-all bg-blue-600 text-white shadow">
+                        Normal
+                    </button>
+                    <button id="mode-lite" class="text-xs font-bold py-1 px-3 rounded-md transition-all text-slate-500 hover:text-slate-700">
+                        Lite ⚡
+                    </button>
+                </div>
+                <button id="search-toggle-btn" class="text-xs font-bold py-2 px-3 rounded-lg border transition-all bg-slate-100 text-slate-500 border-slate-200" title="Toggle web search">
+                    🔍 Search: OFF
+                </button>
+                <button id="refresh-btn" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 px-3 rounded-lg transition-all border border-slate-200">
+                    New Chat
+                </button>
+                <div id="connection-status" class="flex items-center text-xs text-green-500 font-medium">
+                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span> Connected
+                </div>
+            </div>
+        </header>
+
+        <div id="chat-window" class="flex-grow bg-white rounded-xl shadow-sm p-6 mb-4 chat-container overflow-y-auto flex flex-col space-y-4 border border-slate-100">
+            <div class="bg-slate-100 self-start p-4 rounded-2xl rounded-tl-none message-bubble text-slate-700 shadow-sm">
+                Hi! I'm running locally on Gemma. Send me a message to test my response speed! I will remember our conversation.
+            </div>
+        </div>
+
+        <div class="relative">
+            <div id="image-preview-container" class="hidden mb-2 p-2 bg-white rounded-xl border border-slate-200 flex items-center space-x-2">
+                <div class="relative">
+                    <img id="image-preview" src="" class="h-16 w-16 object-cover rounded-lg border border-slate-200">
+                    <button id="remove-image" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <span id="file-name" class="text-xs text-slate-500 truncate max-w-[150px]"></span>
+            </div>
+            <div class="flex space-x-2 bg-white p-2 rounded-2xl shadow-md border border-slate-200">
+                <button id="attach-btn" class="p-3 text-slate-400 hover:text-blue-600 transition-all active:scale-90">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </button>
+                <input type="file" id="file-input" class="hidden" accept="image/*">
+                <input type="text" id="user-input" class="flex-grow p-4 bg-transparent focus:outline-none text-slate-700" placeholder="Ask Gemma something...">
+                <button id="send-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl transition-all flex items-center shadow-lg active:scale-95 disabled:opacity-50">
+                    Send
+                </button>
+            </div>
+            <div id="status" class="absolute -bottom-7 left-2 text-[10px] font-mono text-slate-400"></div>
+        </div>
+    </div>
+
+    <script>
+        const chatWindow = document.getElementById('chat-window');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const statusDiv = document.getElementById('status');
+        const modeNormalBtn = document.getElementById('mode-normal');
+        const modeLiteBtn = document.getElementById('mode-lite');
+        const attachBtn = document.getElementById('attach-btn');
+        const fileInput = document.getElementById('file-input');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const removeImageBtn = document.getElementById('remove-image');
+        const fileNameSpan = document.getElementById('file-name');
+        const currentUserBadge = document.getElementById('current-user-badge');
+        const apiKeyBtn = document.getElementById('api-key-btn');
+
+        let currentSessionId = localStorage.getItem('sessionId') || null;
+        let currentMode = localStorage.getItem('modelMode') || 'normal';
+        let currentUserName = localStorage.getItem('userName') || null;
+        let currentApiKey = localStorage.getItem('apiKey') || null;
+        let selectedFile = null;
+        let searchEnabled = false;
+
+        const searchToggleBtn = document.getElementById('search-toggle-btn');
+        searchToggleBtn.addEventListener('click', () => {
+            searchEnabled = !searchEnabled;
+            if (searchEnabled) {
+                searchToggleBtn.textContent = '🔍 Search: ON';
+                searchToggleBtn.className = 'text-xs font-bold py-2 px-3 rounded-lg border transition-all bg-green-100 text-green-700 border-green-300';
+            } else {
+                searchToggleBtn.textContent = '🔍 Search: OFF';
+                searchToggleBtn.className = 'text-xs font-bold py-2 px-3 rounded-lg border transition-all bg-slate-100 text-slate-500 border-slate-200';
+            }
+        });
+
+        function resetSelectedImage() {
+            selectedFile = null;
+            fileInput.value = '';
+            imagePreviewContainer.classList.add('hidden');
+            imagePreview.src = '';
+            fileNameSpan.textContent = '';
+        }
+
+        function updateCurrentUserBadge() {
+            if (!currentUserName) {
+                currentUserBadge.classList.add('hidden');
+                currentUserBadge.textContent = '';
+                return;
+            }
+            currentUserBadge.classList.remove('hidden');
+            currentUserBadge.textContent = `User: ${currentUserName}`;
+        }
+
+        function updateCurrentApiKeyBadge() {
+            if (!currentApiKey) {
+                apiKeyBtn.textContent = 'Add Key';
+                apiKeyBtn.className = 'text-xs font-semibold py-2 px-3 rounded-lg border transition-all cursor-pointer bg-red-50 text-red-600 border-red-200 hover:bg-red-100';
+                return;
+            }
+            apiKeyBtn.textContent = 'Key: ...' + currentApiKey.slice(-4);
+            apiKeyBtn.className = 'text-xs font-semibold py-2 px-3 rounded-lg border transition-all cursor-pointer bg-green-50 text-green-600 border-green-200 hover:bg-green-100';
+        }
+
+        async function promptForApiKey(defaultValue = currentApiKey || '') {
+            const provided = window.prompt('Enter your API key to use the chatbot:', defaultValue);
+            if (provided === null) {
+                return false;
+            }
+
+            const trimmed = provided.trim();
+            if (!trimmed) {
+                statusDiv.textContent = 'API key is required before chatting';
+                return false;
+            }
+
+            currentApiKey = trimmed;
+            localStorage.setItem('apiKey', currentApiKey);
+            updateCurrentApiKeyBadge();
+            return true;
+        }
+
+        async function ensureApiKey() {
+            if (currentApiKey) {
+                return true;
+            }
+            return promptForApiKey('');
+        }
+
+        function buildApiHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'X-API-KEY': currentApiKey,
+            };
+        }
+
+        function applyModeUI() {
+            const isLite = currentMode === 'lite';
+            if (isLite) {
+                modeLiteBtn.className = 'text-xs font-bold py-1 px-3 rounded-md transition-all bg-green-500 text-white shadow';
+                modeNormalBtn.className = 'text-xs font-bold py-1 px-3 rounded-md transition-all text-slate-500 hover:text-slate-700';
+                attachBtn.disabled = false;
+                attachBtn.classList.remove('hidden', 'opacity-40', 'cursor-not-allowed');
+            } else {
+                modeNormalBtn.className = 'text-xs font-bold py-1 px-3 rounded-md transition-all bg-blue-600 text-white shadow';
+                modeLiteBtn.className = 'text-xs font-bold py-1 px-3 rounded-md transition-all text-slate-500 hover:text-slate-700';
+                attachBtn.disabled = true;
+                attachBtn.classList.add('opacity-40', 'cursor-not-allowed');
+                resetSelectedImage();
+            }
+        }
+
+        async function restoreLatestSessionForUser() {
+            if (!currentUserName) {
+                currentSessionId = null;
+                localStorage.removeItem('sessionId');
+                return;
+            }
+
+            const response = await fetch(`/v1/users/${encodeURIComponent(currentUserName)}/sessions?project_id=test`, {
+                headers: buildApiHeaders(),
+            });
+            if (!response.ok) {
+                throw new Error('Failed to load previous sessions');
+            }
+
+            const sessions = await response.json();
+            if (sessions.length > 0) {
+                currentSessionId = sessions[0].session_id;
+                localStorage.setItem('sessionId', currentSessionId);
+                statusDiv.textContent = `Resumed latest session for ${currentUserName}`;
+                return;
+            }
+
+            currentSessionId = null;
+            localStorage.removeItem('sessionId');
+            statusDiv.textContent = `Started a fresh session for ${currentUserName}`;
+        }
+
+        async function promptForUserName(defaultValue = currentUserName || '') {
+            const provided = window.prompt('Enter your name to continue chat history:', defaultValue);
+            if (provided === null) {
+                return false;
+            }
+
+            const trimmed = provided.trim();
+            if (!trimmed) {
+                statusDiv.textContent = 'User name is required before chatting';
+                return false;
+            }
+
+            currentUserName = trimmed;
+            localStorage.setItem('userName', currentUserName);
+            updateCurrentUserBadge();
+            await restoreLatestSessionForUser();
+            return true;
+        }
+
+        function renderNewSessionMessage() {
+            chatWindow.innerHTML = '';
+            addMessage('New session ready. How can I help you today?');
+        }
+
+        modeNormalBtn.addEventListener('click', () => {
+            currentMode = 'normal';
+            localStorage.setItem('modelMode', currentMode);
+            applyModeUI();
+            statusDiv.textContent = 'Switched to Normal mode — image upload is available only in Lite mode';
+        });
+
+        modeLiteBtn.addEventListener('click', () => {
+            currentMode = 'lite';
+            localStorage.setItem('modelMode', currentMode);
+            applyModeUI();
+            statusDiv.textContent = 'Switched to Lite mode (gemma4:e4b) — image upload enabled';
+        });
+
+        apiKeyBtn.addEventListener('click', async () => {
+            const ok = await promptForApiKey(currentApiKey || '');
+            if (ok) {
+                statusDiv.textContent = 'API key updated';
+            }
+        });
+
+        attachBtn.addEventListener('click', () => {
+            if (currentMode !== 'lite') {
+                statusDiv.textContent = 'Image upload is available only in Lite mode';
+                return;
+            }
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (currentMode !== 'lite') {
+                resetSelectedImage();
+                statusDiv.textContent = 'Image upload is available only in Lite mode';
+                return;
+            }
+            if (file && file.type.startsWith('image/')) {
+                selectedFile = file;
+                fileNameSpan.textContent = file.name;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    imagePreview.src = event.target.result;
+                    imagePreviewContainer.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        removeImageBtn.addEventListener('click', resetSelectedImage);
+
+        function addMessage(text, isUser = false, images = []) {
+            const wrapper = document.createElement('div');
+            wrapper.className = isUser ? 'flex justify-end' : 'flex justify-start';
+
+            const div = document.createElement('div');
+            div.className = isUser
+                ? 'bg-blue-600 text-white p-4 rounded-2xl rounded-tr-none message-bubble shadow-md'
+                : 'bg-slate-100 text-slate-700 p-4 rounded-2xl rounded-tl-none message-bubble shadow-sm border border-slate-200';
+
+            if (images && images.length > 0) {
+                images.forEach((imgData) => {
+                    const img = document.createElement('img');
+                    img.src = imgData;
+                    img.className = 'max-w-full h-auto rounded-lg mb-2 border border-blue-400';
+                    div.appendChild(img);
+                });
+            }
+
+            const textSpan = document.createElement('span');
+            textSpan.textContent = text;
+            div.appendChild(textSpan);
+
+            wrapper.appendChild(div);
+            chatWindow.appendChild(wrapper);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        refreshBtn.addEventListener('click', async () => {
+            const accepted = await promptForUserName(currentUserName || '');
+            if (!accepted) {
+                return;
+            }
+            resetSelectedImage();
+            renderNewSessionMessage();
+        });
+
+        async function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = (error) => reject(error);
+            });
+        }
+
+        async function ensureUserName() {
+            if (currentUserName) {
+                return true;
+            }
+            return promptForUserName('');
+        }
+
+        async function sendMessage() {
+            const hasApiKey = await ensureApiKey();
+            if (!hasApiKey) {
+                userInput.focus();
+                return;
+            }
+
+            const hasUser = await ensureUserName();
+            if (!hasUser) {
+                userInput.focus();
+                return;
+            }
+
+            const message = userInput.value.trim();
+            if (!message && !selectedFile) return;
+
+            let images = [];
+            let imagePreviews = [];
+            if (selectedFile && currentMode === 'lite') {
+                const base64 = await fileToBase64(selectedFile);
+                images.push(base64);
+                imagePreviews.push(imagePreview.src);
+                resetSelectedImage();
+            }
+
+            userInput.value = '';
+            addMessage(message || 'Analyze this image', true, imagePreviews);
+
+            const startTime = performance.now();
+            statusDiv.innerHTML = '<span class="loader mr-2"></span> Gemma is generating...';
+            sendBtn.disabled = true;
+
+            try {
+                const payload = {
+                    project_id: 'test',
+                    user_name: currentUserName,
+                    user_message: message || 'Analyze this image',
+                    session_id: currentSessionId,
+                    stream: false,
+                    model_mode: currentMode,
+                    enable_search: searchEnabled,
+                };
+
+                if (currentMode === 'lite' && images.length > 0) {
+                    payload.images = images;
+                }
+
+                const response = await fetch('/v1/chat', {
+                    method: 'POST',
+                    headers: buildApiHeaders(),
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    let detail = `API error (${response.status})`;
+                    try {
+                        const err = await response.json();
+                        detail = err.detail || detail;
+                    } catch (_) {}
+                    throw new Error(detail);
+                }
+
+                const data = await response.json();
+                const endTime = performance.now();
+                const duration = ((endTime - startTime) / 1000).toFixed(2);
+
+                currentSessionId = data.session_id;
+                localStorage.setItem('sessionId', currentSessionId);
+
+                addMessage(data.content);
+                statusDiv.textContent = `LATENCY: ${duration}s | SESSION: ${data.session_id.substring(0,8)}... | MODEL: ${data.model}`;
+            } catch (error) {
+                console.error(error);
+                addMessage('Error: ' + error.message, false);
+                statusDiv.textContent = 'ERROR DETECTED';
+            } finally {
+                sendBtn.disabled = false;
+                userInput.focus();
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        updateCurrentApiKeyBadge();
+        updateCurrentUserBadge();
+        applyModeUI();
+        if (!currentApiKey) {
+            statusDiv.textContent = 'Enter your API key before using the chatbot';
+        } else if (!currentUserName) {
+            statusDiv.textContent = 'Enter your user name before starting a chat';
+        } else {
+            restoreLatestSessionForUser().catch((error) => {
+                console.error(error);
+                statusDiv.textContent = 'Failed to restore previous session';
+            });
+        }
+        userInput.focus();
+    </script>
+</body>
+</html>
