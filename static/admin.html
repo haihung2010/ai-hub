@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Hub Observability</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-800">
+    <main class="mx-auto max-w-7xl p-4 sm:p-6">
+        <header class="mb-4 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold">AI Hub Observability</h1>
+                <p class="text-sm text-slate-500">Local routing, latency, fallback, queueing, and provider health.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <a href="/" class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100">Chat</a>
+                <button id="api-key-btn" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-100">Add Key</button>
+                <button id="refresh-btn" class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Refresh</button>
+                <button id="auto-refresh-btn" class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100">Auto: OFF</button>
+            </div>
+        </header>
+
+        <div id="status" class="mb-4 rounded-lg bg-white px-4 py-2 text-sm text-slate-500 shadow-sm">Ready.</div>
+
+        <section class="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div class="rounded-2xl bg-white p-4 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Requests</p>
+                <p id="total-requests" class="mt-2 text-3xl font-bold">0</p>
+                <p id="success-error" class="text-xs text-slate-500">0 OK / 0 errors</p>
+            </div>
+            <div class="rounded-2xl bg-white p-4 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Latency p95</p>
+                <p id="latency-p95" class="mt-2 text-3xl font-bold">0 ms</p>
+                <p id="latency-detail" class="text-xs text-slate-500">avg 0 ms / max 0 ms</p>
+            </div>
+            <div class="rounded-2xl bg-white p-4 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Fallback</p>
+                <p id="fallback-count" class="mt-2 text-3xl font-bold">0</p>
+                <p id="fallback-rate" class="text-xs text-slate-500">0%</p>
+            </div>
+            <div class="rounded-2xl bg-white p-4 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Queue wait</p>
+                <p id="queue-avg" class="mt-2 text-3xl font-bold">0 ms</p>
+                <p id="queue-detail" class="text-xs text-slate-500">max 0 ms / 0 requests</p>
+            </div>
+            <div class="rounded-2xl bg-white p-4 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Providers</p>
+                <div id="provider-health" class="mt-2 space-y-1 text-sm text-slate-600">Loading...</div>
+            </div>
+        </section>
+
+        <section class="mb-4 grid gap-4 lg:grid-cols-2">
+            <div class="rounded-2xl bg-white p-4 shadow-sm">
+                <h2 class="mb-3 font-bold">Route reasons</h2>
+                <div id="route-reasons" class="overflow-x-auto"></div>
+            </div>
+            <div class="rounded-2xl bg-white p-4 shadow-sm">
+                <h2 class="mb-3 font-bold">Routes</h2>
+                <div id="routes" class="overflow-x-auto"></div>
+            </div>
+            <div class="rounded-2xl bg-white p-4 shadow-sm">
+                <h2 class="mb-3 font-bold">Providers</h2>
+                <div id="providers" class="overflow-x-auto"></div>
+            </div>
+            <div class="rounded-2xl bg-white p-4 shadow-sm">
+                <h2 class="mb-3 font-bold">Models</h2>
+                <div id="models" class="overflow-x-auto"></div>
+            </div>
+        </section>
+
+        <section class="rounded-2xl bg-white p-4 shadow-sm">
+            <h2 class="mb-3 font-bold">Recent requests</h2>
+            <div id="recent" class="overflow-x-auto"></div>
+        </section>
+    </main>
+
+    <script>
+        const apiKeyBtn = document.getElementById('api-key-btn');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const autoRefreshBtn = document.getElementById('auto-refresh-btn');
+        const statusEl = document.getElementById('status');
+        let currentApiKey = localStorage.getItem('apiKey') || '';
+        let autoRefreshTimer = null;
+
+        function setText(id, value) {
+            document.getElementById(id).textContent = String(value);
+        }
+
+        function fmtMs(value) {
+            return `${Math.round(Number(value || 0))} ms`;
+        }
+
+        function updateApiKeyBadge() {
+            if (!currentApiKey) {
+                apiKeyBtn.textContent = 'Add Key';
+                apiKeyBtn.className = 'rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-100';
+                return;
+            }
+            apiKeyBtn.textContent = `Key: ...${currentApiKey.slice(-4)}`;
+            apiKeyBtn.className = 'rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-semibold text-green-600 hover:bg-green-100';
+        }
+
+        function promptForApiKey() {
+            const provided = window.prompt('Enter your API key:', currentApiKey);
+            if (provided === null) return false;
+            const trimmed = provided.trim();
+            if (!trimmed) {
+                statusEl.textContent = 'API key is required.';
+                return false;
+            }
+            currentApiKey = trimmed;
+            localStorage.setItem('apiKey', currentApiKey);
+            updateApiKeyBadge();
+            return true;
+        }
+
+        function headers() {
+            return { 'X-API-KEY': currentApiKey };
+        }
+
+        function table(headers, rows, emptyText = 'No data yet.') {
+            if (!rows || rows.length === 0) {
+                const div = document.createElement('div');
+                div.className = 'rounded-lg bg-slate-50 p-3 text-sm text-slate-500';
+                div.textContent = emptyText;
+                return div;
+            }
+            const tbl = document.createElement('table');
+            tbl.className = 'min-w-full text-left text-sm';
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headers.forEach((item) => {
+                const th = document.createElement('th');
+                th.className = 'border-b border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400';
+                th.textContent = item.label;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            tbl.appendChild(thead);
+            const tbody = document.createElement('tbody');
+            rows.forEach((row) => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-100 last:border-0';
+                headers.forEach((item) => {
+                    const td = document.createElement('td');
+                    td.className = 'px-3 py-2 align-top text-slate-700';
+                    td.textContent = item.format ? item.format(row[item.key], row) : (row[item.key] ?? '');
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            tbl.appendChild(tbody);
+            return tbl;
+        }
+
+        function renderTable(containerId, headers, rows) {
+            const el = document.getElementById(containerId);
+            el.replaceChildren(table(headers, rows));
+        }
+
+        function renderStats(stats) {
+            setText('total-requests', stats.total_requests || 0);
+            setText('success-error', `${stats.success_requests || 0} OK / ${stats.error_requests || 0} errors`);
+            setText('latency-p95', fmtMs(stats.latency?.p95_ms));
+            setText('latency-detail', `avg ${fmtMs(stats.latency?.avg_ms)} / max ${fmtMs(stats.latency?.max_ms)}`);
+            setText('fallback-count', stats.fallback_requests || 0);
+            setText('fallback-rate', `${(((stats.fallback_rate || 0) * 100).toFixed(2))}%`);
+            setText('queue-avg', fmtMs(stats.queue_wait?.avg_ms));
+            setText('queue-detail', `max ${fmtMs(stats.queue_wait?.max_ms)} / ${stats.queue_wait?.requests || 0} requests`);
+
+            renderTable('route-reasons', [
+                { key: 'route_reason', label: 'Reason' },
+                { key: 'requests', label: 'Requests' },
+                { key: 'avg_queue_wait_ms', label: 'Avg queue', format: fmtMs },
+                { key: 'fallback_requests', label: 'Fallbacks' },
+            ], stats.by_route_reason || []);
+            renderTable('routes', [
+                { key: 'route_alias', label: 'Route' },
+                { key: 'requests', label: 'Requests' },
+                { key: 'avg_latency_ms', label: 'Avg latency', format: fmtMs },
+                { key: 'fallback_requests', label: 'Fallbacks' },
+            ], stats.by_route || []);
+            renderTable('providers', [
+                { key: 'provider', label: 'Provider' },
+                { key: 'requests', label: 'Requests' },
+                { key: 'avg_latency_ms', label: 'Avg latency', format: fmtMs },
+            ], stats.by_provider || []);
+            renderTable('models', [
+                { key: 'model', label: 'Model' },
+                { key: 'requests', label: 'Requests' },
+                { key: 'avg_latency_ms', label: 'Avg latency', format: fmtMs },
+            ], stats.by_model || []);
+            renderTable('recent', [
+                { key: 'created_at', label: 'Time' },
+                { key: 'tenant_id', label: 'Tenant' },
+                { key: 'project_id', label: 'Project' },
+                { key: 'route_alias', label: 'Route' },
+                { key: 'route_reason', label: 'Reason' },
+                { key: 'provider', label: 'Provider' },
+                { key: 'model', label: 'Model' },
+                { key: 'latency_ms', label: 'Latency', format: fmtMs },
+                { key: 'queue_wait_ms', label: 'Queue', format: fmtMs },
+                { key: 'fallback_used', label: 'Fallback', format: (value) => Number(value) ? 'yes' : 'no' },
+                { key: 'status_code', label: 'Status' },
+                { key: 'error_type', label: 'Error' },
+            ], stats.recent || []);
+        }
+
+        function renderHealth(payload) {
+            const box = document.getElementById('provider-health');
+            box.replaceChildren();
+            (payload.providers || []).forEach((provider) => {
+                const div = document.createElement('div');
+                div.className = provider.configured ? 'text-green-600' : 'text-slate-400';
+                div.textContent = `${provider.name}: ${provider.status}`;
+                box.appendChild(div);
+            });
+        }
+
+        async function fetchJson(path) {
+            const response = await fetch(path, { headers: headers() });
+            if (!response.ok) {
+                let detail = `API error ${response.status}`;
+                try { detail = (await response.json()).detail || detail; } catch (_) {}
+                throw new Error(detail);
+            }
+            return response.json();
+        }
+
+        async function refresh() {
+            if (!currentApiKey && !promptForApiKey()) return;
+            statusEl.textContent = 'Refreshing...';
+            try {
+                const [stats, health] = await Promise.all([
+                    fetchJson('/v1/admin/stats'),
+                    fetchJson('/v1/admin/health/providers'),
+                ]);
+                renderStats(stats);
+                renderHealth(health);
+                statusEl.textContent = `Updated at ${new Date().toLocaleTimeString()}`;
+            } catch (error) {
+                statusEl.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        apiKeyBtn.addEventListener('click', () => { if (promptForApiKey()) refresh(); });
+        refreshBtn.addEventListener('click', refresh);
+        autoRefreshBtn.addEventListener('click', () => {
+            if (autoRefreshTimer) {
+                clearInterval(autoRefreshTimer);
+                autoRefreshTimer = null;
+                autoRefreshBtn.textContent = 'Auto: OFF';
+                return;
+            }
+            autoRefreshTimer = setInterval(refresh, 10000);
+            autoRefreshBtn.textContent = 'Auto: 10s';
+            refresh();
+        });
+
+        updateApiKeyBadge();
+        refresh();
+    </script>
+</body>
+</html>

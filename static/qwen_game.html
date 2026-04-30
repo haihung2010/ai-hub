@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Né Chướng Ngại Vật</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #1a1a2e; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden; }
+canvas { border: 2px solid #e94560; border-radius: 4px; }
+#ui { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); color: #fff; text-align: center; pointer-events: none; }
+#score { font-size: 24px; font-weight: bold; color: #e94560; }
+#level { font-size: 16px; color: #0f3460; margin-top: 4px; }
+#overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; background: rgba(26,26,46,0.85); z-index: 10; }
+#overlay.hidden { display: none; }
+#panel { text-align: center; color: #fff; }
+#panel h1 { font-size: 42px; color: #e94560; margin-bottom: 10px; }
+#panel p { font-size: 18px; margin: 6px 0; color: #a8a8b3; }
+#panel .final { font-size: 28px; color: #e94560; margin: 14px 0; }
+#panel button { margin-top: 18px; padding: 12px 36px; font-size: 20px; background: #e94560; color: #fff; border: none; border-radius: 6px; cursor: pointer; pointer-events: all; }
+#panel button:hover { background: #c73652; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="ui">
+  <div id="score">Score: 0</div>
+  <div id="level">Level 1</div>
+</div>
+<div id="overlay">
+  <div id="panel">
+    <h1>NÉ CHƯỚNG NGẠI VẬT</h1>
+    <p>Di chuyển: WASD hoặc Mũi tên</p>
+    <p>Né các khối rơi xuống!</p>
+    <button id="startBtn">Bắt đầu</button>
+  </div>
+</div>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 480, H = 640;
+canvas.width = W;
+canvas.height = H;
+
+const scoreEl = document.getElementById('score');
+const levelEl = document.getElementById('level');
+const overlay = document.getElementById('overlay');
+const panel = document.getElementById('panel');
+const startBtn = document.getElementById('startBtn');
+
+let player, obstacles, score, level, gameRunning, keys, spawnTimer, frameCount;
+
+function init() {
+  player = { x: W / 2 - 18, y: H - 70, w: 36, h: 36, speed: 5 };
+  obstacles = [];
+  score = 0;
+  level = 1;
+  spawnTimer = 0;
+  frameCount = 0;
+  keys = {};
+  gameRunning = true;
+  overlay.classList.add('hidden');
+  updateUI();
+}
+
+function updateUI() {
+  scoreEl.textContent = 'Score: ' + score;
+  levelEl.textContent = 'Level ' + level;
+}
+
+function getSpawnInterval() {
+  return Math.max(15, 50 - level * 4);
+}
+
+function getObstacleSpeed() {
+  return 2 + level * 0.6;
+}
+
+function spawnObstacle() {
+  const w = 30 + Math.random() * 40;
+  const h = 30 + Math.random() * 40;
+  obstacles.push({
+    x: Math.random() * (W - w),
+    y: -h,
+    w: w,
+    h: h,
+    speed: getObstacleSpeed() + Math.random() * 1.5
+  });
+}
+
+function rectsCollide(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function update() {
+  if (!gameRunning) return;
+  frameCount++;
+
+  if (keys['ArrowLeft'] || keys['KeyA']) player.x -= player.speed;
+  if (keys['ArrowRight'] || keys['KeyD']) player.x += player.speed;
+  if (keys['ArrowUp'] || keys['KeyW']) player.y -= player.speed;
+  if (keys['ArrowDown'] || keys['KeyS']) player.y += player.speed;
+
+  player.x = Math.max(0, Math.min(W - player.w, player.x));
+  player.y = Math.max(0, Math.min(H - player.h, player.y));
+
+  spawnTimer++;
+  if (spawnTimer >= getSpawnInterval()) {
+    spawnObstacle();
+    spawnTimer = 0;
+  }
+
+  for (let i = obstacles.length - 1; i >= 0; i--) {
+    const o = obstacles[i];
+    o.y += o.speed;
+    if (o.y > H + 10) {
+      obstacles.splice(i, 1);
+      score++;
+      if (score % 10 === 0) {
+        level++;
+      }
+      updateUI();
+      continue;
+    }
+    if (rectsCollide(player, o)) {
+      gameOver();
+      return;
+    }
+  }
+}
+
+function draw() {
+  ctx.fillStyle = '#16213e';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = 'rgba(233,69,96,0.08)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += 40) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  for (const o of obstacles) {
+    ctx.fillStyle = '#e94560';
+    ctx.fillRect(o.x, o.y, o.w, o.h);
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(o.x, o.y, o.w, 4);
+  }
+
+  ctx.fillStyle = '#0f3460';
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+  ctx.fillStyle = '#e94560';
+  ctx.fillRect(player.x + 4, player.y + 4, player.w - 8, player.h - 8);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(player.x + 10, player.y + 10, 6, 6);
+  ctx.fillRect(player.x + 20, player.y + 10, 6, 6);
+}
+
+function gameOver() {
+  gameRunning = false;
+  overlay.classList.remove('hidden');
+  panel.innerHTML = '<h1>GAME OVER</h1><div class="final">Score: ' + score + '</div><p>Level đạt được: ' + level + '</p><button id="restartBtn">Chơi lại</button>';
+  document.getElementById('restartBtn').addEventListener('click', init);
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+document.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  e.preventDefault();
+});
+document.addEventListener('keyup', e => {
+  keys[e.code] = false;
+});
+
+startBtn.addEventListener('click', init);
+loop();
+</script>
+</body>
+</html>

@@ -1,0 +1,353 @@
+"""API key auth, host allow-listing, rate limiting, and security audit logging."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+import time
+from collections import deque
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from threading import Lock
+
+from fastapi import status
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
+
+from app.core.config import Settings
+from app.core.database import get_db_connection
+from app.services.api_key_service import ApiKeyRecord, ApiKeyService
+
+logger = logging.getLogger("app.security")
+API_KEY_HEADER = "X-API-KEY"
+ALWAYS_PUBLIC_PATHS = {"/"}
+DOCS_PATHS = {"/docs", "/openapi.json", "/redoc"}
+HEALTH_PATHS = {"/health"}
+RATE_LIMIT_WINDOW_SECONDS = 60
+
+
+@dataclass
+class RateBucket:
+    timestamps: deque[float] = field(default_factory=deque)
+    lock: Lock = field(default_factory=Lock)
+
+
+class InMemoryRateLimiter:
+    def __init__(self, limit: int, window_seconds: int = RATE_LIMIT_WINDOW_SECONDS) -> None:
+        self._limit = limit
+        self._window_seconds = window_seconds
+        self._buckets: dict[str, RateBucket] = {}
+        self._lock = Lock()
+
+    def allow(self, key: str, now: float | None = None) -> bool:
+        current_time = time.time() if now is None else now
+        bucket = self._get_bucket(key)
+        with bucket.lock:
+            while bucket.timestamps and current_time - bucket.timestamps[0] >= self._window_seconds:
+                bucket.timestamps.popleft()
+            if len(bucket.timestamps) >= self._limit:
+                return False
+            bucket.timestamps.append(current_time)
+            return True
+
+    def _get_bucket(self, key: str) -> RateBucket:
+        with self._lock:
+            bucket = self._buckets.get(key)
+            if bucket is None:
+                bucket = RateBucket()
+                self._buckets[key] = bucket
+            return bucket
+
+
+@dataclass
+class FailureState:
+    failures: deque[float] = field(default_factory=deque)
+    blocked_until: float = 0.0
+    lock: Lock = field(default_factory=Lock)
+
+
+class AuthFailureTracker:
+    """Small fail2ban-style in-process block list for bad API-key scans."""
+
+    def __init__(self, limit: int, block_seconds: int, window_seconds: int = 300) -> None:
+        self._limit = limit
+        self._block_seconds = block_seconds
+        self._window_seconds = window_seconds
+        self._states: dict[str, FailureState] = {}
+        self._lock = Lock()
+
+    def is_blocked(self, key: str, now: float | None = None) -> bool:
+        current_time = time.time() if now is None else now
+        state = self._get_state(key)
+        with state.lock:
+            return current_time < state.blocked_until
+
+    def record_failure(self, key: str, now: float | None = None) -> None:
+        current_time = time.time() if now is None else now
+        state = self._get_state(key)
+        with state.lock:
+            while state.failures and current_time - state.failures[0] >= self._window_seconds:
+                state.failures.popleft()
+            state.failures.append(current_time)
+            if len(state.failures) >= self._limit:
+                state.blocked_until = current_time + self._block_seconds
+
+    def reset(self, key: str) -> None:
+        state = self._get_state(key)
+        with state.lock:
+            state.failures.clear()
+            state.blocked_until = 0.0
+
+    def _get_state(self, key: str) -> FailureState:
+        with self._lock:
+            state = self._states.get(key)
+            if state is None:
+                state = FailureState()
+                self._states[key] = state
+            return state
+
+
+class SqliteRateLimiter:
+    """Rate limiter backed by SQLite — survives server restarts.
+
+    In-memory cache is the hot path; SQLite is written on every mutation and
+    loaded lazily on first access so cold-start state is restored.
+    """
+
+    def __init__(self, limit: int, window_seconds: int = RATE_LIMIT_WINDOW_SECONDS) -> None:
+        self._limit = limit
+        self._window_seconds = window_seconds
+        self._cache: dict[str, deque[float]] = {}
+        self._lock = Lock()
+        self._loaded = False
+
+    def _load(self) -> None:
+        if self._loaded:
+            return
+        self._loaded = True
+        try:
+            with get_db_connection() as conn:
+                rows = conn.execute("SELECT key, timestamps_json FROM rate_limit_buckets").fetchall()
+                for row in rows:
+                    ts: list[float] = json.loads(row["timestamps_json"])
+                    self._cache[row["key"]] = deque(ts)
+        except Exception:
+            pass
+
+    def _persist(self, key: str, timestamps: list[float]) -> None:
+        try:
+            with get_db_connection() as conn:
+                conn.execute(
+                    "INSERT OR REPLACE INTO rate_limit_buckets (key, timestamps_json, updated_at) VALUES (?, ?, ?)",
+                    (key, json.dumps(timestamps), time.time()),
+                )
+                conn.commit()
+        except Exception:
+            pass
+
+    def allow(self, key: str, now: float | None = None) -> bool:
+        current_time = time.time() if now is None else now
+        with self._lock:
+            self._load()
+            timestamps = self._cache.get(key) or deque()
+            while timestamps and current_time - timestamps[0] >= self._window_seconds:
+                timestamps.popleft()
+            if len(timestamps) >= self._limit:
+                return False
+            timestamps.append(current_time)
+            self._cache[key] = timestamps
+            self._persist(key, list(timestamps))
+            return True
+
+
+class SqliteFailureTracker:
+    """Fail2ban-style block list backed by SQLite — survives server restarts."""
+
+    def __init__(self, limit: int, block_seconds: int, window_seconds: int = 300) -> None:
+        self._limit = limit
+        self._block_seconds = block_seconds
+        self._window_seconds = window_seconds
+        self._cache: dict[str, dict] = {}
+        self._lock = Lock()
+        self._loaded = False
+
+    def _load(self) -> None:
+        if self._loaded:
+            return
+        self._loaded = True
+        try:
+            with get_db_connection() as conn:
+                rows = conn.execute("SELECT key, failures_json, blocked_until FROM auth_failures").fetchall()
+                for row in rows:
+                    self._cache[row["key"]] = {
+                        "failures": deque(json.loads(row["failures_json"])),
+                        "blocked_until": row["blocked_until"],
+                    }
+        except Exception:
+            pass
+
+    def _persist(self, key: str, failures: list[float], blocked_until: float) -> None:
+        try:
+            with get_db_connection() as conn:
+                conn.execute(
+                    "INSERT OR REPLACE INTO auth_failures (key, failures_json, blocked_until, updated_at) VALUES (?, ?, ?, ?)",
+                    (key, json.dumps(failures), blocked_until, time.time()),
+                )
+                conn.commit()
+        except Exception:
+            pass
+
+    def _get(self, key: str) -> dict:
+        entry = self._cache.get(key)
+        if entry is None:
+            entry = {"failures": deque(), "blocked_until": 0.0}
+            self._cache[key] = entry
+        return entry
+
+    def is_blocked(self, key: str, now: float | None = None) -> bool:
+        current_time = time.time() if now is None else now
+        with self._lock:
+            self._load()
+            return current_time < self._get(key)["blocked_until"]
+
+    def record_failure(self, key: str, now: float | None = None) -> None:
+        current_time = time.time() if now is None else now
+        with self._lock:
+            self._load()
+            entry = self._get(key)
+            failures: deque[float] = entry["failures"]
+            while failures and current_time - failures[0] >= self._window_seconds:
+                failures.popleft()
+            failures.append(current_time)
+            blocked_until = entry["blocked_until"]
+            if len(failures) >= self._limit:
+                blocked_until = current_time + self._block_seconds
+                entry["blocked_until"] = blocked_until
+            self._persist(key, list(failures), blocked_until)
+
+    def reset(self, key: str) -> None:
+        with self._lock:
+            self._load()
+            entry = self._get(key)
+            entry["failures"].clear()
+            entry["blocked_until"] = 0.0
+            self._persist(key, [], 0.0)
+
+
+class SecurityMiddleware(BaseHTTPMiddleware):
+    def __init__(
+        self,
+        app,
+        settings: Settings,
+        limiter: InMemoryRateLimiter | SqliteRateLimiter | None = None,
+        failure_tracker: AuthFailureTracker | SqliteFailureTracker | None = None,
+    ) -> None:
+        super().__init__(app)
+        self._settings = settings
+        self._limiter = limiter or SqliteRateLimiter(settings.rate_limit_per_minute)
+        self._limiters_by_limit: dict[int, SqliteRateLimiter | InMemoryRateLimiter] = {settings.rate_limit_per_minute: self._limiter}
+        self._failure_tracker = failure_tracker or SqliteFailureTracker(
+            settings.auth_failure_limit,
+            settings.auth_failure_block_seconds,
+        )
+        self._allowed_hosts = {host.lower() for host in settings.allowed_hosts}
+        self._api_keys = ApiKeyService()
+
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Response]) -> Response:
+        client_ip = self._client_ip(request)
+        if not self._host_allowed(request):
+            self._log_denial(client_ip, request.url.path, "host_not_allowed")
+            return JSONResponse(
+                status_code=status.HTTP_421_MISDIRECTED_REQUEST,
+                content={"detail": "host not allowed"},
+            )
+
+        if request.method == "OPTIONS" or self._is_public_path(request.url.path):
+            return await call_next(request)
+
+        if self._failure_tracker.is_blocked(client_ip):
+            self._log_denial(client_ip, request.url.path, "client_temporarily_blocked")
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={"detail": "client temporarily blocked"},
+            )
+
+        provided_key = request.headers.get(API_KEY_HEADER)
+        api_key_record: ApiKeyRecord | None = None
+        if provided_key == self._settings.api_key:
+            request.state.api_key_id = None
+            request.state.api_key_allow_external = True
+            request.state.api_key_rpm_limit = self._settings.rate_limit_per_minute
+        elif provided_key:
+            api_key_record = self._api_keys.lookup(provided_key)
+            if api_key_record is None:
+                self._failure_tracker.record_failure(client_ip)
+                self._log_denial(client_ip, request.url.path, "invalid_api_key")
+                return JSONResponse(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    content={"detail": "invalid api key"},
+                )
+            request.state.api_key_id = api_key_record.id
+            request.state.api_key_allow_external = api_key_record.allow_external
+            request.state.api_key_rpm_limit = api_key_record.rpm_limit
+        else:
+            self._failure_tracker.record_failure(client_ip)
+            self._log_denial(client_ip, request.url.path, "invalid_api_key")
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"detail": "invalid api key"},
+            )
+
+        self._failure_tracker.reset(client_ip)
+        rate_key = self._rate_limit_key(
+            client_ip,
+            provided_key,
+            getattr(request.state, "api_key_id", None),
+        )
+        limiter = self._limiter_for_limit(getattr(request.state, "api_key_rpm_limit", self._settings.rate_limit_per_minute))
+        if not limiter.allow(rate_key):
+            self._log_denial(client_ip, request.url.path, "rate_limit_exceeded")
+            return JSONResponse(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                content={"detail": "rate limit exceeded"},
+                headers={"Retry-After": str(RATE_LIMIT_WINDOW_SECONDS)},
+            )
+
+        return await call_next(request)
+
+    def _host_allowed(self, request: Request) -> bool:
+        host = request.headers.get("host", "").split(":", 1)[0].lower()
+        return "*" in self._allowed_hosts or host in self._allowed_hosts
+
+    def _limiter_for_limit(self, limit: int) -> SqliteRateLimiter | InMemoryRateLimiter:
+        if limit not in self._limiters_by_limit:
+            self._limiters_by_limit[limit] = SqliteRateLimiter(limit)
+        return self._limiters_by_limit[limit]
+
+    @staticmethod
+    def _rate_limit_key(client_ip: str, provided_key: str | None, api_key_id: str | None) -> str:
+        """Build a stable per-client rate key without persisting raw API secrets."""
+        key_material = api_key_id or provided_key or "missing"
+        key_hash = hashlib.sha256(key_material.encode("utf-8")).hexdigest()
+        return f"{client_ip}:{key_hash}"
+
+    def _is_public_path(self, path: str) -> bool:
+        if path in ALWAYS_PUBLIC_PATHS:
+            return True
+        if self._settings.public_health_enabled and path in HEALTH_PATHS:
+            return True
+        if self._settings.public_docs_enabled and path in DOCS_PATHS:
+            return True
+        return False
+
+    @staticmethod
+    def _client_ip(request: Request) -> str:
+        forwarded_for = request.headers.get("cf-connecting-ip") or request.headers.get("x-real-ip")
+        if forwarded_for:
+            return forwarded_for.split(",", 1)[0].strip()
+        return request.client.host if request.client is not None else "unknown"
+
+    def _log_denial(self, client_ip: str, path: str, reason: str) -> None:
+        logger.warning("security_denied ip=%s path=%s reason=%s", client_ip, path, reason)
