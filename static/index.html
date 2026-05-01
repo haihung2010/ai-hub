@@ -122,9 +122,8 @@
         let searchEnabled = false;
         let streamEnabled = true;
 
-        // ── Stream toggle ──────────────────────────────────────────────
-        streamToggleBtn.addEventListener('click', () => {
-            streamEnabled = !streamEnabled;
+        function setStreamEnabled(enabled) {
+            streamEnabled = enabled;
             if (streamEnabled) {
                 streamToggleBtn.textContent = '⚡ Stream: ON';
                 streamToggleBtn.className = 'whitespace-nowrap rounded-lg border border-purple-300 bg-purple-100 px-3 py-2 text-xs font-bold text-purple-700 transition-all';
@@ -132,6 +131,11 @@
                 streamToggleBtn.textContent = '⚡ Stream: OFF';
                 streamToggleBtn.className = 'whitespace-nowrap rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-300 transition-all';
             }
+        }
+
+        // ── Stream toggle ──────────────────────────────────────────────
+        streamToggleBtn.addEventListener('click', () => {
+            setStreamEnabled(!streamEnabled);
         });
 
         // ── Search toggle ──────────────────────────────────────────────
@@ -140,6 +144,7 @@
             if (searchEnabled) {
                 searchToggleBtn.textContent = '🔍 Search: ON';
                 searchToggleBtn.className = 'whitespace-nowrap rounded-lg border border-green-300 bg-green-100 px-3 py-2 text-xs font-bold text-green-700 transition-all';
+                statusDiv.textContent = 'Muốn dùng search thì nhập /search: nội dung cần search';
             } else {
                 searchToggleBtn.textContent = '🔍 Search: OFF';
                 searchToggleBtn.className = 'whitespace-nowrap rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-300 transition-all';
@@ -401,9 +406,12 @@
             return textSpan;
         }
 
-        function shouldAutoSearch(text) {
-            const normalized = text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-            return /\b(hom nay|ngay bao nhieu|ngay may|gia vang|sjc|pnj|doji|ti gia|ty gia|thoi tiet|tin moi|latest|current|today|price|weather)\b/.test(normalized);
+        function isSearchCommand(text) {
+            return /^\s*\/search(?::|\s+)\s*.+/i.test(text);
+        }
+
+        function startsWithSearchCommand(text) {
+            return /^\s*\/search\b/i.test(text);
         }
 
         // ── Streaming send ─────────────────────────────────────────────
@@ -492,6 +500,13 @@
             const message = userInput.value.trim();
             if (!message && !selectedFile) return;
 
+            if (!searchEnabled && startsWithSearchCommand(message)) {
+                statusDiv.textContent = 'Search đang OFF. Bật Search rồi nhập /search: nội dung cần search';
+                addBubble('Search đang OFF. Bật Search rồi gửi lại lệnh /search.', false);
+                userInput.focus();
+                return;
+            }
+
             let images = [], imagePreviews = [];
             if (selectedFile && currentMode === 'lite') {
                 images.push(await fileToBase64(selectedFile));
@@ -503,10 +518,18 @@
             addBubble(message || 'Analyze this image', true, imagePreviews);
 
             const startTime = performance.now();
-            const autoSearch = shouldAutoSearch(message);
-            statusDiv.innerHTML = streamEnabled
-                ? '<span class="loader mr-2"></span> Streaming response...'
-                : `<span class="loader mr-2"></span> ${currentMode === 'lite' ? 'Gemma E4B' : 'Qwen 27B'} is generating...`;
+            const explicitSearch = searchEnabled && isSearchCommand(message);
+            const useStream = streamEnabled && !explicitSearch;
+            if (explicitSearch && streamEnabled) {
+                setStreamEnabled(false);
+                statusDiv.textContent = 'Search sẽ chạy với Stream OFF để ổn định hơn';
+            } else if (searchEnabled && !explicitSearch && message) {
+                statusDiv.textContent = 'Search đang ON. Muốn dùng search thì nhập /search: nội dung cần search';
+            } else {
+                statusDiv.innerHTML = useStream
+                    ? '<span class="loader mr-2"></span> Streaming response...'
+                    : `<span class="loader mr-2"></span> ${currentMode === 'lite' ? 'Gemma E4B' : 'Qwen 27B'} is generating...`;
+            }
             sendBtn.disabled = true;
 
             const payload = {
@@ -515,12 +538,13 @@
                 user_message: message || 'Analyze this image',
                 session_id: currentSessionId,
                 model_mode: currentMode,
-                enable_search: searchEnabled || autoSearch,
+                enable_search: searchEnabled,
+                allow_external: explicitSearch,
             };
             if (currentMode === 'lite' && images.length > 0) payload.images = images;
 
             try {
-                const { sessionId, latencyMs } = streamEnabled
+                const { sessionId, latencyMs } = useStream
                     ? await sendStreaming(payload)
                     : await sendNonStreaming(payload);
 
@@ -533,7 +557,7 @@
                     ? (latencyMs / 1000).toFixed(2)
                     : ((performance.now() - startTime) / 1000).toFixed(2);
 
-                statusDiv.textContent = `LATENCY: ${elapsed}s | SESSION: ${(sessionId || '').substring(0, 8)}... | MODE: ${currentMode.toUpperCase()}${autoSearch ? ' | AUTO SEARCH' : ''}${streamEnabled ? ' | STREAMED' : ''}`;
+                statusDiv.textContent = `LATENCY: ${elapsed}s | SESSION: ${(sessionId || '').substring(0, 8)}... | MODE: ${currentMode.toUpperCase()}${explicitSearch ? ' | SEARCH | STREAM OFF' : ''}${useStream ? ' | STREAMED' : ''}`;
             } catch (error) {
                 console.error(error);
                 addBubble('Error: ' + error.message, false);

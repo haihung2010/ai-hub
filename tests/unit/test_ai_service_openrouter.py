@@ -20,6 +20,7 @@ class _Provider:
         self.name = name
         self.content = content
         self.calls = 0
+        self.stream_calls = 0
         self.models: list[str] = []
         self.messages: list[list[Message]] = []
         self.options: list[dict | None] = []
@@ -36,6 +37,28 @@ class _Provider:
         self.messages.append(messages)
         self.options.append(options)
         return self.content
+
+    async def stream_complete(
+        self,
+        messages: list[Message],
+        model: str,
+        temperature: float,
+        options: dict | None = None,
+    ):
+        self.stream_calls += 1
+        self.models.append(model)
+        self.messages.append(messages)
+        self.options.append(options)
+        yield self.content
+
+
+class _SearchService:
+    def __init__(self) -> None:
+        self.queries: list[str] = []
+
+    def search(self, query: str, max_results: int = 5) -> list[dict[str, str]]:
+        self.queries.append(query)
+        return [{"title": "Example", "url": "https://example.com/news", "snippet": "fresh result"}]
 
 
 class _LockedButNonBlockingSemaphore:
@@ -386,6 +409,212 @@ async def test_external_mode_denies_private_vehix_even_if_allowed(openrouter_set
                 allow_external=True,
             )
         )
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("/search: latest AI news", "latest AI news"),
+        ("/search latest AI news", "latest AI news"),
+        ("  /search: latest AI news  ", "latest AI news"),
+        ("/SEARCH: latest AI news", "latest AI news"),
+        ("/search", None),
+        ("/search:", None),
+        ("please /search latest AI news", None),
+        ("what is the weather today?", None),
+    ],
+)
+def test_explicit_search_parser(openrouter_settings: Settings, text: str, expected: str | None) -> None:
+    service = AIService(
+        local=_Provider("llama_cpp"),
+        cloud=_Provider("openrouter"),
+        history=HistoryService(),
+        settings=openrouter_settings,
+        users=UserService(),
+    )
+
+    assert service._extract_explicit_search_query(text) == expected
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_explicit_search_routes_to_openrouter_and_uses_stripped_query(openrouter_settings: Settings) -> None:
+    init_db()
+    local = _Provider("llama_cpp", "local")
+    cloud = _Provider("openrouter", "cloud")
+    search = _SearchService()
+    service = AIService(
+        local=local,
+        cloud=cloud,
+        history=HistoryService(),
+        settings=openrouter_settings,
+        users=UserService(),
+        web_search=search,
+    )
+
+    response = await service.chat(
+        ChatRequest(
+            project_id="test",
+            tenant_id="default",
+            user_name="hung-search-cloud",
+            user_message="/search: latest AI news",
+            enable_search=True,
+            allow_external=True,
+        )
+    )
+
+    assert response.provider == "openrouter"
+    assert response.model == "openrouter/free-model"
+    assert response.route == "cloud"
+    assert response.route_reason == "explicit_search_cloud"
+    assert response.sources == ["https://example.com/news"]
+    assert search.queries == ["latest AI news"]
+    assert cloud.calls == 1
+    assert local.calls == 0
+    assert "WEB SEARCH CONTEXT" in cloud.messages[0][0].content
+    assert cloud.messages[0][-1].content == "latest AI news"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_enable_search_without_command_stays_local(openrouter_settings: Settings) -> None:
+    init_db()
+    local = _Provider("llama_cpp", "local")
+    cloud = _Provider("openrouter", "cloud")
+    search = _SearchService()
+    service = AIService(
+        local=local,
+        cloud=cloud,
+        history=HistoryService(),
+        settings=openrouter_settings,
+        users=UserService(),
+        web_search=search,
+    )
+
+    response = await service.chat(
+        ChatRequest(
+            project_id="test",
+            tenant_id="default",
+            user_name="hung-normal-search-toggle",
+            user_message="gia vang hom nay the nao",
+            enable_search=True,
+            allow_external=True,
+        )
+    )
+
+    assert response.provider == "llama_cpp"
+    assert response.route == "local"
+    assert response.sources == []
+    assert search.queries == []
+    assert local.calls == 1
+    assert cloud.calls == 0
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_search_command_without_toggle_stays_local(openrouter_settings: Settings) -> None:
+    init_db()
+    local = _Provider("llama_cpp", "local")
+    cloud = _Provider("openrouter", "cloud")
+    search = _SearchService()
+    service = AIService(
+        local=local,
+        cloud=cloud,
+        history=HistoryService(),
+        settings=openrouter_settings,
+        users=UserService(),
+        web_search=search,
+    )
+
+    response = await service.chat(
+        ChatRequest(
+            project_id="test",
+            tenant_id="default",
+            user_name="hung-search-toggle-off",
+            user_message="/search: latest AI news",
+            enable_search=False,
+            allow_external=True,
+        )
+    )
+
+    assert response.provider == "llama_cpp"
+    assert response.route == "local"
+    assert response.sources == []
+    assert search.queries == []
+    assert local.calls == 1
+    assert cloud.calls == 0
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_explicit_search_respects_external_policy(openrouter_settings: Settings) -> None:
+    init_db()
+    local = _Provider("llama_cpp", "local")
+    cloud = _Provider("openrouter", "cloud")
+    service = AIService(
+        local=local,
+        cloud=cloud,
+        history=HistoryService(),
+        settings=openrouter_settings,
+        users=UserService(),
+        web_search=_SearchService(),
+    )
+
+    with pytest.raises(UpstreamError, match="not allowed"):
+        await service.chat(
+            ChatRequest(
+                project_id="test",
+                tenant_id="default",
+                user_name="hung-search-denied",
+                user_message="/search: latest AI news",
+                enable_search=True,
+                allow_external=False,
+            )
+        )
+
+    assert local.calls == 0
+    assert cloud.calls == 0
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_explicit_search_stream_routes_to_openrouter(openrouter_settings: Settings) -> None:
+    init_db()
+    local = _Provider("llama_cpp", "local")
+    cloud = _Provider("openrouter", "cloud")
+    search = _SearchService()
+    service = AIService(
+        local=local,
+        cloud=cloud,
+        history=HistoryService(),
+        settings=openrouter_settings,
+        users=UserService(),
+        web_search=search,
+    )
+
+    events = [
+        event
+        async for event in service.chat_stream(
+            ChatRequest(
+                project_id="test",
+                tenant_id="default",
+                user_name="hung-search-stream",
+                user_message="/search latest AI news",
+                enable_search=True,
+                allow_external=True,
+            )
+        )
+    ]
+
+    assert events[0]["type"] == "start"
+    assert events[0]["provider"] == "openrouter"
+    assert events[0]["model"] == "openrouter/free-model"
+    assert events[0]["route"] == "cloud"
+    assert events[-1]["sources"] == ["https://example.com/news"]
+    assert search.queries == ["latest AI news"]
+    assert cloud.stream_calls == 1
+    assert local.stream_calls == 0
 
 
 @pytest.mark.unit

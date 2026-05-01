@@ -100,9 +100,16 @@ class OpenRouterProvider:
         choices = data.get("choices") or []
         if not choices:
             raise UpstreamError("openrouter returned no choices")
-        message = choices[0].get("message") or {}
-        content = message.get("content")
+        choice = choices[0]
+        message = choice.get("message") or {}
+        content = message.get("content") or message.get("reasoning") or message.get("text")
         if not content:
+            logger.warning(
+                "OpenRouter returned empty content finish_reason=%s message_keys=%s choice_keys=%s",
+                choice.get("finish_reason"),
+                sorted(message.keys()),
+                sorted(choice.keys()),
+            )
             raise UpstreamError("openrouter returned empty content")
         return content
 
@@ -156,7 +163,8 @@ class OpenRouterProvider:
                         break
                     try:
                         chunk = json.loads(data)
-                        content = (chunk["choices"][0]["delta"] or {}).get("content") or ""
+                        delta = chunk["choices"][0]["delta"] or {}
+                        content = delta.get("content") or delta.get("reasoning") or delta.get("text") or ""
                         if content:
                             yield content
                     except (json.JSONDecodeError, KeyError, IndexError):

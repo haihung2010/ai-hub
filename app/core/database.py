@@ -281,6 +281,43 @@ def init_db():
             )
         """)
 
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS knowledge_cards (
+                id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL DEFAULT 'default',
+                project_id TEXT NOT NULL,
+                knowledge_domain TEXT NOT NULL,
+                title TEXT NOT NULL,
+                summary TEXT NOT NULL DEFAULT '',
+                content TEXT NOT NULL,
+                source_type TEXT NOT NULL,
+                trust_level INTEGER NOT NULL DEFAULT 3,
+                status TEXT NOT NULL DEFAULT 'active',
+                version INTEGER NOT NULL DEFAULT 1,
+                effective_from TIMESTAMP,
+                effective_to TIMESTAMP,
+                tags TEXT NOT NULL DEFAULT '[]',
+                owner TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS knowledge_card_chunks (
+                id TEXT PRIMARY KEY,
+                card_id TEXT NOT NULL,
+                tenant_id TEXT NOT NULL DEFAULT 'default',
+                project_id TEXT NOT NULL,
+                chunk_index INTEGER NOT NULL,
+                content TEXT NOT NULL,
+                token_estimate INTEGER NOT NULL DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (card_id) REFERENCES knowledge_cards (id) ON DELETE CASCADE,
+                UNIQUE (card_id, chunk_index)
+            )
+        """)
+
         messages_cols = _column_names(cursor, "messages")
         if "tenant_id" not in messages_cols:
             cursor.execute(
@@ -389,6 +426,18 @@ def init_db():
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_failure_risk_events_project_level "
             "ON failure_risk_events (project_id, risk_level, created_at)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_knowledge_cards_scope "
+            "ON knowledge_cards (tenant_id, project_id, status, knowledge_domain, updated_at)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_knowledge_cards_project_status "
+            "ON knowledge_cards (project_id, status, trust_level)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_scope "
+            "ON knowledge_card_chunks (tenant_id, project_id, card_id, chunk_index)"
         )
 
         cursor.execute("""

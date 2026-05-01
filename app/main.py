@@ -36,6 +36,7 @@ from app.routes import admin as admin_routes
 from app.routes import chat as chat_routes
 from app.routes import crew as crew_routes
 from app.routes import health as health_routes
+from app.routes import knowledge as knowledge_routes
 from app.routes import memory as memory_routes
 from app.routes import predictions as predictions_routes
 from app.routes import users as users_routes
@@ -44,6 +45,8 @@ from app.core.database import DB_PATH
 from app.services.ai_service import AIService
 from app.services.failure_risk_service import FailureRiskService
 from app.services.history_service import HistoryService
+from app.services.knowledge_ingestion_service import KnowledgeIngestionService
+from app.services.knowledge_retrieval_service import KnowledgeRetrievalService
 from app.services.memory_consolidation_service import MemoryConsolidationService
 from app.services.memory_extraction_service import MemoryExtractionService
 from app.services.memory_retrieval_service import MemoryRetrievalService
@@ -122,6 +125,11 @@ def create_app(
             memory_retrieval = MemoryRetrievalService()
             memory_consolidation = MemoryConsolidationService()
             pinned_memory = PinnedMemoryService()
+            knowledge_ingestion = KnowledgeIngestionService(
+                chunk_chars=settings.knowledge_chunk_chars,
+                max_card_chars=settings.knowledge_max_card_chars,
+            )
+            knowledge_retrieval = KnowledgeRetrievalService()
             usage = UsageService()
             failure_risk = FailureRiskService(
                 high_threshold=settings.failure_risk_high_threshold,
@@ -149,6 +157,8 @@ def create_app(
             app.state.memory_retrieval_service = memory_retrieval
             app.state.memory_consolidation_service = memory_consolidation
             app.state.pinned_memory_service = pinned_memory
+            app.state.knowledge_ingestion_service = knowledge_ingestion
+            app.state.knowledge_retrieval_service = knowledge_retrieval
             app.state.usage_service = usage
             app.state.failure_risk_service = failure_risk
             app.state.structmem_service = structmem
@@ -172,6 +182,7 @@ def create_app(
                 cloud=openrouter,
                 usage=usage,
                 failure_risk=failure_risk,
+                knowledge_retrieval=knowledge_retrieval,
             )
             logger.info("ai-hub started on port %s", settings.app_port)
             yield
@@ -200,6 +211,7 @@ def create_app(
     app.include_router(chat_routes.router)
     app.include_router(users_routes.router)
     app.include_router(memory_routes.router)
+    app.include_router(knowledge_routes.router)
     app.include_router(predictions_routes.router)
     app.include_router(crew_routes.router)
     app.include_router(admin_routes.router)

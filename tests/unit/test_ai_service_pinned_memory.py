@@ -10,7 +10,10 @@ from app.core.config import Settings
 from app.core.database import init_db
 from app.models.chat import ChatRequest, Message
 from app.services.ai_service import AIService
+from app.models.knowledge import KnowledgeCardCreate
 from app.services.history_service import HistoryService
+from app.services.knowledge_ingestion_service import KnowledgeIngestionService
+from app.services.knowledge_retrieval_service import KnowledgeRetrievalService
 from app.services.pinned_memory_service import PinnedMemoryService
 from app.services.user_service import UserService
 
@@ -128,3 +131,76 @@ async def test_pinned_memory_is_injected_into_prompt(service_settings: Settings)
     system_text = "\n".join(message.content for message in provider.messages if message.role == "system")
     assert "### SYSTEM: PINNED MEMORY ###" in system_text
     assert "Vehix devices use MQTT" in system_text
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_project_knowledge_is_injected_into_prompt(service_settings: Settings) -> None:
+    init_db()
+    ingestion = KnowledgeIngestionService()
+    ingestion.create_card(
+        KnowledgeCardCreate(
+            project_id="test",
+            knowledge_domain="customer_faq",
+            title="Refund FAQ",
+            summary="Refund rules",
+            content="Customers can request refund within thirty days with order code.",
+            tags=["refund"],
+        )
+    )
+    provider = _CaptureProvider()
+    service = AIService(
+        local=provider,
+        history=HistoryService(),
+        settings=service_settings,
+        users=UserService(),
+        knowledge_retrieval=KnowledgeRetrievalService(),
+    )
+
+    await service.chat(
+        ChatRequest(
+            project_id="test",
+            tenant_id="default",
+            user_message="How does refund work with order code?",
+        )
+    )
+
+    system_text = "\n".join(message.content for message in provider.messages if message.role == "system")
+    assert "### SYSTEM: PROJECT KNOWLEDGE CONTEXT ###" in system_text
+    assert "Refund FAQ" in system_text
+    assert "thirty days" in system_text
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_project_knowledge_does_not_cross_project(service_settings: Settings) -> None:
+    init_db()
+    ingestion = KnowledgeIngestionService()
+    ingestion.create_card(
+        KnowledgeCardCreate(
+            tenant_id="tenant-a",
+            project_id="test",
+            knowledge_domain="customer_faq",
+            title="Refund FAQ",
+            content="Refund requires tenant A approval.",
+        )
+    )
+    provider = _CaptureProvider()
+    service = AIService(
+        local=provider,
+        history=HistoryService(),
+        settings=service_settings,
+        users=UserService(),
+        knowledge_retrieval=KnowledgeRetrievalService(),
+    )
+
+    await service.chat(
+        ChatRequest(
+            project_id="test",
+            tenant_id="tenant-b",
+            user_message="How does refund work?",
+        )
+    )
+
+    system_text = "\n".join(message.content for message in provider.messages if message.role == "system")
+    assert "### SYSTEM: PROJECT KNOWLEDGE CONTEXT ###" not in system_text

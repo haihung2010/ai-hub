@@ -51,3 +51,23 @@ async def test_openrouter_provider_posts_openai_compatible_payload() -> None:
     assert seen["payload"]["messages"] == [{"role": "user", "content": "hello"}]
     assert seen["payload"]["max_tokens"] == 32
     assert "num_ctx" not in seen["payload"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_openrouter_provider_uses_reasoning_when_content_is_empty() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": "", "reasoning": "reasoned answer"}}]},
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        provider = OpenRouterProvider(
+            client=client,
+            base_url="https://openrouter.test/api/v1",
+            api_key="test-key",
+        )
+        content = await provider.complete([Message(role="user", content="hello")], "free-model", 0.2)
+
+    assert content == "reasoned answer"
