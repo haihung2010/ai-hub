@@ -1,0 +1,1081 @@
+[
+  {
+    "group": "Z",
+    "slot": 8,
+    "gpu": 8,
+    "ctx": 65536,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 7074,
+    "report": "q8_gZ_s8_g8_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 169.097,
+    "latency_p50_s": 17.844,
+    "latency_p95_s": 20.335,
+    "latency_p99_s": 21.307,
+    "latency_max_s": 21.618,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "Z",
+    "slot": 8,
+    "gpu": 8,
+    "ctx": 65536,
+    "tier": "tier2",
+    "users": 30,
+    "questions": 20,
+    "vram_before_mib": 7074,
+    "report": "q8_gZ_s8_g8_30u20_tier2",
+    "total_questions": 600,
+    "total_ok": 600,
+    "total_errors": 0,
+    "wall_time_s": 452.897,
+    "latency_p50_s": 19.909,
+    "latency_p95_s": 32.104,
+    "latency_p99_s": 32.892,
+    "latency_max_s": 36.419,
+    "providers": {
+      "llama_cpp": 570,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 570,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 600
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 28,
+    "sample_errors": []
+  },
+  {
+    "group": "A",
+    "slot": 16,
+    "gpu": 16,
+    "ctx": 131072,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 8418,
+    "report": "q8_gA_s16_g16_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 299,
+    "total_errors": 1,
+    "wall_time_s": 364.049,
+    "latency_p50_s": 39.779,
+    "latency_p95_s": 51.338,
+    "latency_p99_s": 54.144,
+    "latency_max_s": 55.548,
+    "providers": {
+      "llama_cpp": 269,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 269,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 299
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": [
+      "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}"
+    ]
+  },
+  {
+    "group": "A",
+    "slot": 15,
+    "gpu": 15,
+    "ctx": 122880,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 8264,
+    "report": "q8_gA_s15_g15_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 349.107,
+    "latency_p50_s": 39.335,
+    "latency_p95_s": 48.678,
+    "latency_p99_s": 51.344,
+    "latency_max_s": 52.209,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "A",
+    "slot": 14,
+    "gpu": 14,
+    "ctx": 114688,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 8089,
+    "report": "q8_gA_s14_g14_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 304.616,
+    "latency_p50_s": 33.111,
+    "latency_p95_s": 43.774,
+    "latency_p99_s": 45.958,
+    "latency_max_s": 46.397,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "A",
+    "slot": 13,
+    "gpu": 13,
+    "ctx": 106496,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 7984,
+    "report": "q8_gA_s13_g13_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 327.257,
+    "latency_p50_s": 35.048,
+    "latency_p95_s": 43.741,
+    "latency_p99_s": 46.703,
+    "latency_max_s": 49.815,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "A",
+    "slot": 12,
+    "gpu": 12,
+    "ctx": 98304,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 7847,
+    "report": "q8_gA_s12_g12_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 290.263,
+    "latency_p50_s": 30.816,
+    "latency_p95_s": 38.443,
+    "latency_p99_s": 41.292,
+    "latency_max_s": 42.492,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "A",
+    "slot": 11,
+    "gpu": 11,
+    "ctx": 90112,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 7630,
+    "report": "q8_gA_s11_g11_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 252.002,
+    "latency_p50_s": 28.072,
+    "latency_p95_s": 33.334,
+    "latency_p99_s": 34.767,
+    "latency_max_s": 35.426,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "A",
+    "slot": 10,
+    "gpu": 10,
+    "ctx": 81920,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 7437,
+    "report": "q8_gA_s10_g10_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 224.518,
+    "latency_p50_s": 23.695,
+    "latency_p95_s": 28.065,
+    "latency_p99_s": 29.248,
+    "latency_max_s": 30.312,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "A",
+    "slot": 9,
+    "gpu": 9,
+    "ctx": 73728,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 7262,
+    "report": "q8_gA_s9_g9_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 163.015,
+    "latency_p50_s": 16.824,
+    "latency_p95_s": 20.23,
+    "latency_p99_s": 21.614,
+    "latency_max_s": 22.333,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "A",
+    "slot": 9,
+    "gpu": 9,
+    "ctx": 73728,
+    "tier": "tier2",
+    "users": 30,
+    "questions": 20,
+    "vram_before_mib": 7262,
+    "report": "q8_gA_s9_g9_30u20_tier2",
+    "total_questions": 600,
+    "total_ok": 599,
+    "total_errors": 1,
+    "wall_time_s": 460.664,
+    "latency_p50_s": 19.166,
+    "latency_p95_s": 31.098,
+    "latency_p99_s": 33.935,
+    "latency_max_s": 35.832,
+    "providers": {
+      "llama_cpp": 569,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 569,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 599
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 28,
+    "sample_errors": [
+      "{\"detail\":\"upstream error: llama.cpp 500: {\\\"error\\\":{\\\"code\\\":500,\\\"message\\\":\\\"Failed to parse input at pos 13: *   **Kết hợp cả hai thế mạnh:** Hybrid search cho phép bạn vừa tìm kiếm theo từ khóa truyền thống (BM25), vừa tìm kiếm theo ý nghĩa củ\"}"
+    ]
+  },
+  {
+    "group": "B",
+    "slot": 16,
+    "gpu": 15,
+    "ctx": 131072,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 8437,
+    "report": "q8_gB_s16_g15_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 378.069,
+    "latency_p50_s": 42.29,
+    "latency_p95_s": 49.594,
+    "latency_p99_s": 54.227,
+    "latency_max_s": 55.201,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "B",
+    "slot": 15,
+    "gpu": 14,
+    "ctx": 122880,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 8490,
+    "report": "q8_gB_s15_g14_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 30,
+    "total_errors": 270,
+    "wall_time_s": 5.055,
+    "latency_p50_s": 0.398,
+    "latency_p95_s": 1.088,
+    "latency_p99_s": 1.219,
+    "latency_max_s": 1.238,
+    "providers": {
+      "memory": 30
+    },
+    "models": {
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 30
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 0,
+    "sample_errors": [
+      "{\"detail\":\"upstream error: llama.cpp transport error: \"}",
+      "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+      "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+      "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+      "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+    ]
+  },
+  {
+    "group": "B",
+    "slot": 14,
+    "gpu": 13,
+    "ctx": 114688,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 8134,
+    "report": "q8_gB_s14_g13_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 351.743,
+    "latency_p50_s": 39.709,
+    "latency_p95_s": 45.485,
+    "latency_p99_s": 47.805,
+    "latency_max_s": 49.087,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "B",
+    "slot": 13,
+    "gpu": 12,
+    "ctx": 106496,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 7968,
+    "report": "q8_gB_s13_g12_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 303.867,
+    "latency_p50_s": 34.086,
+    "latency_p95_s": 41.164,
+    "latency_p99_s": 42.844,
+    "latency_max_s": 46.254,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "B",
+    "slot": 12,
+    "gpu": 11,
+    "ctx": 98304,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 7782,
+    "report": "q8_gB_s12_g11_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 281.623,
+    "latency_p50_s": 31.951,
+    "latency_p95_s": 37.819,
+    "latency_p99_s": 39.446,
+    "latency_max_s": 40.032,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "B",
+    "slot": 11,
+    "gpu": 10,
+    "ctx": 90112,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 7617,
+    "report": "q8_gB_s11_g10_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 249.993,
+    "latency_p50_s": 27.086,
+    "latency_p95_s": 33.05,
+    "latency_p99_s": 35.057,
+    "latency_max_s": 35.591,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "B",
+    "slot": 10,
+    "gpu": 9,
+    "ctx": 81920,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 7636,
+    "report": "q8_gB_s10_g9_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 219.012,
+    "latency_p50_s": 22.884,
+    "latency_p95_s": 30.798,
+    "latency_p99_s": 32.165,
+    "latency_max_s": 32.586,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "B",
+    "slot": 9,
+    "gpu": 8,
+    "ctx": 73728,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 7439,
+    "report": "q8_gB_s9_g8_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 166.878,
+    "latency_p50_s": 17.072,
+    "latency_p95_s": 20.85,
+    "latency_p99_s": 22.453,
+    "latency_max_s": 22.779,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "C",
+    "slot": 16,
+    "gpu": 14,
+    "ctx": 131072,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 8603,
+    "report": "q8_gC_s16_g14_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 353.815,
+    "latency_p50_s": 40.016,
+    "latency_p95_s": 50.119,
+    "latency_p99_s": 52.526,
+    "latency_max_s": 53.699,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "C",
+    "slot": 15,
+    "gpu": 13,
+    "ctx": 122880,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 8505,
+    "report": "q8_gC_s15_g13_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 298,
+    "total_errors": 2,
+    "wall_time_s": 348.262,
+    "latency_p50_s": 37.514,
+    "latency_p95_s": 48.858,
+    "latency_p99_s": 52.369,
+    "latency_max_s": 53.667,
+    "providers": {
+      "llama_cpp": 268,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 268,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 298
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": [
+      "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+      "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}"
+    ]
+  },
+  {
+    "group": "C",
+    "slot": 14,
+    "gpu": 12,
+    "ctx": 114688,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 8308,
+    "report": "q8_gC_s14_g12_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 317.917,
+    "latency_p50_s": 34.163,
+    "latency_p95_s": 43.177,
+    "latency_p99_s": 46.619,
+    "latency_max_s": 49.919,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "C",
+    "slot": 13,
+    "gpu": 11,
+    "ctx": 106496,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 8075,
+    "report": "q8_gC_s13_g11_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 317.127,
+    "latency_p50_s": 34.354,
+    "latency_p95_s": 43.027,
+    "latency_p99_s": 45.005,
+    "latency_max_s": 45.753,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "C",
+    "slot": 12,
+    "gpu": 10,
+    "ctx": 98304,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 7805,
+    "report": "q8_gC_s12_g10_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 282.23,
+    "latency_p50_s": 30.027,
+    "latency_p95_s": 36.229,
+    "latency_p99_s": 37.907,
+    "latency_max_s": 39.895,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "C",
+    "slot": 11,
+    "gpu": 9,
+    "ctx": 90112,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 7639,
+    "report": "q8_gC_s11_g9_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 254.427,
+    "latency_p50_s": 27.517,
+    "latency_p95_s": 31.469,
+    "latency_p99_s": 32.982,
+    "latency_max_s": 35.394,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "C",
+    "slot": 10,
+    "gpu": 8,
+    "ctx": 81920,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 7473,
+    "report": "q8_gC_s10_g8_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 215.078,
+    "latency_p50_s": 23.042,
+    "latency_p95_s": 26.057,
+    "latency_p99_s": 26.922,
+    "latency_max_s": 27.832,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "D",
+    "slot": 16,
+    "gpu": 8,
+    "ctx": 131072,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 8473,
+    "report": "q8_gD_s16_g8_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 344.272,
+    "latency_p50_s": 39.647,
+    "latency_p95_s": 48.032,
+    "latency_p99_s": 52.218,
+    "latency_max_s": 53.803,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "D",
+    "slot": 15,
+    "gpu": 8,
+    "ctx": 122880,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 8337,
+    "report": "q8_gD_s15_g8_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 291,
+    "total_errors": 9,
+    "wall_time_s": 397.645,
+    "latency_p50_s": 40.425,
+    "latency_p95_s": 49.449,
+    "latency_p99_s": 82.876,
+    "latency_max_s": 90.633,
+    "providers": {
+      "llama_cpp": 261,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 261,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 291
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 24,
+    "sample_errors": [
+      "timed out",
+      "timed out",
+      "timed out",
+      "timed out",
+      "timed out"
+    ]
+  },
+  {
+    "group": "D",
+    "slot": 14,
+    "gpu": 8,
+    "ctx": 114688,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 8143,
+    "report": "q8_gD_s14_g8_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 285,
+    "total_errors": 15,
+    "wall_time_s": 359.618,
+    "latency_p50_s": 39.356,
+    "latency_p95_s": 50.239,
+    "latency_p99_s": 64.575,
+    "latency_max_s": 72.255,
+    "providers": {
+      "llama_cpp": 255,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 255,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 285
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": [
+      "timed out",
+      "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+      "timed out",
+      "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+      "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}"
+    ]
+  },
+  {
+    "group": "D",
+    "slot": 13,
+    "gpu": 8,
+    "ctx": 106496,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 7977,
+    "report": "q8_gD_s13_g8_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 292.029,
+    "latency_p50_s": 32.304,
+    "latency_p95_s": 38.35,
+    "latency_p99_s": 41.044,
+    "latency_max_s": 41.58,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "D",
+    "slot": 12,
+    "gpu": 8,
+    "ctx": 98304,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 8037,
+    "report": "q8_gD_s12_g8_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 286.178,
+    "latency_p50_s": 31.092,
+    "latency_p95_s": 36.704,
+    "latency_p99_s": 38.32,
+    "latency_max_s": 39.297,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  },
+  {
+    "group": "D",
+    "slot": 11,
+    "gpu": 8,
+    "ctx": 90112,
+    "tier": "tier1",
+    "users": 30,
+    "questions": 10,
+    "vram_before_mib": 7657,
+    "report": "q8_gD_s11_g8_30u10_tier1",
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 250.104,
+    "latency_p50_s": 27.464,
+    "latency_p95_s": 32.277,
+    "latency_p99_s": 33.241,
+    "latency_max_s": 33.929,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25,
+    "sample_errors": []
+  }
+]

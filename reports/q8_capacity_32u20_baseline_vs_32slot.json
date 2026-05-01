@@ -1,0 +1,56 @@
+[
+  {
+    "case": "p8_ctx65536_gpu8",
+    "parallel": 8,
+    "ctx": 65536,
+    "gpu": 8,
+    "total_questions": 640,
+    "total_ok": 640,
+    "total_errors": 0,
+    "wall_time_s": 462.345,
+    "latency_p50_s": 21.201,
+    "latency_p95_s": 32.06,
+    "latency_p99_s": 33.111,
+    "latency_max_s": 35.033,
+    "providers": {
+      "llama_cpp": 608,
+      "memory": 32
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 608,
+      "history-recall": 32
+    },
+    "routes": {
+      "local": 640
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 30
+  },
+  {
+    "case": "p32_ctx262144_gpu32",
+    "parallel": 32,
+    "ctx": 262144,
+    "gpu": 32,
+    "total_questions": 640,
+    "total_ok": 318,
+    "total_errors": 322,
+    "wall_time_s": 508.955,
+    "latency_p50_s": 19.637,
+    "latency_p95_s": 62.171,
+    "latency_p99_s": 65.322,
+    "latency_max_s": 67.306,
+    "providers": {
+      "llama_cpp": 286,
+      "memory": 32
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 286,
+      "history-recall": 32
+    },
+    "routes": {
+      "local": 318
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 27
+  }
+]

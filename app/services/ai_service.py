@@ -14,8 +14,10 @@ from collections.abc import AsyncIterator
 from app.core.config import Settings
 from app.core.errors import OllamaUnavailable, SessionAccessDenied, UpstreamError, UpstreamTimeout, VramExhausted
 from app.models.chat import ChatRequest, ChatResponse, Message
+from app.models.failure_risk import FailureRiskResult, RiskPolicyDecision
 from app.models.memory import MemoryConsolidationRecord, MemoryItemRecord, RetrievedMemoryBundle
 from app.prompts.loader import load_prompt
+from app.services.failure_risk_service import FailureRiskService
 from app.services.history_service import HistoryService
 from app.services.memory_retrieval_service import MemoryRetrievalService
 from app.services.pinned_memory_service import PinnedMemoryService
@@ -45,6 +47,7 @@ class AIService:
         pinned_memory: PinnedMemoryService | None = None,
         cloud: ChatProvider | None = None,
         usage: UsageService | None = None,
+        failure_risk: FailureRiskService | None = None,
     ) -> None:
         self._local = local
         self._cloud = cloud
@@ -58,6 +61,7 @@ class AIService:
         self._predictions = predictions
         self._pinned_memory = pinned_memory
         self._usage = usage or UsageService()
+        self._failure_risk = failure_risk
         self._gpu_lock = asyncio.Semaphore(settings.gpu_concurrency)
         logger.info(
             "AIService initialized with gpu_concurrency=%s", settings.gpu_concurrency
@@ -352,6 +356,103 @@ class AIService:
                 logger.info("Search triggered but no results found")
 
         return messages, source_urls
+
+    def _evaluate_failure_risk(
+        self,
+        *,
+        req: ChatRequest,
+        messages: list[Message],
+        summary: str | None,
+        memory_bundle: RetrievedMemoryBundle | None,
+        pinned_memory_block: str | None,
+        provider: ChatProvider,
+        model: str,
+        history_count: int,
+        source_urls: list[str],
+    ) -> tuple[FailureRiskResult | None, RiskPolicyDecision]:
+        if not self._settings.enable_failure_risk or not self._failure_risk:
+            return None, RiskPolicyDecision()
+        risk = self._failure_risk.evaluate(
+            req=req,
+            messages=messages,
+            summary=summary,
+            memory_bundle=memory_bundle,
+            pinned_memory_block=pinned_memory_block,
+            provider_name="local" if provider.name == self._local.name else provider.name,
+            model=model,
+            history_count=history_count,
+            history_cap=self._effective_history_cap(self._settings, req.model_mode),
+            search_injected=bool(source_urls),
+            local_queue_locked=self._gpu_lock.locked(),
+            external_allowed=self._overload_fallback_allowed(req),
+        )
+        decision = self._failure_risk.decide(
+            risk,
+            log_only=self._settings.failure_risk_log_only,
+            enable_actions=self._settings.failure_risk_enable_actions,
+            enable_search_action=self._settings.failure_risk_enable_search_action,
+        )
+        return risk, decision
+
+    def _apply_failure_risk_decision(
+        self,
+        *,
+        decision: RiskPolicyDecision,
+        req: ChatRequest,
+        messages: list[Message],
+        source_urls: list[str],
+        route_reason: str,
+    ) -> tuple[list[Message], list[str], str]:
+        if not decision.applied:
+            return messages, source_urls, route_reason
+        if decision.route_reason_suffix:
+            route_reason = f"{route_reason}+{decision.route_reason_suffix}"
+        if decision.action == "inject_risk_context":
+            guard = Message(
+                role="system",
+                content=(
+                    "### SYSTEM: FAILURE RISK GUARD ###\n"
+                    "This request has elevated failure risk. Be conservative: use only supported context, "
+                    "state missing information instead of guessing, and answer the user's exact request."
+                ),
+            )
+            return [*messages[:-1], guard, messages[-1]], source_urls, route_reason
+        if decision.action == "enable_search" and req.enable_search:
+            search_context, urls = self._build_search_context(req.user_message)
+            if search_context:
+                return self._inject_search_context(messages, search_context), urls, route_reason
+        return messages, source_urls, route_reason
+
+    def _record_failure_risk(
+        self,
+        *,
+        risk: FailureRiskResult | None,
+        decision: RiskPolicyDecision,
+        req: ChatRequest,
+        user_id: str | None,
+        session_id: str,
+        route_before: str,
+        route_after: str,
+        model_before: str,
+        model_after: str,
+    ) -> None:
+        if not risk or not self._failure_risk:
+            return
+        try:
+            self._failure_risk.record(
+                tenant_id=req.tenant_id,
+                project_id=req.project_id,
+                user_id=user_id,
+                session_id=session_id,
+                risk=risk,
+                decision=decision,
+                route_before=route_before,
+                route_after=route_after,
+                model_before=model_before,
+                model_after=model_after,
+            )
+        except Exception:
+            logger.exception("Failed to record failure risk event project=%s session=%s", req.project_id, session_id)
 
     def _resolve_user(self, req: ChatRequest) -> str | None:
         if req.user_name is None:
@@ -736,6 +837,73 @@ class AIService:
         fallback_used = False
         queue_wait_ms: float | None = None
         route_reason = "explicit_cloud" if provider.name != self._local.name else "local_available"
+        route_before = "cloud" if provider.name == getattr(self._cloud, "name", None) else "local"
+        model_before = model
+        risk, risk_decision = self._evaluate_failure_risk(
+            req=req,
+            messages=messages,
+            summary=summary,
+            memory_bundle=memory_bundle,
+            pinned_memory_block=pinned_memory_block,
+            provider=provider,
+            model=model,
+            history_count=len(combined_history),
+            source_urls=source_urls,
+        )
+        if risk_decision.applied and risk_decision.action == "ask_clarification":
+            content = risk_decision.message or "Mình cần thêm ngữ cảnh để tránh trả lời sai."
+            self._save_chat_messages(req, session_id, user_id, content)
+            self._record_failure_risk(
+                risk=risk,
+                decision=risk_decision,
+                req=req,
+                user_id=user_id,
+                session_id=session_id,
+                route_before=route_before,
+                route_after=route_before,
+                model_before=model_before,
+                model_after=model,
+            )
+            latency_ms = round((time.perf_counter() - started) * 1000, 3)
+            self._usage.record(
+                UsageEvent(
+                    tenant_id=req.tenant_id,
+                    project_id=req.project_id,
+                    user_id=user_id,
+                    session_id=session_id,
+                    api_key_id=api_key_id,
+                    provider="risk_policy",
+                    model="clarification",
+                    route_alias=route_before,
+                    latency_ms=latency_ms,
+                    status_code=200,
+                    fallback_used=False,
+                    queue_wait_ms=0.0,
+                    route_reason="risk_clarification",
+                )
+            )
+            return ChatResponse(
+                project_id=req.project_id,
+                session_id=session_id,
+                model="clarification",
+                provider="risk_policy",
+                content=content,
+                user_id=user_id,
+                route=route_before,
+                latency_ms=latency_ms,
+                queue_wait_ms=0.0,
+                route_reason="risk_clarification",
+                fallback_used=False,
+                sources=[],
+                usage=None,
+            )
+        messages, source_urls, route_reason = self._apply_failure_risk_decision(
+            decision=risk_decision,
+            req=req,
+            messages=messages,
+            source_urls=source_urls,
+            route_reason=route_reason,
+        )
         if (
             provider.name == self._local.name
             and self._settings.hybrid_force_cloud_for_allowed
@@ -824,6 +992,17 @@ class AIService:
         self._schedule_memory_jobs(user_id, req.tenant_id, req.project_id, session_id, self._local)
         latency_ms = round((time.perf_counter() - started) * 1000, 3)
         route_alias = "cloud" if provider.name == getattr(self._cloud, "name", None) else "local"
+        self._record_failure_risk(
+            risk=risk,
+            decision=risk_decision,
+            req=req,
+            user_id=user_id,
+            session_id=session_id,
+            route_before=route_before,
+            route_after=route_alias,
+            model_before=model_before,
+            model_after=model,
+        )
         logger.info(
             "chat_complete tenant=%s project=%s provider=%s route=%s fallback=%s latency_ms=%s queue_wait_ms=%s route_reason=%s",
             req.tenant_id,

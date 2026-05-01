@@ -1,0 +1,1162 @@
+{
+  "config": {
+    "base_url": "http://localhost:8000",
+    "project_id": "test",
+    "tenant_id": "hybridrepeat",
+    "model_mode": "lite",
+    "allow_external": false,
+    "user_count": 30,
+    "num_questions": 10,
+    "extra_questions_users": 0,
+    "extra_questions": 0,
+    "max_concurrency": 30,
+    "seed": 20260430,
+    "shared_repeat_questions": [
+      "Thời tiết hôm nay ở TP.HCM như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Thời tiết hôm nay ở Hà Nội như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Giá VNINDEX hôm nay ra sao? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Cổ phiếu VCB hôm nay tăng hay giảm? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Vehix hiện có những dòng xe nào phù hợp gia đình?",
+      "Vehix có xe điện nào đáng mua không? So sánh ngắn.",
+      "Giá xe sedan hạng B hiện khoảng bao nhiêu?",
+      "SUV 7 chỗ nào phù hợp đi gia đình và tiết kiệm nhiên liệu?",
+      "RAG database giúp chatbot trả lời câu hỏi lặp lại như thế nào?",
+      "Vector database khác keyword search ở điểm nào?"
+    ]
+  },
+  "summary": {
+    "total_questions": 300,
+    "total_ok": 300,
+    "total_errors": 0,
+    "wall_time_s": 303.867,
+    "latency_p50_s": 34.086,
+    "latency_p95_s": 41.164,
+    "latency_p99_s": 42.844,
+    "latency_max_s": 46.254,
+    "providers": {
+      "llama_cpp": 270,
+      "memory": 30
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 270,
+      "history-recall": 30
+    },
+    "routes": {
+      "local": 300
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 25
+  },
+  "users": [
+    {
+      "user": "hybrid_user_01",
+      "topic_mix": [
+        "rag_ai",
+        "weather",
+        "stocks"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        14.596,
+        17.18,
+        30.591,
+        31.402,
+        29.689,
+        35.586,
+        39.037,
+        34.266,
+        33.322,
+        2.478
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 5,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_02",
+      "topic_mix": [
+        "web_support",
+        "weather",
+        "stocks"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        13.667,
+        21.295,
+        36.914,
+        31.413,
+        34.96,
+        37.854,
+        41.619,
+        39.415,
+        34.293,
+        0.04
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 2,
+      "final_memory_ok": false,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_03",
+      "topic_mix": [
+        "finance_general",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        15.44,
+        22.206,
+        36.883,
+        27.942,
+        37.787,
+        38.762,
+        35.849,
+        34.938,
+        41.691,
+        0.031
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 5,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_04",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "weather"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        10.95,
+        16.827,
+        32.006,
+        28.84,
+        30.746,
+        35.039,
+        35.262,
+        35.001,
+        32.883,
+        6.925
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 7,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_05",
+      "topic_mix": [
+        "weather",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        14.795,
+        19.372,
+        35.542,
+        30.833,
+        36.555,
+        33.232,
+        39.678,
+        40.477,
+        38.299,
+        0.014
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 6,
+      "final_memory_ok": false,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_06",
+      "topic_mix": [
+        "rag_ai",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        6.715,
+        20.344,
+        34.052,
+        35.302,
+        32.807,
+        40.122,
+        39.566,
+        39.918,
+        40.284,
+        0.037
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 7,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_07",
+      "topic_mix": [
+        "vehix",
+        "web_support",
+        "stocks"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        6.118,
+        17.88,
+        29.019,
+        34.387,
+        35.525,
+        38.637,
+        42.724,
+        35.732,
+        40.654,
+        0.031
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 4,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_08",
+      "topic_mix": [
+        "finance_general",
+        "weather",
+        "stocks"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        16.683,
+        19.117,
+        35.798,
+        27.252,
+        34.12,
+        38.885,
+        34.147,
+        32.231,
+        39.644,
+        0.03
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 4,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_09",
+      "topic_mix": [
+        "vehix",
+        "weather",
+        "web_support"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        14.968,
+        21.272,
+        36.63,
+        31.629,
+        36.228,
+        39.994,
+        37.824,
+        40.93,
+        37.208,
+        0.032
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 1,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_10",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "finance_general"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        10.366,
+        18.615,
+        31.714,
+        34.335,
+        33.833,
+        35.786,
+        42.098,
+        40.449,
+        38.382,
+        0.045
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 4,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_11",
+      "topic_mix": [
+        "weather",
+        "stocks",
+        "rag_ai"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        16.798,
+        24.918,
+        35.979,
+        32.133,
+        38.244,
+        39.16,
+        41.927,
+        41.043,
+        32.969,
+        0.016
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 5,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_12",
+      "topic_mix": [
+        "weather",
+        "stocks",
+        "web_support"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        11.789,
+        22.641,
+        40.444,
+        32.814,
+        36.309,
+        38.423,
+        41.164,
+        40.873,
+        34.781,
+        0.014
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 4,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_13",
+      "topic_mix": [
+        "weather",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        11.401,
+        17.579,
+        32.866,
+        32.691,
+        33.388,
+        33.287,
+        37.497,
+        38.077,
+        41.867,
+        0.015
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 6,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_14",
+      "topic_mix": [
+        "finance_general",
+        "rag_ai",
+        "weather"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        12.529,
+        20.693,
+        40.443,
+        32.018,
+        34.307,
+        38.695,
+        40.824,
+        43.908,
+        37.021,
+        0.014
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 2,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_15",
+      "topic_mix": [
+        "rag_ai",
+        "finance_general",
+        "web_support"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        7.183,
+        17.955,
+        27.054,
+        33.45,
+        32.903,
+        34.565,
+        38.62,
+        39.845,
+        35.729,
+        2.926
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 2,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_16",
+      "topic_mix": [
+        "finance_general",
+        "web_support",
+        "weather"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        5.17,
+        15.632,
+        29.742,
+        34.557,
+        34.265,
+        37.162,
+        40.019,
+        38.785,
+        38.685,
+        0.766
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 5,
+      "final_memory_ok": false,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_17",
+      "topic_mix": [
+        "vehix",
+        "finance_general",
+        "weather"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        5.766,
+        14.513,
+        24.872,
+        33.22,
+        28.802,
+        35.027,
+        37.661,
+        36.599,
+        34.738,
+        10.865
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 3,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_18",
+      "topic_mix": [
+        "web_support",
+        "rag_ai",
+        "weather"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        7.827,
+        18.465,
+        28.081,
+        36.133,
+        33.921,
+        36.435,
+        37.792,
+        38.057,
+        38.059,
+        0.028
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 5,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_19",
+      "topic_mix": [
+        "stocks",
+        "rag_ai",
+        "vehix"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        9.835,
+        18.608,
+        28.598,
+        35.611,
+        35.34,
+        32.814,
+        39.323,
+        41.336,
+        37.547,
+        0.014
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 3,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_20",
+      "topic_mix": [
+        "rag_ai",
+        "vehix",
+        "finance_general"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        9.873,
+        19.141,
+        34.744,
+        36.307,
+        31.477,
+        42.844,
+        42.914,
+        37.225,
+        38.216,
+        0.015
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 4,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_21",
+      "topic_mix": [
+        "finance_general",
+        "weather",
+        "rag_ai"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        13.254,
+        17.916,
+        29.966,
+        35.581,
+        32.539,
+        38.656,
+        38.141,
+        39.883,
+        36.047,
+        0.016
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 4,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_22",
+      "topic_mix": [
+        "finance_general",
+        "web_support",
+        "stocks"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        3.981,
+        18.227,
+        25.498,
+        33.476,
+        31.808,
+        36.033,
+        39.466,
+        40.137,
+        38.615,
+        2.968
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 4,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_23",
+      "topic_mix": [
+        "rag_ai",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        6.296,
+        16.522,
+        29.836,
+        35.343,
+        34.147,
+        36.021,
+        41.064,
+        41.027,
+        39.114,
+        0.014
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 5,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_24",
+      "topic_mix": [
+        "stocks",
+        "weather",
+        "web_support"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        9.203,
+        18.035,
+        32.336,
+        33.786,
+        34.989,
+        35.703,
+        41.337,
+        37.337,
+        42.838,
+        0.045
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 2,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_25",
+      "topic_mix": [
+        "weather",
+        "web_support",
+        "stocks"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        17.919,
+        26.651,
+        37.034,
+        34.582,
+        34.238,
+        39.698,
+        39.904,
+        38.087,
+        33.434,
+        0.028
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 2,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_26",
+      "topic_mix": [
+        "finance_general",
+        "web_support",
+        "weather"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        17.449,
+        25.957,
+        36.269,
+        32.151,
+        35.79,
+        36.341,
+        41.701,
+        36.368,
+        35.183,
+        0.027
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 5,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_27",
+      "topic_mix": [
+        "weather",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        17.112,
+        24.542,
+        31.76,
+        27.788,
+        34.8,
+        33.049,
+        38.68,
+        40.172,
+        38.791,
+        0.03
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 3,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_28",
+      "topic_mix": [
+        "weather",
+        "stocks",
+        "finance_general"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        19.603,
+        30.667,
+        33.19,
+        33.667,
+        33.809,
+        36.208,
+        40.558,
+        38.873,
+        31.879,
+        0.028
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 4,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_29",
+      "topic_mix": [
+        "web_support",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        18.985,
+        24.028,
+        36.037,
+        28.895,
+        38.269,
+        34.95,
+        37.441,
+        40.067,
+        36.528,
+        0.025
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 3,
+      "final_memory_ok": false,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_30",
+      "topic_mix": [
+        "web_support",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        20.545,
+        27.771,
+        34.559,
+        35.212,
+        31.984,
+        37.514,
+        46.254,
+        42.011,
+        27.97,
+        0.026
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 3,
+      "final_memory_ok": false,
+      "error_messages": []
+    }
+  ]
+}

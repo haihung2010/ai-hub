@@ -50,6 +50,11 @@ def test_defaults_available(monkeypatch: pytest.MonkeyPatch, tmp_path: pytest.Te
     assert s.openrouter_max_tokens == 0
     assert s.ai_top_p == 0.0
     assert s.provider_call_timeout_seconds == 0.0
+    assert s.enable_failure_risk is True
+    assert s.failure_risk_log_only is True
+    assert s.failure_risk_enable_actions is False
+    assert s.failure_risk_high_threshold == 0.6
+    assert s.failure_risk_medium_threshold == 0.3
     assert "https://htechlabsvn.com" in s.allowed_origins
 
 

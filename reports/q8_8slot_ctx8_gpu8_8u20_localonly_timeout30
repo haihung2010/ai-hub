@@ -1,0 +1,471 @@
+{
+  "config": {
+    "base_url": "http://localhost:8000",
+    "project_id": "test",
+    "tenant_id": "hybridrepeat",
+    "model_mode": "lite",
+    "allow_external": false,
+    "user_count": 8,
+    "num_questions": 20,
+    "max_concurrency": 8,
+    "seed": 20260430,
+    "shared_repeat_questions": [
+      "Thời tiết hôm nay ở TP.HCM như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Thời tiết hôm nay ở Hà Nội như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Giá VNINDEX hôm nay ra sao? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Cổ phiếu VCB hôm nay tăng hay giảm? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Vehix hiện có những dòng xe nào phù hợp gia đình?",
+      "Vehix có xe điện nào đáng mua không? So sánh ngắn.",
+      "Giá xe sedan hạng B hiện khoảng bao nhiêu?",
+      "SUV 7 chỗ nào phù hợp đi gia đình và tiết kiệm nhiên liệu?",
+      "RAG database giúp chatbot trả lời câu hỏi lặp lại như thế nào?",
+      "Vector database khác keyword search ở điểm nào?"
+    ]
+  },
+  "summary": {
+    "total_questions": 160,
+    "total_ok": 123,
+    "total_errors": 37,
+    "wall_time_s": 109.21,
+    "latency_p50_s": 6.04,
+    "latency_p95_s": 10.238,
+    "latency_p99_s": 12.493,
+    "latency_max_s": 13.325,
+    "providers": {
+      "llama_cpp": 115,
+      "memory": 8
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 115,
+      "history-recall": 8
+    },
+    "routes": {
+      "local": 123
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 8
+  },
+  "users": [
+    {
+      "user": "hybrid_user_01",
+      "topic_mix": [
+        "rag_ai",
+        "weather",
+        "stocks"
+      ],
+      "ok": 16,
+      "errors": 4,
+      "latencies_s": [
+        6.211,
+        5.842,
+        8.045,
+        8.488,
+        6.151,
+        4.583,
+        4.208,
+        3.864,
+        5.365,
+        7.924,
+        10.238,
+        8.405,
+        8.299,
+        6.575,
+        8.359,
+        6.259,
+        0.073,
+        0.061,
+        0.055,
+        0.089
+      ],
+      "providers": {
+        "llama_cpp": 15,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 15,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 16
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 12,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_02",
+      "topic_mix": [
+        "web_support",
+        "weather",
+        "stocks"
+      ],
+      "ok": 14,
+      "errors": 6,
+      "latencies_s": [
+        5.32,
+        6.361,
+        9.137,
+        10.124,
+        6.312,
+        6.968,
+        6.236,
+        7.647,
+        9.146,
+        12.493,
+        8.911,
+        6.949,
+        10.901,
+        2.31,
+        0.072,
+        0.062,
+        0.055,
+        0.089,
+        0.087,
+        0.028
+      ],
+      "providers": {
+        "llama_cpp": 13,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 13,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 14
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 6,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_03",
+      "topic_mix": [
+        "finance_general",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 16,
+      "errors": 4,
+      "latencies_s": [
+        4.157,
+        4.919,
+        5.895,
+        8.018,
+        9.256,
+        6.594,
+        5.051,
+        5.307,
+        6.84,
+        5.464,
+        9.862,
+        11.444,
+        8.516,
+        7.646,
+        9.845,
+        0.073,
+        0.054,
+        0.063,
+        0.09,
+        0.083
+      ],
+      "providers": {
+        "llama_cpp": 15,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 15,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 16
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 10,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_04",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "weather"
+      ],
+      "ok": 16,
+      "errors": 4,
+      "latencies_s": [
+        5.953,
+        4.581,
+        7.102,
+        7.914,
+        6.13,
+        6.426,
+        3.952,
+        4.662,
+        5.71,
+        6.344,
+        9.791,
+        12.529,
+        8.945,
+        5.897,
+        9.604,
+        3.276,
+        0.072,
+        0.062,
+        0.056,
+        0.078
+      ],
+      "providers": {
+        "llama_cpp": 15,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 15,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 16
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 12,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_05",
+      "topic_mix": [
+        "weather",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 16,
+      "errors": 4,
+      "latencies_s": [
+        3.61,
+        3.44,
+        6.107,
+        9.46,
+        7.255,
+        5.852,
+        4.018,
+        4.861,
+        7.01,
+        6.698,
+        8.486,
+        6.814,
+        10.274,
+        8.022,
+        7.837,
+        9.071,
+        0.073,
+        0.062,
+        0.054,
+        0.09
+      ],
+      "providers": {
+        "llama_cpp": 15,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 15,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 16
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 13,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_06",
+      "topic_mix": [
+        "rag_ai",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 15,
+      "errors": 5,
+      "latencies_s": [
+        3.61,
+        4.566,
+        7.732,
+        9.336,
+        5.972,
+        6.457,
+        5.703,
+        4.977,
+        5.404,
+        8.559,
+        13.325,
+        11.499,
+        7.502,
+        8.838,
+        5.335,
+        0.075,
+        0.057,
+        0.055,
+        0.09,
+        0.084
+      ],
+      "providers": {
+        "llama_cpp": 14,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 14,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 15
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 11,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_07",
+      "topic_mix": [
+        "vehix",
+        "web_support",
+        "stocks"
+      ],
+      "ok": 15,
+      "errors": 5,
+      "latencies_s": [
+        3.902,
+        5.841,
+        7.001,
+        10.205,
+        6.675,
+        6.794,
+        8.219,
+        5.962,
+        8.578,
+        11.176,
+        9.08,
+        5.7,
+        8.58,
+        9.664,
+        1.436,
+        0.073,
+        0.063,
+        0.054,
+        0.096,
+        0.078
+      ],
+      "providers": {
+        "llama_cpp": 14,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 14,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 15
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 12,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_08",
+      "topic_mix": [
+        "finance_general",
+        "weather",
+        "stocks"
+      ],
+      "ok": 15,
+      "errors": 5,
+      "latencies_s": [
+        5.125,
+        5.838,
+        8.295,
+        9.682,
+        7.033,
+        6.809,
+        4.301,
+        4.174,
+        5.69,
+        8.437,
+        9.903,
+        9.357,
+        7.893,
+        7.57,
+        8.707,
+        0.073,
+        0.062,
+        0.054,
+        0.103,
+        0.071
+      ],
+      "providers": {
+        "llama_cpp": 14,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 14,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 15
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 7,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    }
+  ]
+}

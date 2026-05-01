@@ -1,0 +1,600 @@
+{
+  "config": {
+    "base_url": "http://localhost:8000",
+    "project_id": "test",
+    "tenant_id": "hybridrepeat",
+    "model_mode": "lite",
+    "allow_external": false,
+    "user_count": 10,
+    "num_questions": 20,
+    "max_concurrency": 8,
+    "seed": 20260430,
+    "shared_repeat_questions": [
+      "Thời tiết hôm nay ở TP.HCM như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Thời tiết hôm nay ở Hà Nội như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Giá VNINDEX hôm nay ra sao? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Cổ phiếu VCB hôm nay tăng hay giảm? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Vehix hiện có những dòng xe nào phù hợp gia đình?",
+      "Vehix có xe điện nào đáng mua không? So sánh ngắn.",
+      "Giá xe sedan hạng B hiện khoảng bao nhiêu?",
+      "SUV 7 chỗ nào phù hợp đi gia đình và tiết kiệm nhiên liệu?",
+      "RAG database giúp chatbot trả lời câu hỏi lặp lại như thế nào?",
+      "Vector database khác keyword search ở điểm nào?"
+    ]
+  },
+  "summary": {
+    "total_questions": 200,
+    "total_ok": 130,
+    "total_errors": 70,
+    "wall_time_s": 460.239,
+    "latency_p50_s": 7.22,
+    "latency_p95_s": 42.349,
+    "latency_p99_s": 351.509,
+    "latency_max_s": 354.174,
+    "providers": {
+      "llama_cpp": 120,
+      "memory": 10
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 120,
+      "history-recall": 10
+    },
+    "routes": {
+      "local": 130
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 10
+  },
+  "users": [
+    {
+      "user": "hybrid_user_01",
+      "topic_mix": [
+        "rag_ai",
+        "weather",
+        "stocks"
+      ],
+      "ok": 15,
+      "errors": 5,
+      "latencies_s": [
+        5.033,
+        3.291,
+        5.32,
+        7.113,
+        9.179,
+        7.937,
+        5.712,
+        7.192,
+        5.628,
+        11.511,
+        10.535,
+        9.259,
+        9.852,
+        10.633,
+        347.993,
+        3.513,
+        0.128,
+        0.056,
+        0.063,
+        0.053
+      ],
+      "providers": {
+        "llama_cpp": 14,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 14,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 15
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 12,
+      "final_memory_ok": true,
+      "error_messages": [
+        "timed out",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_02",
+      "topic_mix": [
+        "web_support",
+        "weather",
+        "stocks"
+      ],
+      "ok": 12,
+      "errors": 8,
+      "latencies_s": [
+        6.1,
+        7.249,
+        8.459,
+        12.288,
+        9.515,
+        10.169,
+        9.841,
+        13.17,
+        10.557,
+        12.429,
+        41.059,
+        315.458,
+        3.501,
+        0.057,
+        0.063,
+        0.082,
+        0.095,
+        0.067,
+        0.029,
+        0.035
+      ],
+      "providers": {
+        "llama_cpp": 11,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 11,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 12
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 6,
+      "final_memory_ok": true,
+      "error_messages": [
+        "timed out",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_03",
+      "topic_mix": [
+        "finance_general",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 13,
+      "errors": 7,
+      "latencies_s": [
+        4.488,
+        6.81,
+        7.963,
+        7.746,
+        10.3,
+        8.144,
+        6.802,
+        9.052,
+        10.099,
+        9.384,
+        11.952,
+        13.113,
+        350.428,
+        3.431,
+        0.086,
+        0.082,
+        0.069,
+        0.067,
+        0.077,
+        0.047
+      ],
+      "providers": {
+        "llama_cpp": 12,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 12,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 13
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 10,
+      "final_memory_ok": true,
+      "error_messages": [
+        "timed out",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_04",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "weather"
+      ],
+      "ok": 14,
+      "errors": 6,
+      "latencies_s": [
+        5.069,
+        4.635,
+        5.674,
+        7.324,
+        9.483,
+        9.84,
+        7.319,
+        6.627,
+        9.237,
+        9.979,
+        6.374,
+        10.985,
+        10.61,
+        352.921,
+        3.619,
+        0.091,
+        0.091,
+        0.06,
+        0.067,
+        0.061
+      ],
+      "providers": {
+        "llama_cpp": 13,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 13,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 14
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 12,
+      "final_memory_ok": true,
+      "error_messages": [
+        "timed out",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_05",
+      "topic_mix": [
+        "weather",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 13,
+      "errors": 7,
+      "latencies_s": [
+        6.337,
+        6.688,
+        7.178,
+        10.289,
+        9.505,
+        7.147,
+        8.299,
+        8.91,
+        9.9,
+        10.187,
+        10.412,
+        9.762,
+        351.509,
+        3.594,
+        0.078,
+        0.063,
+        0.081,
+        0.08,
+        0.075,
+        0.049
+      ],
+      "providers": {
+        "llama_cpp": 12,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 12,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 13
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 13,
+      "final_memory_ok": true,
+      "error_messages": [
+        "timed out",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_06",
+      "topic_mix": [
+        "rag_ai",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 13,
+      "errors": 7,
+      "latencies_s": [
+        3.58,
+        7.717,
+        8.433,
+        11.497,
+        7.076,
+        7.662,
+        7.541,
+        8.756,
+        9.972,
+        11.295,
+        12.378,
+        32.702,
+        327.531,
+        3.577,
+        0.117,
+        0.067,
+        0.059,
+        0.071,
+        0.086,
+        0.044
+      ],
+      "providers": {
+        "llama_cpp": 12,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 12,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 13
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 11,
+      "final_memory_ok": true,
+      "error_messages": [
+        "timed out",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_07",
+      "topic_mix": [
+        "vehix",
+        "web_support",
+        "stocks"
+      ],
+      "ok": 12,
+      "errors": 8,
+      "latencies_s": [
+        6.476,
+        9.54,
+        10.023,
+        7.813,
+        8.345,
+        9.343,
+        8.534,
+        8.919,
+        13.442,
+        12.214,
+        10.299,
+        351.313,
+        3.457,
+        0.082,
+        0.063,
+        0.091,
+        0.069,
+        0.077,
+        0.062,
+        0.023
+      ],
+      "providers": {
+        "llama_cpp": 11,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 11,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 12
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 12,
+      "final_memory_ok": true,
+      "error_messages": [
+        "timed out",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_08",
+      "topic_mix": [
+        "finance_general",
+        "weather",
+        "stocks"
+      ],
+      "ok": 15,
+      "errors": 5,
+      "latencies_s": [
+        4.609,
+        5.791,
+        6.75,
+        7.993,
+        8.423,
+        7.834,
+        5.149,
+        6.349,
+        6.608,
+        8.974,
+        11.728,
+        9.258,
+        11.198,
+        40.945,
+        318.107,
+        0.075,
+        0.061,
+        0.063,
+        0.1,
+        0.056
+      ],
+      "providers": {
+        "llama_cpp": 14,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 14,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 15
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 7,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_09",
+      "topic_mix": [
+        "vehix",
+        "weather",
+        "web_support"
+      ],
+      "ok": 11,
+      "errors": 9,
+      "latencies_s": [
+        9.702,
+        8.216,
+        10.593,
+        10.242,
+        8.99,
+        10.191,
+        9.653,
+        9.704,
+        11.952,
+        12.874,
+        354.174,
+        3.489,
+        0.067,
+        0.06,
+        0.063,
+        0.083,
+        0.089,
+        0.043,
+        0.036,
+        0.015
+      ],
+      "providers": {
+        "llama_cpp": 10,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 10,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 11
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 6,
+      "final_memory_ok": true,
+      "error_messages": [
+        "timed out",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_10",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "finance_general"
+      ],
+      "ok": 12,
+      "errors": 8,
+      "latencies_s": [
+        8.321,
+        6.943,
+        9.617,
+        11.139,
+        10.171,
+        8.805,
+        9.131,
+        12.272,
+        11.522,
+        12.383,
+        42.349,
+        317.047,
+        0.093,
+        0.057,
+        0.059,
+        0.067,
+        0.112,
+        0.061,
+        0.038,
+        0.035
+      ],
+      "providers": {
+        "llama_cpp": 11,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 11,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 12
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 9,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    }
+  ]
+}

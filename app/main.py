@@ -42,6 +42,7 @@ from app.routes import users as users_routes
 from app.agents.crew_service import CrewService
 from app.core.database import DB_PATH
 from app.services.ai_service import AIService
+from app.services.failure_risk_service import FailureRiskService
 from app.services.history_service import HistoryService
 from app.services.memory_consolidation_service import MemoryConsolidationService
 from app.services.memory_extraction_service import MemoryExtractionService
@@ -122,6 +123,10 @@ def create_app(
             memory_consolidation = MemoryConsolidationService()
             pinned_memory = PinnedMemoryService()
             usage = UsageService()
+            failure_risk = FailureRiskService(
+                high_threshold=settings.failure_risk_high_threshold,
+                medium_threshold=settings.failure_risk_medium_threshold,
+            )
             structmem = StructMemService(
                 history=history,
                 extraction=memory_extraction,
@@ -145,6 +150,7 @@ def create_app(
             app.state.memory_consolidation_service = memory_consolidation
             app.state.pinned_memory_service = pinned_memory
             app.state.usage_service = usage
+            app.state.failure_risk_service = failure_risk
             app.state.structmem_service = structmem
             app.state.web_search_service = web_search
             app.state.crew_service = (
@@ -165,6 +171,7 @@ def create_app(
                 pinned_memory=pinned_memory,
                 cloud=openrouter,
                 usage=usage,
+                failure_risk=failure_risk,
             )
             logger.info("ai-hub started on port %s", settings.app_port)
             yield

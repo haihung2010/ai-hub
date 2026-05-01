@@ -1,0 +1,320 @@
+{
+  "config": {
+    "base_url": "http://127.0.0.1:8000",
+    "project_id": "test",
+    "tenant_id": "q8_sweep_p8_ctx49152_gpu6_4u40",
+    "model_mode": "lite",
+    "allow_external": false,
+    "user_count": 4,
+    "num_questions": 40,
+    "extra_questions_users": 0,
+    "extra_questions": 0,
+    "max_concurrency": 4,
+    "seed": 20260430,
+    "shared_repeat_questions": [
+      "Thời tiết hôm nay ở TP.HCM như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Thời tiết hôm nay ở Hà Nội như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Giá VNINDEX hôm nay ra sao? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Cổ phiếu VCB hôm nay tăng hay giảm? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Vehix hiện có những dòng xe nào phù hợp gia đình?",
+      "Vehix có xe điện nào đáng mua không? So sánh ngắn.",
+      "Giá xe sedan hạng B hiện khoảng bao nhiêu?",
+      "SUV 7 chỗ nào phù hợp đi gia đình và tiết kiệm nhiên liệu?",
+      "RAG database giúp chatbot trả lời câu hỏi lặp lại như thế nào?",
+      "Vector database khác keyword search ở điểm nào?"
+    ]
+  },
+  "summary": {
+    "total_questions": 160,
+    "total_ok": 160,
+    "total_errors": 0,
+    "wall_time_s": 273.252,
+    "latency_p50_s": 6.496,
+    "latency_p95_s": 9.568,
+    "latency_p99_s": 10.566,
+    "latency_max_s": 12.449,
+    "providers": {
+      "llama_cpp": 156,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 156,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 160
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  "users": [
+    {
+      "user": "hybrid_user_01",
+      "topic_mix": [
+        "rag_ai",
+        "weather",
+        "stocks"
+      ],
+      "ok": 40,
+      "errors": 0,
+      "latencies_s": [
+        6.15,
+        3.484,
+        2.826,
+        3.013,
+        2.747,
+        4.723,
+        3.878,
+        4.07,
+        3.342,
+        4.007,
+        3.998,
+        3.927,
+        4.614,
+        8.426,
+        8.125,
+        6.049,
+        7.45,
+        7.975,
+        6.321,
+        6.534,
+        6.171,
+        5.557,
+        5.566,
+        5.423,
+        6.825,
+        6.2,
+        4.735,
+        7.189,
+        6.588,
+        7.763,
+        8.384,
+        7.064,
+        5.678,
+        6.65,
+        3.99,
+        8.722,
+        5.373,
+        6.518,
+        5.728,
+        0.017
+      ],
+      "providers": {
+        "llama_cpp": 39,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 39,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 40
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 21,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_02",
+      "topic_mix": [
+        "web_support",
+        "weather",
+        "stocks"
+      ],
+      "ok": 40,
+      "errors": 0,
+      "latencies_s": [
+        4.811,
+        4.916,
+        5.353,
+        5.615,
+        5.891,
+        3.792,
+        4.847,
+        4.662,
+        4.854,
+        5.477,
+        6.463,
+        8.498,
+        7.856,
+        8.639,
+        9.591,
+        6.329,
+        9.1,
+        6.691,
+        9.061,
+        5.671,
+        5.369,
+        6.559,
+        7.14,
+        7.082,
+        8.338,
+        9.805,
+        7.936,
+        9.444,
+        7.127,
+        6.567,
+        3.856,
+        8.051,
+        8.505,
+        4.15,
+        6.443,
+        6.888,
+        5.846,
+        4.559,
+        6.965,
+        0.02
+      ],
+      "providers": {
+        "llama_cpp": 39,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 39,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 40
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 13,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_03",
+      "topic_mix": [
+        "finance_general",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 40,
+      "errors": 0,
+      "latencies_s": [
+        6.577,
+        5.449,
+        6.094,
+        4.016,
+        6.693,
+        6.053,
+        4.304,
+        6.279,
+        6.957,
+        7.569,
+        7.775,
+        9.615,
+        8.493,
+        9.251,
+        7.689,
+        8.599,
+        5.914,
+        9.549,
+        5.551,
+        9.675,
+        7.189,
+        7.253,
+        9.509,
+        9.568,
+        6.475,
+        8.409,
+        3.127,
+        10.566,
+        4.235,
+        8.657,
+        7.575,
+        7.945,
+        8.126,
+        5.106,
+        4.399,
+        4.636,
+        9.283,
+        6.295,
+        2.782,
+        0.015
+      ],
+      "providers": {
+        "llama_cpp": 39,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 39,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 40
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 17,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_04",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "weather"
+      ],
+      "ok": 40,
+      "errors": 0,
+      "latencies_s": [
+        4.86,
+        3.416,
+        7.453,
+        3.02,
+        3.387,
+        5.893,
+        3.829,
+        3.596,
+        6.734,
+        6.981,
+        3.563,
+        12.449,
+        9.039,
+        5.729,
+        7.905,
+        8.778,
+        9.517,
+        3.912,
+        5.414,
+        4.886,
+        8.619,
+        6.949,
+        7.795,
+        8.244,
+        9.113,
+        8.663,
+        11.543,
+        7.083,
+        7.912,
+        8.998,
+        6.106,
+        7.64,
+        9.629,
+        5.839,
+        9.123,
+        5.797,
+        7.838,
+        8.016,
+        6.14,
+        0.016
+      ],
+      "providers": {
+        "llama_cpp": 39,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 39,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 40
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 21,
+      "final_memory_ok": true,
+      "error_messages": []
+    }
+  ]
+}

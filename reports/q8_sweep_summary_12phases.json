@@ -1,0 +1,674 @@
+[
+  {
+    "case": "p4_ctx65536_gpu4",
+    "parallel": 4,
+    "ctx": 65536,
+    "gpu": 4,
+    "questions": 20,
+    "total_questions": 80,
+    "total_ok": 80,
+    "total_errors": 0,
+    "wall_time_s": 79.115,
+    "latency_p50_s": 3.385,
+    "latency_p95_s": 6.33,
+    "latency_p99_s": 6.865,
+    "latency_max_s": 7.602,
+    "providers": {
+      "llama_cpp": 76,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 76,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 80
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p4_ctx65536_gpu4",
+    "parallel": 4,
+    "ctx": 65536,
+    "gpu": 4,
+    "questions": 40,
+    "total_questions": 160,
+    "total_ok": 160,
+    "total_errors": 0,
+    "wall_time_s": 180.947,
+    "latency_p50_s": 4.277,
+    "latency_p95_s": 6.098,
+    "latency_p99_s": 6.493,
+    "latency_max_s": 7.468,
+    "providers": {
+      "llama_cpp": 156,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 156,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 160
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p8_ctx65536_gpu4",
+    "parallel": 8,
+    "ctx": 65536,
+    "gpu": 4,
+    "questions": 20,
+    "total_questions": 80,
+    "total_ok": 80,
+    "total_errors": 0,
+    "wall_time_s": 107.253,
+    "latency_p50_s": 3.156,
+    "latency_p95_s": 9.736,
+    "latency_p99_s": 9.955,
+    "latency_max_s": 10.235,
+    "providers": {
+      "llama_cpp": 76,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 76,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 80
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p8_ctx65536_gpu4",
+    "parallel": 8,
+    "ctx": 65536,
+    "gpu": 4,
+    "questions": 40,
+    "total_questions": 160,
+    "total_ok": 160,
+    "total_errors": 0,
+    "wall_time_s": 330.228,
+    "latency_p50_s": 7.786,
+    "latency_p95_s": 11.03,
+    "latency_p99_s": 11.553,
+    "latency_max_s": 13.021,
+    "providers": {
+      "llama_cpp": 156,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 156,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 160
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p8_ctx65536_gpu6",
+    "parallel": 8,
+    "ctx": 65536,
+    "gpu": 6,
+    "questions": 20,
+    "total_questions": 80,
+    "total_ok": 80,
+    "total_errors": 0,
+    "wall_time_s": 100.815,
+    "latency_p50_s": 3.575,
+    "latency_p95_s": 9.003,
+    "latency_p99_s": 9.829,
+    "latency_max_s": 10.396,
+    "providers": {
+      "llama_cpp": 76,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 76,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 80
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p8_ctx65536_gpu6",
+    "parallel": 8,
+    "ctx": 65536,
+    "gpu": 6,
+    "questions": 40,
+    "total_questions": 160,
+    "total_ok": 160,
+    "total_errors": 0,
+    "wall_time_s": 306.096,
+    "latency_p50_s": 7.263,
+    "latency_p95_s": 10.573,
+    "latency_p99_s": 11.657,
+    "latency_max_s": 12.396,
+    "providers": {
+      "llama_cpp": 156,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 156,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 160
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p10_ctx65536_gpu8",
+    "parallel": 10,
+    "ctx": 65536,
+    "gpu": 8,
+    "questions": 20,
+    "total_questions": 80,
+    "total_ok": 80,
+    "total_errors": 0,
+    "wall_time_s": 107.629,
+    "latency_p50_s": 3.336,
+    "latency_p95_s": 10.572,
+    "latency_p99_s": 10.847,
+    "latency_max_s": 10.92,
+    "providers": {
+      "llama_cpp": 76,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 76,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 80
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p10_ctx65536_gpu8",
+    "parallel": 10,
+    "ctx": 65536,
+    "gpu": 8,
+    "questions": 40,
+    "total_questions": 160,
+    "total_ok": 160,
+    "total_errors": 0,
+    "wall_time_s": 354.504,
+    "latency_p50_s": 8.51,
+    "latency_p95_s": 12.015,
+    "latency_p99_s": 12.807,
+    "latency_max_s": 15.313,
+    "providers": {
+      "llama_cpp": 156,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 156,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 160
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p8_ctx32768_gpu8",
+    "parallel": 8,
+    "ctx": 32768,
+    "gpu": 8,
+    "questions": 20,
+    "total_questions": 80,
+    "total_ok": 80,
+    "total_errors": 0,
+    "wall_time_s": 103.51,
+    "latency_p50_s": 3.253,
+    "latency_p95_s": 7.794,
+    "latency_p99_s": 9.662,
+    "latency_max_s": 10.818,
+    "providers": {
+      "llama_cpp": 76,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 76,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 80
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p8_ctx32768_gpu8",
+    "parallel": 8,
+    "ctx": 32768,
+    "gpu": 8,
+    "questions": 40,
+    "total_questions": 160,
+    "total_ok": 160,
+    "total_errors": 0,
+    "wall_time_s": 324.227,
+    "latency_p50_s": 7.688,
+    "latency_p95_s": 10.946,
+    "latency_p99_s": 11.47,
+    "latency_max_s": 13.789,
+    "providers": {
+      "llama_cpp": 156,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 156,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 160
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p10_ctx32768_gpu8",
+    "parallel": 10,
+    "ctx": 32768,
+    "gpu": 8,
+    "questions": 20,
+    "total_questions": 80,
+    "total_ok": 80,
+    "total_errors": 0,
+    "wall_time_s": 111.247,
+    "latency_p50_s": 3.492,
+    "latency_p95_s": 10.283,
+    "latency_p99_s": 11.174,
+    "latency_max_s": 12.065,
+    "providers": {
+      "llama_cpp": 76,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 76,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 80
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p10_ctx32768_gpu8",
+    "parallel": 10,
+    "ctx": 32768,
+    "gpu": 8,
+    "questions": 40,
+    "total_questions": 160,
+    "total_ok": 160,
+    "total_errors": 0,
+    "wall_time_s": 346.495,
+    "latency_p50_s": 8.26,
+    "latency_p95_s": 12.281,
+    "latency_p99_s": 12.831,
+    "latency_max_s": 14.135,
+    "providers": {
+      "llama_cpp": 156,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 156,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 160
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p6_ctx32768_gpu6",
+    "parallel": 6,
+    "ctx": 32768,
+    "gpu": 6,
+    "questions": 20,
+    "total_questions": 80,
+    "total_ok": 80,
+    "total_errors": 0,
+    "wall_time_s": 93.093,
+    "latency_p50_s": 3.354,
+    "latency_p95_s": 7.026,
+    "latency_p99_s": 8.127,
+    "latency_max_s": 8.208,
+    "providers": {
+      "llama_cpp": 76,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 76,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 80
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p6_ctx32768_gpu6",
+    "parallel": 6,
+    "ctx": 32768,
+    "gpu": 6,
+    "questions": 40,
+    "total_questions": 160,
+    "total_ok": 160,
+    "total_errors": 0,
+    "wall_time_s": 231.028,
+    "latency_p50_s": 5.269,
+    "latency_p95_s": 7.539,
+    "latency_p99_s": 8.626,
+    "latency_max_s": 8.855,
+    "providers": {
+      "llama_cpp": 156,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 156,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 160
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p4_ctx32768_gpu4",
+    "parallel": 4,
+    "ctx": 32768,
+    "gpu": 4,
+    "questions": 20,
+    "total_questions": 80,
+    "total_ok": 80,
+    "total_errors": 0,
+    "wall_time_s": 77.735,
+    "latency_p50_s": 3.33,
+    "latency_p95_s": 6.144,
+    "latency_p99_s": 7.012,
+    "latency_max_s": 7.012,
+    "providers": {
+      "llama_cpp": 76,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 76,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 80
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p4_ctx32768_gpu4",
+    "parallel": 4,
+    "ctx": 32768,
+    "gpu": 4,
+    "questions": 40,
+    "total_questions": 160,
+    "total_ok": 160,
+    "total_errors": 0,
+    "wall_time_s": 193.286,
+    "latency_p50_s": 4.704,
+    "latency_p95_s": 6.726,
+    "latency_p99_s": 7.828,
+    "latency_max_s": 8.008,
+    "providers": {
+      "llama_cpp": 156,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 156,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 160
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p6_ctx49152_gpu6",
+    "parallel": 6,
+    "ctx": 49152,
+    "gpu": 6,
+    "questions": 20,
+    "total_questions": 80,
+    "total_ok": 80,
+    "total_errors": 0,
+    "wall_time_s": 82.214,
+    "latency_p50_s": 3.196,
+    "latency_p95_s": 6.895,
+    "latency_p99_s": 7.798,
+    "latency_max_s": 8.424,
+    "providers": {
+      "llama_cpp": 76,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 76,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 80
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p6_ctx49152_gpu6",
+    "parallel": 6,
+    "ctx": 49152,
+    "gpu": 6,
+    "questions": 40,
+    "total_questions": 160,
+    "total_ok": 160,
+    "total_errors": 0,
+    "wall_time_s": 226.219,
+    "latency_p50_s": 5.745,
+    "latency_p95_s": 8.103,
+    "latency_p99_s": 8.658,
+    "latency_max_s": 9.087,
+    "providers": {
+      "llama_cpp": 156,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 156,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 160
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p8_ctx49152_gpu6",
+    "parallel": 8,
+    "ctx": 49152,
+    "gpu": 6,
+    "questions": 20,
+    "total_questions": 80,
+    "total_ok": 80,
+    "total_errors": 0,
+    "wall_time_s": 98.512,
+    "latency_p50_s": 3.388,
+    "latency_p95_s": 8.993,
+    "latency_p99_s": 10.073,
+    "latency_max_s": 10.525,
+    "providers": {
+      "llama_cpp": 76,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 76,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 80
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p8_ctx49152_gpu6",
+    "parallel": 8,
+    "ctx": 49152,
+    "gpu": 6,
+    "questions": 40,
+    "total_questions": 160,
+    "total_ok": 160,
+    "total_errors": 0,
+    "wall_time_s": 273.252,
+    "latency_p50_s": 6.496,
+    "latency_p95_s": 9.568,
+    "latency_p99_s": 10.566,
+    "latency_max_s": 12.449,
+    "providers": {
+      "llama_cpp": 156,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 156,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 160
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p8_ctx49152_gpu8",
+    "parallel": 8,
+    "ctx": 49152,
+    "gpu": 8,
+    "questions": 20,
+    "total_questions": 80,
+    "total_ok": 80,
+    "total_errors": 0,
+    "wall_time_s": 113.626,
+    "latency_p50_s": 4.119,
+    "latency_p95_s": 9.439,
+    "latency_p99_s": 9.949,
+    "latency_max_s": 10.472,
+    "providers": {
+      "llama_cpp": 76,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 76,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 80
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p8_ctx49152_gpu8",
+    "parallel": 8,
+    "ctx": 49152,
+    "gpu": 8,
+    "questions": 40,
+    "total_questions": 160,
+    "total_ok": 160,
+    "total_errors": 0,
+    "wall_time_s": 305.941,
+    "latency_p50_s": 7.223,
+    "latency_p95_s": 10.193,
+    "latency_p99_s": 11.206,
+    "latency_max_s": 13.016,
+    "providers": {
+      "llama_cpp": 156,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 156,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 160
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p10_ctx49152_gpu8",
+    "parallel": 10,
+    "ctx": 49152,
+    "gpu": 8,
+    "questions": 20,
+    "total_questions": 80,
+    "total_ok": 80,
+    "total_errors": 0,
+    "wall_time_s": 106.648,
+    "latency_p50_s": 3.185,
+    "latency_p95_s": 10.99,
+    "latency_p99_s": 11.623,
+    "latency_max_s": 11.795,
+    "providers": {
+      "llama_cpp": 76,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 76,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 80
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  {
+    "case": "p10_ctx49152_gpu8",
+    "parallel": 10,
+    "ctx": 49152,
+    "gpu": 8,
+    "questions": 40,
+    "total_questions": 160,
+    "total_ok": 160,
+    "total_errors": 0,
+    "wall_time_s": 338.487,
+    "latency_p50_s": 7.887,
+    "latency_p95_s": 12.14,
+    "latency_p99_s": 13.156,
+    "latency_max_s": 13.562,
+    "providers": {
+      "llama_cpp": 156,
+      "memory": 4
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 156,
+      "history-recall": 4
+    },
+    "routes": {
+      "local": 160
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  }
+]

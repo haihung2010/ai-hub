@@ -1,0 +1,698 @@
+{
+  "config": {
+    "base_url": "http://localhost:8000",
+    "project_id": "test",
+    "tenant_id": "hybridrepeat",
+    "model_mode": "lite",
+    "allow_external": false,
+    "user_count": 10,
+    "num_questions": 20,
+    "max_concurrency": 10,
+    "seed": 20260430,
+    "shared_repeat_questions": [
+      "Thời tiết hôm nay ở TP.HCM như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Thời tiết hôm nay ở Hà Nội như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Giá VNINDEX hôm nay ra sao? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Cổ phiếu VCB hôm nay tăng hay giảm? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Vehix hiện có những dòng xe nào phù hợp gia đình?",
+      "Vehix có xe điện nào đáng mua không? So sánh ngắn.",
+      "Giá xe sedan hạng B hiện khoảng bao nhiêu?",
+      "SUV 7 chỗ nào phù hợp đi gia đình và tiết kiệm nhiên liệu?",
+      "RAG database giúp chatbot trả lời câu hỏi lặp lại như thế nào?",
+      "Vector database khác keyword search ở điểm nào?"
+    ]
+  },
+  "summary": {
+    "total_questions": 200,
+    "total_ok": 10,
+    "total_errors": 190,
+    "wall_time_s": 2.532,
+    "latency_p50_s": 0.116,
+    "latency_p95_s": 0.166,
+    "latency_p99_s": 0.234,
+    "latency_max_s": 0.258,
+    "providers": {
+      "memory": 10
+    },
+    "models": {
+      "history-recall": 10
+    },
+    "routes": {
+      "local": 10
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 0
+  },
+  "users": [
+    {
+      "user": "hybrid_user_01",
+      "topic_mix": [
+        "rag_ai",
+        "weather",
+        "stocks"
+      ],
+      "ok": 1,
+      "errors": 19,
+      "latencies_s": [
+        0.219,
+        0.112,
+        0.129,
+        0.164,
+        0.131,
+        0.104,
+        0.103,
+        0.1,
+        0.104,
+        0.111,
+        0.118,
+        0.122,
+        0.103,
+        0.112,
+        0.148,
+        0.123,
+        0.114,
+        0.119,
+        0.112,
+        0.144
+      ],
+      "providers": {
+        "memory": 1
+      },
+      "models": {
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 1
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 12,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_02",
+      "topic_mix": [
+        "web_support",
+        "weather",
+        "stocks"
+      ],
+      "ok": 1,
+      "errors": 19,
+      "latencies_s": [
+        0.258,
+        0.102,
+        0.152,
+        0.153,
+        0.122,
+        0.097,
+        0.112,
+        0.104,
+        0.11,
+        0.121,
+        0.108,
+        0.113,
+        0.101,
+        0.12,
+        0.151,
+        0.116,
+        0.113,
+        0.131,
+        0.136,
+        0.11
+      ],
+      "providers": {
+        "memory": 1
+      },
+      "models": {
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 1
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 6,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_03",
+      "topic_mix": [
+        "finance_general",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 1,
+      "errors": 19,
+      "latencies_s": [
+        0.234,
+        0.106,
+        0.139,
+        0.161,
+        0.126,
+        0.104,
+        0.102,
+        0.104,
+        0.101,
+        0.119,
+        0.114,
+        0.118,
+        0.102,
+        0.114,
+        0.148,
+        0.122,
+        0.114,
+        0.125,
+        0.117,
+        0.155
+      ],
+      "providers": {
+        "memory": 1
+      },
+      "models": {
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 1
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 10,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_04",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "weather"
+      ],
+      "ok": 1,
+      "errors": 19,
+      "latencies_s": [
+        0.234,
+        0.105,
+        0.141,
+        0.16,
+        0.126,
+        0.104,
+        0.111,
+        0.104,
+        0.105,
+        0.121,
+        0.111,
+        0.115,
+        0.102,
+        0.114,
+        0.148,
+        0.122,
+        0.114,
+        0.128,
+        0.121,
+        0.141
+      ],
+      "providers": {
+        "memory": 1
+      },
+      "models": {
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 1
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 12,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_05",
+      "topic_mix": [
+        "weather",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 1,
+      "errors": 19,
+      "latencies_s": [
+        0.203,
+        0.114,
+        0.118,
+        0.166,
+        0.139,
+        0.106,
+        0.104,
+        0.1,
+        0.105,
+        0.11,
+        0.119,
+        0.122,
+        0.103,
+        0.111,
+        0.147,
+        0.126,
+        0.113,
+        0.116,
+        0.117,
+        0.122
+      ],
+      "providers": {
+        "memory": 1
+      },
+      "models": {
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 1
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 13,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_06",
+      "topic_mix": [
+        "rag_ai",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 1,
+      "errors": 19,
+      "latencies_s": [
+        0.183,
+        0.115,
+        0.104,
+        0.161,
+        0.149,
+        0.115,
+        0.099,
+        0.099,
+        0.105,
+        0.111,
+        0.117,
+        0.122,
+        0.104,
+        0.099,
+        0.147,
+        0.133,
+        0.114,
+        0.117,
+        0.121,
+        0.086
+      ],
+      "providers": {
+        "memory": 1
+      },
+      "models": {
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 1
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 11,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_07",
+      "topic_mix": [
+        "vehix",
+        "web_support",
+        "stocks"
+      ],
+      "ok": 1,
+      "errors": 19,
+      "latencies_s": [
+        0.196,
+        0.114,
+        0.116,
+        0.161,
+        0.144,
+        0.108,
+        0.104,
+        0.1,
+        0.105,
+        0.11,
+        0.119,
+        0.121,
+        0.103,
+        0.11,
+        0.144,
+        0.127,
+        0.115,
+        0.116,
+        0.118,
+        0.108
+      ],
+      "providers": {
+        "memory": 1
+      },
+      "models": {
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 1
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 12,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_08",
+      "topic_mix": [
+        "finance_general",
+        "weather",
+        "stocks"
+      ],
+      "ok": 1,
+      "errors": 19,
+      "latencies_s": [
+        0.191,
+        0.115,
+        0.115,
+        0.161,
+        0.145,
+        0.109,
+        0.1,
+        0.1,
+        0.105,
+        0.11,
+        0.119,
+        0.121,
+        0.103,
+        0.108,
+        0.141,
+        0.132,
+        0.115,
+        0.116,
+        0.119,
+        0.11
+      ],
+      "providers": {
+        "memory": 1
+      },
+      "models": {
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 1
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 7,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_09",
+      "topic_mix": [
+        "vehix",
+        "weather",
+        "web_support"
+      ],
+      "ok": 1,
+      "errors": 19,
+      "latencies_s": [
+        0.196,
+        0.114,
+        0.116,
+        0.162,
+        0.143,
+        0.107,
+        0.104,
+        0.1,
+        0.105,
+        0.11,
+        0.119,
+        0.121,
+        0.103,
+        0.111,
+        0.146,
+        0.127,
+        0.113,
+        0.116,
+        0.118,
+        0.123
+      ],
+      "providers": {
+        "memory": 1
+      },
+      "models": {
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 1
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 6,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_10",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "finance_general"
+      ],
+      "ok": 1,
+      "errors": 19,
+      "latencies_s": [
+        0.244,
+        0.103,
+        0.148,
+        0.155,
+        0.124,
+        0.102,
+        0.108,
+        0.104,
+        0.108,
+        0.121,
+        0.109,
+        0.114,
+        0.102,
+        0.115,
+        0.148,
+        0.121,
+        0.114,
+        0.129,
+        0.129,
+        0.128
+      ],
+      "providers": {
+        "memory": 1
+      },
+      "models": {
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 1
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 9,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    }
+  ]
+}

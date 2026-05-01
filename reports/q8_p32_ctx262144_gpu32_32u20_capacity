@@ -1,0 +1,1910 @@
+{
+  "config": {
+    "base_url": "http://localhost:8000",
+    "project_id": "test",
+    "tenant_id": "hybridrepeat",
+    "model_mode": "lite",
+    "allow_external": false,
+    "user_count": 32,
+    "num_questions": 20,
+    "extra_questions_users": 0,
+    "extra_questions": 0,
+    "max_concurrency": 32,
+    "seed": 20260430,
+    "shared_repeat_questions": [
+      "Thời tiết hôm nay ở TP.HCM như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Thời tiết hôm nay ở Hà Nội như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Giá VNINDEX hôm nay ra sao? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Cổ phiếu VCB hôm nay tăng hay giảm? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Vehix hiện có những dòng xe nào phù hợp gia đình?",
+      "Vehix có xe điện nào đáng mua không? So sánh ngắn.",
+      "Giá xe sedan hạng B hiện khoảng bao nhiêu?",
+      "SUV 7 chỗ nào phù hợp đi gia đình và tiết kiệm nhiên liệu?",
+      "RAG database giúp chatbot trả lời câu hỏi lặp lại như thế nào?",
+      "Vector database khác keyword search ở điểm nào?"
+    ]
+  },
+  "summary": {
+    "total_questions": 640,
+    "total_ok": 318,
+    "total_errors": 322,
+    "wall_time_s": 508.955,
+    "latency_p50_s": 19.637,
+    "latency_p95_s": 62.171,
+    "latency_p99_s": 65.322,
+    "latency_max_s": 67.306,
+    "providers": {
+      "llama_cpp": 286,
+      "memory": 32
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 286,
+      "history-recall": 32
+    },
+    "routes": {
+      "local": 318
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 27
+  },
+  "users": [
+    {
+      "user": "hybrid_user_01",
+      "topic_mix": [
+        "rag_ai",
+        "weather",
+        "stocks"
+      ],
+      "ok": 10,
+      "errors": 10,
+      "latencies_s": [
+        9.717,
+        26.853,
+        37.03,
+        47.076,
+        51.053,
+        52.486,
+        59.406,
+        44.565,
+        50.784,
+        59.389,
+        41.168,
+        26.875,
+        0.262,
+        0.226,
+        0.252,
+        0.313,
+        0.222,
+        0.221,
+        0.218,
+        0.222
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 12,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_02",
+      "topic_mix": [
+        "web_support",
+        "weather",
+        "stocks"
+      ],
+      "ok": 9,
+      "errors": 11,
+      "latencies_s": [
+        14.728,
+        32.142,
+        41.743,
+        54.698,
+        42.315,
+        58.885,
+        60.74,
+        45.383,
+        41.401,
+        57.109,
+        53.817,
+        3.59,
+        0.232,
+        0.235,
+        0.318,
+        0.239,
+        0.221,
+        0.221,
+        0.227,
+        0.354
+      ],
+      "providers": {
+        "llama_cpp": 8,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 8,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 9
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 6,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_03",
+      "topic_mix": [
+        "finance_general",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 10,
+      "errors": 10,
+      "latencies_s": [
+        7.128,
+        23.965,
+        43.075,
+        51.024,
+        63.729,
+        58.635,
+        40.051,
+        65.621,
+        62.683,
+        39.236,
+        49.176,
+        2.219,
+        0.233,
+        0.235,
+        0.308,
+        0.25,
+        0.22,
+        0.222,
+        0.226,
+        0.351
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 10,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_04",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "weather"
+      ],
+      "ok": 11,
+      "errors": 9,
+      "latencies_s": [
+        16.518,
+        31.436,
+        46.974,
+        51.225,
+        55.51,
+        55.294,
+        54.411,
+        57.784,
+        57.366,
+        62.795,
+        17.153,
+        0.26,
+        0.229,
+        0.282,
+        0.281,
+        0.22,
+        0.225,
+        0.214,
+        0.392,
+        0.35
+      ],
+      "providers": {
+        "llama_cpp": 10,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 10,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 11
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 12,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_05",
+      "topic_mix": [
+        "weather",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 10,
+      "errors": 10,
+      "latencies_s": [
+        8.092,
+        22.55,
+        42.994,
+        55.851,
+        63.065,
+        42.993,
+        62.625,
+        64.665,
+        62.303,
+        65.845,
+        15.48,
+        0.253,
+        0.228,
+        0.278,
+        0.285,
+        0.221,
+        0.224,
+        0.215,
+        0.364,
+        0.373
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 13,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_06",
+      "topic_mix": [
+        "rag_ai",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 10,
+      "errors": 10,
+      "latencies_s": [
+        10.036,
+        27.838,
+        38.614,
+        50.058,
+        51.395,
+        56.872,
+        41.704,
+        54.734,
+        61.873,
+        54.206,
+        40.201,
+        18.933,
+        0.233,
+        0.229,
+        0.262,
+        0.299,
+        0.223,
+        0.221,
+        0.218,
+        0.246
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 11,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_07",
+      "topic_mix": [
+        "vehix",
+        "web_support",
+        "stocks"
+      ],
+      "ok": 9,
+      "errors": 11,
+      "latencies_s": [
+        14.185,
+        32.411,
+        42.016,
+        50.846,
+        52.659,
+        43.078,
+        42.368,
+        40.051,
+        59.771,
+        57.206,
+        57.393,
+        14.481,
+        0.266,
+        0.23,
+        0.286,
+        0.276,
+        0.22,
+        0.225,
+        0.223,
+        0.264
+      ],
+      "providers": {
+        "llama_cpp": 8,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 8,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 9
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 12,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_08",
+      "topic_mix": [
+        "finance_general",
+        "weather",
+        "stocks"
+      ],
+      "ok": 9,
+      "errors": 11,
+      "latencies_s": [
+        12.937,
+        31.633,
+        42.079,
+        54.195,
+        39.758,
+        61.193,
+        53.435,
+        60.328,
+        58.033,
+        41.208,
+        51.549,
+        0.253,
+        0.23,
+        0.248,
+        0.315,
+        0.228,
+        0.219,
+        0.22,
+        0.251,
+        0.377
+      ],
+      "providers": {
+        "llama_cpp": 8,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 8,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 9
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 7,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_09",
+      "topic_mix": [
+        "vehix",
+        "weather",
+        "web_support"
+      ],
+      "ok": 10,
+      "errors": 10,
+      "latencies_s": [
+        5.482,
+        24.058,
+        39.91,
+        47.694,
+        58.184,
+        67.205,
+        61.088,
+        63.682,
+        46.121,
+        55.376,
+        37.599,
+        0.282,
+        0.229,
+        0.257,
+        0.305,
+        0.22,
+        0.224,
+        0.217,
+        0.306,
+        0.405
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 6,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_10",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "finance_general"
+      ],
+      "ok": 9,
+      "errors": 11,
+      "latencies_s": [
+        9.284,
+        31.507,
+        43.632,
+        58.8,
+        39.166,
+        64.116,
+        40.556,
+        60.939,
+        64.233,
+        59.468,
+        34.696,
+        0.24,
+        0.226,
+        0.246,
+        0.318,
+        0.224,
+        0.221,
+        0.219,
+        0.287,
+        0.432
+      ],
+      "providers": {
+        "llama_cpp": 8,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 8,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 9
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 9,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_11",
+      "topic_mix": [
+        "weather",
+        "stocks",
+        "rag_ai"
+      ],
+      "ok": 10,
+      "errors": 10,
+      "latencies_s": [
+        11.302,
+        28.212,
+        40.201,
+        56.004,
+        39.551,
+        52.987,
+        61.677,
+        56.745,
+        58.374,
+        63.744,
+        37.548,
+        0.237,
+        0.232,
+        0.243,
+        0.319,
+        0.227,
+        0.222,
+        0.22,
+        0.233,
+        0.39
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 11,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_12",
+      "topic_mix": [
+        "weather",
+        "stocks",
+        "web_support"
+      ],
+      "ok": 13,
+      "errors": 7,
+      "latencies_s": [
+        3.942,
+        19.289,
+        33.245,
+        44.346,
+        49.77,
+        49.416,
+        50.659,
+        50.785,
+        53.661,
+        48.754,
+        55.439,
+        45.471,
+        1.786,
+        0.23,
+        0.236,
+        0.326,
+        0.229,
+        0.223,
+        0.219,
+        0.187
+      ],
+      "providers": {
+        "llama_cpp": 12,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 12,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 13
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 7,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_13",
+      "topic_mix": [
+        "weather",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 11,
+      "errors": 9,
+      "latencies_s": [
+        10.826,
+        24.101,
+        37.566,
+        40.593,
+        55.72,
+        51.179,
+        50.309,
+        61.721,
+        62.765,
+        54.734,
+        56.832,
+        0.275,
+        0.229,
+        0.247,
+        0.317,
+        0.225,
+        0.222,
+        0.217,
+        0.263,
+        0.446
+      ],
+      "providers": {
+        "llama_cpp": 10,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 10,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 11
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 10,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_14",
+      "topic_mix": [
+        "finance_general",
+        "rag_ai",
+        "weather"
+      ],
+      "ok": 10,
+      "errors": 10,
+      "latencies_s": [
+        6.627,
+        23.11,
+        43.054,
+        53.135,
+        65.292,
+        40.776,
+        62.002,
+        62.648,
+        64.11,
+        57.95,
+        27.694,
+        0.231,
+        0.229,
+        0.246,
+        0.318,
+        0.224,
+        0.222,
+        0.218,
+        0.27,
+        0.408
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 4,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_15",
+      "topic_mix": [
+        "rag_ai",
+        "finance_general",
+        "web_support"
+      ],
+      "ok": 10,
+      "errors": 10,
+      "latencies_s": [
+        6.586,
+        21.375,
+        32.581,
+        52.036,
+        55.305,
+        52.202,
+        58.282,
+        41.577,
+        41.311,
+        60.307,
+        56.438,
+        28.396,
+        0.247,
+        0.226,
+        0.25,
+        0.314,
+        0.224,
+        0.221,
+        0.219,
+        0.211
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 3,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_16",
+      "topic_mix": [
+        "finance_general",
+        "web_support",
+        "weather"
+      ],
+      "ok": 10,
+      "errors": 10,
+      "latencies_s": [
+        15.412,
+        31.632,
+        45.555,
+        52.663,
+        59.921,
+        56.133,
+        59.305,
+        41.398,
+        63.404,
+        62.967,
+        18.068,
+        0.24,
+        0.228,
+        0.268,
+        0.294,
+        0.223,
+        0.221,
+        0.218,
+        0.336,
+        0.381
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 7,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_17",
+      "topic_mix": [
+        "vehix",
+        "finance_general",
+        "weather"
+      ],
+      "ok": 10,
+      "errors": 10,
+      "latencies_s": [
+        5.686,
+        26.845,
+        42.695,
+        50.802,
+        65.322,
+        66.243,
+        65.554,
+        60.265,
+        41.022,
+        60.017,
+        22.009,
+        0.272,
+        0.23,
+        0.291,
+        0.271,
+        0.222,
+        0.223,
+        0.226,
+        0.394,
+        0.333
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 7,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_18",
+      "topic_mix": [
+        "web_support",
+        "rag_ai",
+        "weather"
+      ],
+      "ok": 10,
+      "errors": 10,
+      "latencies_s": [
+        13.154,
+        29.78,
+        42.461,
+        54.527,
+        59.434,
+        57.19,
+        55.999,
+        61.812,
+        42.93,
+        38.145,
+        49.088,
+        2.033,
+        0.231,
+        0.235,
+        0.323,
+        0.233,
+        0.222,
+        0.22,
+        0.227,
+        0.362
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 8,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_19",
+      "topic_mix": [
+        "stocks",
+        "rag_ai",
+        "vehix"
+      ],
+      "ok": 11,
+      "errors": 9,
+      "latencies_s": [
+        5.685,
+        23.294,
+        31.561,
+        51.587,
+        56.806,
+        51.15,
+        59.428,
+        60.363,
+        59.987,
+        65.188,
+        41.294,
+        0.245,
+        0.232,
+        0.245,
+        0.317,
+        0.227,
+        0.221,
+        0.22,
+        0.241,
+        0.369
+      ],
+      "providers": {
+        "llama_cpp": 10,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 10,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 11
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 8,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_20",
+      "topic_mix": [
+        "rag_ai",
+        "vehix",
+        "finance_general"
+      ],
+      "ok": 10,
+      "errors": 10,
+      "latencies_s": [
+        15.465,
+        34.57,
+        52.599,
+        40.455,
+        52.888,
+        59.223,
+        60.289,
+        62.146,
+        62.171,
+        54.232,
+        12.475,
+        0.225,
+        0.23,
+        0.294,
+        0.268,
+        0.222,
+        0.222,
+        0.226,
+        0.403,
+        0.32
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 8,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_21",
+      "topic_mix": [
+        "finance_general",
+        "weather",
+        "rag_ai"
+      ],
+      "ok": 11,
+      "errors": 9,
+      "latencies_s": [
+        2.868,
+        19.06,
+        30.823,
+        51.54,
+        44.496,
+        56.742,
+        51.518,
+        59.498,
+        56.182,
+        56.332,
+        48.272,
+        29.062,
+        0.269,
+        0.227,
+        0.253,
+        0.31,
+        0.221,
+        0.224,
+        0.215,
+        0.223
+      ],
+      "providers": {
+        "llama_cpp": 10,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 10,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 11
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 8,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_22",
+      "topic_mix": [
+        "finance_general",
+        "web_support",
+        "stocks"
+      ],
+      "ok": 11,
+      "errors": 9,
+      "latencies_s": [
+        10.435,
+        28.165,
+        40.459,
+        54.042,
+        57.517,
+        55.272,
+        57.02,
+        63.63,
+        63.108,
+        61.731,
+        15.075,
+        0.247,
+        0.228,
+        0.272,
+        0.29,
+        0.223,
+        0.223,
+        0.216,
+        0.349,
+        0.378
+      ],
+      "providers": {
+        "llama_cpp": 10,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 10,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 11
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 10,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_23",
+      "topic_mix": [
+        "rag_ai",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 9,
+      "errors": 11,
+      "latencies_s": [
+        15.166,
+        33.309,
+        47.387,
+        55.119,
+        50.994,
+        61.614,
+        60.724,
+        59.319,
+        41.143,
+        55.772,
+        25.838,
+        0.255,
+        0.225,
+        0.252,
+        0.314,
+        0.222,
+        0.221,
+        0.219,
+        0.288,
+        0.433
+      ],
+      "providers": {
+        "llama_cpp": 8,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 8,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 9
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 8,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp 500: {\\\"error\\\":{\\\"code\\\":500,\\\"message\\\":\\\"Failed to parse input at pos 13: Nếu VNINDEX giảm mạnh, bạn không nên hoảng loạn bán tháo mọi thứ.\\\\n\\\\n*   Hãy xem đó là cơ hội để \\\\\\\"ăn s�uội\\\\\\\" cổ phiếu tốt với giá rẻ.\\\\\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_24",
+      "topic_mix": [
+        "stocks",
+        "weather",
+        "web_support"
+      ],
+      "ok": 9,
+      "errors": 11,
+      "latencies_s": [
+        8.493,
+        25.102,
+        39.529,
+        49.235,
+        59.174,
+        41.014,
+        56.584,
+        59.223,
+        44.865,
+        39.898,
+        57.994,
+        25.275,
+        0.275,
+        0.228,
+        0.255,
+        0.308,
+        0.221,
+        0.224,
+        0.217,
+        0.229
+      ],
+      "providers": {
+        "llama_cpp": 8,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 8,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 9
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 9,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_25",
+      "topic_mix": [
+        "weather",
+        "web_support",
+        "stocks"
+      ],
+      "ok": 10,
+      "errors": 10,
+      "latencies_s": [
+        21.049,
+        37.943,
+        51.968,
+        53.632,
+        58.122,
+        60.476,
+        56.909,
+        63.416,
+        60.179,
+        42.638,
+        0.267,
+        0.229,
+        0.248,
+        0.316,
+        0.226,
+        0.222,
+        0.217,
+        0.263,
+        0.525,
+        0.09
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 5,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_26",
+      "topic_mix": [
+        "finance_general",
+        "web_support",
+        "weather"
+      ],
+      "ok": 10,
+      "errors": 10,
+      "latencies_s": [
+        18.616,
+        31.974,
+        50.133,
+        54.878,
+        58.97,
+        57.992,
+        61.724,
+        63.092,
+        67.306,
+        41.646,
+        0.231,
+        0.233,
+        0.24,
+        0.321,
+        0.226,
+        0.223,
+        0.219,
+        0.233,
+        0.491,
+        0.183
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 10,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_27",
+      "topic_mix": [
+        "weather",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 9,
+      "errors": 11,
+      "latencies_s": [
+        19.342,
+        32.165,
+        46.621,
+        54.238,
+        55.514,
+        44.84,
+        40.875,
+        50.457,
+        42.583,
+        57.647,
+        51.847,
+        10.387,
+        0.232,
+        0.234,
+        0.298,
+        0.259,
+        0.221,
+        0.223,
+        0.226,
+        0.341
+      ],
+      "providers": {
+        "llama_cpp": 8,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 8,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 9
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 4,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_28",
+      "topic_mix": [
+        "weather",
+        "stocks",
+        "finance_general"
+      ],
+      "ok": 10,
+      "errors": 10,
+      "latencies_s": [
+        21.199,
+        37.574,
+        50.092,
+        43.232,
+        52.759,
+        48.627,
+        55.848,
+        43.812,
+        39.684,
+        56.557,
+        46.923,
+        10.203,
+        0.226,
+        0.232,
+        0.296,
+        0.264,
+        0.222,
+        0.222,
+        0.227,
+        0.297
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 7,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_29",
+      "topic_mix": [
+        "web_support",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 9,
+      "errors": 11,
+      "latencies_s": [
+        22.654,
+        37.947,
+        52.35,
+        57.473,
+        54.941,
+        61.031,
+        41.773,
+        59.099,
+        57.111,
+        42.137,
+        19.932,
+        0.226,
+        0.229,
+        0.259,
+        0.303,
+        0.221,
+        0.224,
+        0.218,
+        0.313,
+        0.405
+      ],
+      "providers": {
+        "llama_cpp": 8,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 8,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 9
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 6,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_30",
+      "topic_mix": [
+        "web_support",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 10,
+      "errors": 10,
+      "latencies_s": [
+        22.399,
+        35.808,
+        50.06,
+        51.672,
+        55.289,
+        56.765,
+        58.938,
+        63.484,
+        63.092,
+        48.825,
+        0.26,
+        0.229,
+        0.248,
+        0.315,
+        0.227,
+        0.22,
+        0.218,
+        0.261,
+        0.518,
+        0.105
+      ],
+      "providers": {
+        "llama_cpp": 9,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 9,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 10
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 5,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_31",
+      "topic_mix": [
+        "stocks",
+        "web_support",
+        "rag_ai"
+      ],
+      "ok": 9,
+      "errors": 11,
+      "latencies_s": [
+        23.529,
+        41.977,
+        48.888,
+        58.299,
+        63.336,
+        62.125,
+        59.26,
+        61.506,
+        37.586,
+        49.826,
+        0.223,
+        0.231,
+        0.238,
+        0.324,
+        0.227,
+        0.223,
+        0.219,
+        0.227,
+        0.479,
+        0.198
+      ],
+      "providers": {
+        "llama_cpp": 8,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 8,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 9
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 8,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_32",
+      "topic_mix": [
+        "stocks",
+        "vehix",
+        "weather"
+      ],
+      "ok": 9,
+      "errors": 11,
+      "latencies_s": [
+        21.692,
+        33.807,
+        46.175,
+        41.286,
+        38.027,
+        41.119,
+        47.031,
+        59.133,
+        61.391,
+        54.621,
+        48.699,
+        13.535,
+        0.226,
+        0.233,
+        0.295,
+        0.263,
+        0.222,
+        0.223,
+        0.226,
+        0.312
+      ],
+      "providers": {
+        "llama_cpp": 8,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 8,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 9
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 7,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"upstream timeout after retry: local queue wait exceeded 30.0s. Please try again; your prompt was not saved as answered.\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}",
+        "{\"detail\":\"local provider unavailable: All connection attempts failed\"}"
+      ]
+    }
+  ]
+}

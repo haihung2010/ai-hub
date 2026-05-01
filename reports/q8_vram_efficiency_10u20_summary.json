@@ -1,0 +1,83 @@
+[
+  {
+    "case": "p8_ctx81920_gpu8",
+    "parallel": 8,
+    "ctx": 81920,
+    "gpu": 8,
+    "total_questions": 200,
+    "total_ok": 200,
+    "total_errors": 0,
+    "wall_time_s": 160.221,
+    "latency_p50_s": 7.134,
+    "latency_p95_s": 11.591,
+    "latency_p99_s": 12.388,
+    "latency_max_s": 12.899,
+    "providers": {
+      "llama_cpp": 190,
+      "memory": 10
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 190,
+      "history-recall": 10
+    },
+    "routes": {
+      "local": 200
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 10
+  },
+  {
+    "case": "p9_ctx65536_gpu9",
+    "parallel": 9,
+    "ctx": 65536,
+    "gpu": 9,
+    "total_questions": 200,
+    "total_ok": 200,
+    "total_errors": 0,
+    "wall_time_s": 161.855,
+    "latency_p50_s": 7.046,
+    "latency_p95_s": 11.726,
+    "latency_p99_s": 12.802,
+    "latency_max_s": 13.544,
+    "providers": {
+      "llama_cpp": 190,
+      "memory": 10
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 190,
+      "history-recall": 10
+    },
+    "routes": {
+      "local": 200
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 10
+  },
+  {
+    "case": "p9_ctx81920_gpu9",
+    "parallel": 9,
+    "ctx": 81920,
+    "gpu": 9,
+    "total_questions": 200,
+    "total_ok": 200,
+    "total_errors": 0,
+    "wall_time_s": 164.939,
+    "latency_p50_s": 6.66,
+    "latency_p95_s": 11.891,
+    "latency_p99_s": 14.142,
+    "latency_max_s": 15.255,
+    "providers": {
+      "llama_cpp": 190,
+      "memory": 10
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 190,
+      "history-recall": 10
+    },
+    "routes": {
+      "local": 200
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 10
+  }
+]

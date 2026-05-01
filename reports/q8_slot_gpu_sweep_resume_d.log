@@ -1,0 +1,13 @@
+CASE_START group=D slot=14 gpu=8 ctx=114688 tier=tier1 users=30 questions=10
+CASE_DONE group=D slot=14 gpu=8 tier=tier1 ok=285/300 err=15 wall=359.618 qps=0.793 p95=50.239 p99=64.575 max=72.255
+CASE_NO_PROMOTE group=D slot=14 gpu=8 reason=tier1_not_better_than_baseline_or_failed
+CASE_START group=D slot=13 gpu=8 ctx=106496 tier=tier1 users=30 questions=10
+CASE_DONE group=D slot=13 gpu=8 tier=tier1 ok=300/300 err=0 wall=292.029 qps=1.027 p95=38.35 p99=41.044 max=41.58
+CASE_NO_PROMOTE group=D slot=13 gpu=8 reason=tier1_not_better_than_baseline_or_failed
+CASE_START group=D slot=12 gpu=8 ctx=98304 tier=tier1 users=30 questions=10
+CASE_DONE group=D slot=12 gpu=8 tier=tier1 ok=300/300 err=0 wall=286.178 qps=1.048 p95=36.704 p99=38.32 max=39.297
+CASE_NO_PROMOTE group=D slot=12 gpu=8 reason=tier1_not_better_than_baseline_or_failed
+CASE_START group=D slot=11 gpu=8 ctx=90112 tier=tier1 users=30 questions=10
+CASE_DONE group=D slot=11 gpu=8 tier=tier1 ok=300/300 err=0 wall=250.104 qps=1.200 p95=32.277 p99=33.241 max=33.929
+CASE_NO_PROMOTE group=D slot=11 gpu=8 reason=tier1_not_better_than_baseline_or_failed
+CASE_START group=D slot=10 gpu=8 ctx=81920 tier=tier1 users=30 questions=10

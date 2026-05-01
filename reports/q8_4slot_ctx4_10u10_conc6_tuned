@@ -1,0 +1,458 @@
+{
+  "config": {
+    "base_url": "http://localhost:8000",
+    "project_id": "test",
+    "tenant_id": "hybridrepeat",
+    "model_mode": "lite",
+    "allow_external": true,
+    "user_count": 10,
+    "num_questions": 10,
+    "max_concurrency": 6,
+    "seed": 20260430,
+    "shared_repeat_questions": [
+      "Thời tiết hôm nay ở TP.HCM như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Thời tiết hôm nay ở Hà Nội như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Giá VNINDEX hôm nay ra sao? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Cổ phiếu VCB hôm nay tăng hay giảm? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Vehix hiện có những dòng xe nào phù hợp gia đình?",
+      "Vehix có xe điện nào đáng mua không? So sánh ngắn.",
+      "Giá xe sedan hạng B hiện khoảng bao nhiêu?",
+      "SUV 7 chỗ nào phù hợp đi gia đình và tiết kiệm nhiên liệu?",
+      "RAG database giúp chatbot trả lời câu hỏi lặp lại như thế nào?",
+      "Vector database khác keyword search ở điểm nào?"
+    ]
+  },
+  "summary": {
+    "total_questions": 100,
+    "total_ok": 95,
+    "total_errors": 5,
+    "wall_time_s": 71.932,
+    "latency_p50_s": 7.29,
+    "latency_p95_s": 11.224,
+    "latency_p99_s": 12.421,
+    "latency_max_s": 14.228,
+    "providers": {
+      "openrouter": 25,
+      "llama_cpp": 60,
+      "memory": 10
+    },
+    "models": {
+      "openai/gpt-oss-20b:free": 25,
+      "local-gemma4-e4b-q8": 60,
+      "history-recall": 10
+    },
+    "routes": {
+      "cloud": 25,
+      "local": 70
+    },
+    "fallback_used": 25,
+    "memory_checks_ok": 7
+  },
+  "users": [
+    {
+      "user": "hybrid_user_01",
+      "topic_mix": [
+        "rag_ai",
+        "weather",
+        "stocks"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        9.532,
+        3.191,
+        5.069,
+        9.196,
+        6.194,
+        5.732,
+        10.171,
+        7.605,
+        8.649,
+        2.847
+      ],
+      "providers": {
+        "openrouter": 5,
+        "llama_cpp": 4,
+        "memory": 1
+      },
+      "models": {
+        "openai/gpt-oss-20b:free": 5,
+        "local-gemma4-e4b-q8": 4,
+        "history-recall": 1
+      },
+      "routes": {
+        "cloud": 5,
+        "local": 5
+      },
+      "fallback_used": 5,
+      "repeated_questions_seen": 5,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_02",
+      "topic_mix": [
+        "web_support",
+        "weather",
+        "stocks"
+      ],
+      "ok": 9,
+      "errors": 1,
+      "latencies_s": [
+        3.655,
+        5.063,
+        5.23,
+        6.497,
+        10.193,
+        7.445,
+        11.072,
+        8.159,
+        10.215,
+        0.694
+      ],
+      "providers": {
+        "llama_cpp": 7,
+        "openrouter": 1,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 7,
+        "openai/gpt-oss-20b:free": 1,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 8,
+        "cloud": 1
+      },
+      "fallback_used": 1,
+      "repeated_questions_seen": 2,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_03",
+      "topic_mix": [
+        "finance_general",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        2.422,
+        4.728,
+        6.111,
+        5.103,
+        10.766,
+        7.299,
+        10.705,
+        7.444,
+        14.228,
+        0.017
+      ],
+      "providers": {
+        "llama_cpp": 7,
+        "openrouter": 2,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 7,
+        "openai/gpt-oss-20b:free": 2,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 8,
+        "cloud": 2
+      },
+      "fallback_used": 2,
+      "repeated_questions_seen": 5,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_04",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "weather"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        4.038,
+        5.873,
+        5.771,
+        4.826,
+        9.877,
+        11.224,
+        7.143,
+        6.022,
+        9.486,
+        3.905
+      ],
+      "providers": {
+        "llama_cpp": 7,
+        "openrouter": 2,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 7,
+        "openai/gpt-oss-20b:free": 2,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 8,
+        "cloud": 2
+      },
+      "fallback_used": 2,
+      "repeated_questions_seen": 7,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_05",
+      "topic_mix": [
+        "weather",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        2.785,
+        4.805,
+        7.187,
+        8.672,
+        9.901,
+        11.258,
+        9.003,
+        6.835,
+        9.551,
+        0.014
+      ],
+      "providers": {
+        "llama_cpp": 7,
+        "openrouter": 2,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 7,
+        "openai/gpt-oss-20b:free": 2,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 8,
+        "cloud": 2
+      },
+      "fallback_used": 2,
+      "repeated_questions_seen": 6,
+      "final_memory_ok": false,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_06",
+      "topic_mix": [
+        "rag_ai",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 8,
+      "errors": 2,
+      "latencies_s": [
+        3.737,
+        6.16,
+        6.526,
+        8.698,
+        5.042,
+        12.421,
+        8.229,
+        8.84,
+        8.499,
+        0.089
+      ],
+      "providers": {
+        "llama_cpp": 7,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 7,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 8
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 7,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}",
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_07",
+      "topic_mix": [
+        "vehix",
+        "web_support",
+        "stocks"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        5.164,
+        5.096,
+        6.6,
+        8.543,
+        7.946,
+        12.052,
+        8.856,
+        8.889,
+        8.765,
+        0.016
+      ],
+      "providers": {
+        "llama_cpp": 8,
+        "openrouter": 1,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 8,
+        "openai/gpt-oss-20b:free": 1,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 9,
+        "cloud": 1
+      },
+      "fallback_used": 1,
+      "repeated_questions_seen": 4,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_08",
+      "topic_mix": [
+        "finance_general",
+        "weather",
+        "stocks"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        5.864,
+        4.909,
+        8.161,
+        8.286,
+        9.674,
+        11.451,
+        5.761,
+        7.148,
+        9.611,
+        0.018
+      ],
+      "providers": {
+        "llama_cpp": 8,
+        "openrouter": 1,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 8,
+        "openai/gpt-oss-20b:free": 1,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 9,
+        "cloud": 1
+      },
+      "fallback_used": 1,
+      "repeated_questions_seen": 4,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_09",
+      "topic_mix": [
+        "vehix",
+        "weather",
+        "web_support"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        6.137,
+        5.841,
+        6.072,
+        7.417,
+        9.605,
+        8.765,
+        8.344,
+        10.857,
+        8.534,
+        0.014
+      ],
+      "providers": {
+        "llama_cpp": 3,
+        "openrouter": 6,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 3,
+        "openai/gpt-oss-20b:free": 6,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 4,
+        "cloud": 6
+      },
+      "fallback_used": 6,
+      "repeated_questions_seen": 1,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_10",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "finance_general"
+      ],
+      "ok": 8,
+      "errors": 2,
+      "latencies_s": [
+        6.513,
+        7.792,
+        7.419,
+        8.123,
+        5.539,
+        8.435,
+        8.653,
+        6.628,
+        7.282,
+        1.815
+      ],
+      "providers": {
+        "openrouter": 5,
+        "llama_cpp": 2,
+        "memory": 1
+      },
+      "models": {
+        "openai/gpt-oss-20b:free": 5,
+        "local-gemma4-e4b-q8": 2,
+        "history-recall": 1
+      },
+      "routes": {
+        "cloud": 5,
+        "local": 3
+      },
+      "fallback_used": 5,
+      "repeated_questions_seen": 4,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}",
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}"
+      ]
+    }
+  ]
+}

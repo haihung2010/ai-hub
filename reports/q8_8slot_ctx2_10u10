@@ -1,0 +1,473 @@
+{
+  "config": {
+    "base_url": "http://localhost:8000",
+    "project_id": "test",
+    "tenant_id": "hybridrepeat",
+    "model_mode": "lite",
+    "allow_external": true,
+    "user_count": 10,
+    "num_questions": 10,
+    "max_concurrency": 10,
+    "seed": 20260430,
+    "shared_repeat_questions": [
+      "Thời tiết hôm nay ở TP.HCM như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Thời tiết hôm nay ở Hà Nội như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Giá VNINDEX hôm nay ra sao? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Cổ phiếu VCB hôm nay tăng hay giảm? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Vehix hiện có những dòng xe nào phù hợp gia đình?",
+      "Vehix có xe điện nào đáng mua không? So sánh ngắn.",
+      "Giá xe sedan hạng B hiện khoảng bao nhiêu?",
+      "SUV 7 chỗ nào phù hợp đi gia đình và tiết kiệm nhiên liệu?",
+      "RAG database giúp chatbot trả lời câu hỏi lặp lại như thế nào?",
+      "Vector database khác keyword search ở điểm nào?"
+    ]
+  },
+  "summary": {
+    "total_questions": 100,
+    "total_ok": 81,
+    "total_errors": 19,
+    "wall_time_s": 48.309,
+    "latency_p50_s": 3.179,
+    "latency_p95_s": 7.196,
+    "latency_p99_s": 8.91,
+    "latency_max_s": 9.141,
+    "providers": {
+      "llama_cpp": 30,
+      "openrouter": 41,
+      "memory": 10
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 30,
+      "openai/gpt-oss-20b:free": 41,
+      "history-recall": 10
+    },
+    "routes": {
+      "local": 40,
+      "cloud": 41
+    },
+    "fallback_used": 41,
+    "memory_checks_ok": 5
+  },
+  "users": [
+    {
+      "user": "hybrid_user_01",
+      "topic_mix": [
+        "rag_ai",
+        "weather",
+        "stocks"
+      ],
+      "ok": 10,
+      "errors": 0,
+      "latencies_s": [
+        2.082,
+        2.168,
+        1.266,
+        2.569,
+        3.114,
+        6.707,
+        5.391,
+        4.947,
+        3.017,
+        0.014
+      ],
+      "providers": {
+        "llama_cpp": 4,
+        "openrouter": 5,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 4,
+        "openai/gpt-oss-20b:free": 5,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 5,
+        "cloud": 5
+      },
+      "fallback_used": 5,
+      "repeated_questions_seen": 5,
+      "final_memory_ok": true,
+      "error_messages": []
+    },
+    {
+      "user": "hybrid_user_02",
+      "topic_mix": [
+        "web_support",
+        "weather",
+        "stocks"
+      ],
+      "ok": 9,
+      "errors": 1,
+      "latencies_s": [
+        3.229,
+        2.929,
+        5.865,
+        2.588,
+        3.134,
+        3.052,
+        3.765,
+        1.85,
+        0.07,
+        0.016
+      ],
+      "providers": {
+        "llama_cpp": 8,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 8,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 9
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 2,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (2098 tokens) exceeds the available context size (2048 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":2098,\\\"n_ctx\\\":2048}}\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_03",
+      "topic_mix": [
+        "finance_general",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 8,
+      "errors": 2,
+      "latencies_s": [
+        9.141,
+        7.919,
+        6.828,
+        2.807,
+        3.557,
+        3.219,
+        3.068,
+        1.791,
+        0.035,
+        0.015
+      ],
+      "providers": {
+        "openrouter": 3,
+        "llama_cpp": 4,
+        "memory": 1
+      },
+      "models": {
+        "openai/gpt-oss-20b:free": 3,
+        "local-gemma4-e4b-q8": 4,
+        "history-recall": 1
+      },
+      "routes": {
+        "cloud": 3,
+        "local": 5
+      },
+      "fallback_used": 3,
+      "repeated_questions_seen": 5,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (2079 tokens) exceeds the available context size (2048 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":2079,\\\"n_ctx\\\":2048}}\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_04",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "weather"
+      ],
+      "ok": 7,
+      "errors": 3,
+      "latencies_s": [
+        3.368,
+        2.301,
+        2.413,
+        2.814,
+        1.791,
+        2.257,
+        2.23,
+        2.973,
+        2.537,
+        0.013
+      ],
+      "providers": {
+        "llama_cpp": 6,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 6,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 7
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 7,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}",
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}",
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_05",
+      "topic_mix": [
+        "weather",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 7,
+      "errors": 3,
+      "latencies_s": [
+        3.16,
+        2.867,
+        6.258,
+        5.603,
+        5.3,
+        5.001,
+        2.545,
+        6.125,
+        6.896,
+        0.013
+      ],
+      "providers": {
+        "openrouter": 6,
+        "memory": 1
+      },
+      "models": {
+        "openai/gpt-oss-20b:free": 6,
+        "history-recall": 1
+      },
+      "routes": {
+        "cloud": 6,
+        "local": 1
+      },
+      "fallback_used": 6,
+      "repeated_questions_seen": 6,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}",
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}",
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_06",
+      "topic_mix": [
+        "rag_ai",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 7,
+      "errors": 3,
+      "latencies_s": [
+        2.839,
+        4.783,
+        5.609,
+        5.714,
+        2.327,
+        7.013,
+        5.529,
+        3.001,
+        2.963,
+        0.015
+      ],
+      "providers": {
+        "openrouter": 5,
+        "llama_cpp": 1,
+        "memory": 1
+      },
+      "models": {
+        "openai/gpt-oss-20b:free": 5,
+        "local-gemma4-e4b-q8": 1,
+        "history-recall": 1
+      },
+      "routes": {
+        "cloud": 5,
+        "local": 2
+      },
+      "fallback_used": 5,
+      "repeated_questions_seen": 7,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}",
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}",
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_07",
+      "topic_mix": [
+        "vehix",
+        "web_support",
+        "stocks"
+      ],
+      "ok": 9,
+      "errors": 1,
+      "latencies_s": [
+        5.281,
+        6.161,
+        5.503,
+        3.039,
+        3.107,
+        5.454,
+        2.997,
+        2.113,
+        3.019,
+        0.016
+      ],
+      "providers": {
+        "openrouter": 4,
+        "llama_cpp": 4,
+        "memory": 1
+      },
+      "models": {
+        "openai/gpt-oss-20b:free": 4,
+        "local-gemma4-e4b-q8": 4,
+        "history-recall": 1
+      },
+      "routes": {
+        "cloud": 4,
+        "local": 5
+      },
+      "fallback_used": 4,
+      "repeated_questions_seen": 4,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_08",
+      "topic_mix": [
+        "finance_general",
+        "weather",
+        "stocks"
+      ],
+      "ok": 8,
+      "errors": 2,
+      "latencies_s": [
+        6.273,
+        8.91,
+        3.789,
+        2.212,
+        4.121,
+        4.918,
+        3.53,
+        7.744,
+        2.804,
+        0.017
+      ],
+      "providers": {
+        "openrouter": 6,
+        "llama_cpp": 1,
+        "memory": 1
+      },
+      "models": {
+        "openai/gpt-oss-20b:free": 6,
+        "local-gemma4-e4b-q8": 1,
+        "history-recall": 1
+      },
+      "routes": {
+        "cloud": 6,
+        "local": 2
+      },
+      "fallback_used": 6,
+      "repeated_questions_seen": 4,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}",
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_09",
+      "topic_mix": [
+        "vehix",
+        "weather",
+        "web_support"
+      ],
+      "ok": 9,
+      "errors": 1,
+      "latencies_s": [
+        5.819,
+        7.212,
+        6.656,
+        5.49,
+        5.166,
+        4.804,
+        6.88,
+        3.903,
+        2.356,
+        0.019
+      ],
+      "providers": {
+        "openrouter": 7,
+        "llama_cpp": 1,
+        "memory": 1
+      },
+      "models": {
+        "openai/gpt-oss-20b:free": 7,
+        "local-gemma4-e4b-q8": 1,
+        "history-recall": 1
+      },
+      "routes": {
+        "cloud": 7,
+        "local": 2
+      },
+      "fallback_used": 7,
+      "repeated_questions_seen": 1,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_10",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "finance_general"
+      ],
+      "ok": 7,
+      "errors": 3,
+      "latencies_s": [
+        3.198,
+        7.196,
+        5.917,
+        5.525,
+        2.45,
+        4.506,
+        5.235,
+        4.791,
+        3.734,
+        0.014
+      ],
+      "providers": {
+        "openrouter": 5,
+        "llama_cpp": 1,
+        "memory": 1
+      },
+      "models": {
+        "openai/gpt-oss-20b:free": 5,
+        "local-gemma4-e4b-q8": 1,
+        "history-recall": 1
+      },
+      "routes": {
+        "cloud": 5,
+        "local": 2
+      },
+      "fallback_used": 5,
+      "repeated_questions_seen": 4,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}",
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}",
+        "{\"detail\":\"upstream error: openrouter returned empty content\"}"
+      ]
+    }
+  ]
+}

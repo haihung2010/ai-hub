@@ -1,0 +1,790 @@
+{
+  "config": {
+    "base_url": "http://localhost:8000",
+    "project_id": "test",
+    "tenant_id": "hybridrepeat",
+    "model_mode": "lite",
+    "allow_external": true,
+    "user_count": 10,
+    "num_questions": 30,
+    "max_concurrency": 10,
+    "seed": 20260430,
+    "shared_repeat_questions": [
+      "Thời tiết hôm nay ở TP.HCM như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Thời tiết hôm nay ở Hà Nội như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Giá VNINDEX hôm nay ra sao? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Cổ phiếu VCB hôm nay tăng hay giảm? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Vehix hiện có những dòng xe nào phù hợp gia đình?",
+      "Vehix có xe điện nào đáng mua không? So sánh ngắn.",
+      "Giá xe sedan hạng B hiện khoảng bao nhiêu?",
+      "SUV 7 chỗ nào phù hợp đi gia đình và tiết kiệm nhiên liệu?",
+      "RAG database giúp chatbot trả lời câu hỏi lặp lại như thế nào?",
+      "Vector database khác keyword search ở điểm nào?"
+    ]
+  },
+  "summary": {
+    "total_questions": 300,
+    "total_ok": 138,
+    "total_errors": 162,
+    "wall_time_s": 256.837,
+    "latency_p50_s": 1.114,
+    "latency_p95_s": 12.217,
+    "latency_p99_s": 108.666,
+    "latency_max_s": 110.736,
+    "providers": {
+      "llama_cpp": 128,
+      "memory": 10
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 128,
+      "history-recall": 10
+    },
+    "routes": {
+      "local": 138
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 8
+  },
+  "users": [
+    {
+      "user": "hybrid_user_01",
+      "topic_mix": [
+        "rag_ai",
+        "weather",
+        "stocks"
+      ],
+      "ok": 4,
+      "errors": 26,
+      "latencies_s": [
+        6.119,
+        6.482,
+        5.332,
+        0.541,
+        0.555,
+        0.458,
+        0.566,
+        0.476,
+        0.55,
+        0.474,
+        0.548,
+        0.78,
+        0.616,
+        1.882,
+        0.532,
+        0.501,
+        0.488,
+        0.526,
+        0.509,
+        0.517,
+        1.126,
+        0.633,
+        0.493,
+        0.555,
+        0.571,
+        0.507,
+        0.517,
+        0.717,
+        0.512,
+        0.014
+      ],
+      "providers": {
+        "llama_cpp": 3,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 3,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 4
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 18,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_02",
+      "topic_mix": [
+        "web_support",
+        "weather",
+        "stocks"
+      ],
+      "ok": 18,
+      "errors": 12,
+      "latencies_s": [
+        5.2,
+        4.741,
+        5.56,
+        8.359,
+        12.577,
+        8.27,
+        10.104,
+        10.0,
+        8.792,
+        5.912,
+        7.631,
+        7.754,
+        7.501,
+        6.979,
+        107.582,
+        11.354,
+        10.287,
+        7.705,
+        1.031,
+        0.6,
+        0.566,
+        0.585,
+        0.651,
+        0.58,
+        0.699,
+        0.572,
+        0.602,
+        0.587,
+        0.524,
+        0.03
+      ],
+      "providers": {
+        "llama_cpp": 17,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 17,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 18
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 8,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_03",
+      "topic_mix": [
+        "finance_general",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 18,
+      "errors": 12,
+      "latencies_s": [
+        5.656,
+        4.429,
+        8.213,
+        10.86,
+        12.158,
+        8.151,
+        9.443,
+        11.553,
+        7.844,
+        5.625,
+        7.337,
+        6.424,
+        6.306,
+        6.259,
+        109.045,
+        12.217,
+        6.781,
+        8.006,
+        1.109,
+        0.55,
+        0.656,
+        0.63,
+        0.562,
+        0.596,
+        0.693,
+        0.526,
+        0.584,
+        1.119,
+        0.539,
+        0.047
+      ],
+      "providers": {
+        "llama_cpp": 17,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 17,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 18
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 14,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_04",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "weather"
+      ],
+      "ok": 5,
+      "errors": 25,
+      "latencies_s": [
+        1.004,
+        0.476,
+        0.549,
+        0.539,
+        0.946,
+        1.106,
+        0.589,
+        0.493,
+        0.539,
+        0.734,
+        0.49,
+        1.125,
+        2.242,
+        0.485,
+        0.939,
+        0.988,
+        0.562,
+        0.499,
+        0.459,
+        0.569,
+        0.522,
+        0.498,
+        0.527,
+        0.475,
+        0.548,
+        9.329,
+        10.894,
+        5.218,
+        6.563,
+        0.014
+      ],
+      "providers": {
+        "llama_cpp": 4,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 4,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 5
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 17,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_05",
+      "topic_mix": [
+        "weather",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 21,
+      "errors": 9,
+      "latencies_s": [
+        4.779,
+        2.576,
+        5.69,
+        6.054,
+        12.334,
+        8.71,
+        8.106,
+        8.737,
+        9.18,
+        7.865,
+        4.99,
+        6.83,
+        5.914,
+        6.138,
+        7.195,
+        5.88,
+        107.384,
+        8.615,
+        9.933,
+        3.865,
+        5.53,
+        1.549,
+        0.586,
+        0.645,
+        0.673,
+        0.558,
+        0.641,
+        0.544,
+        1.064,
+        0.041
+      ],
+      "providers": {
+        "llama_cpp": 20,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 20,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 21
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 18,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_06",
+      "topic_mix": [
+        "rag_ai",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 1,
+      "errors": 29,
+      "latencies_s": [
+        1.004,
+        0.558,
+        0.495,
+        0.559,
+        1.248,
+        0.915,
+        0.525,
+        0.47,
+        0.525,
+        0.784,
+        0.68,
+        0.512,
+        0.513,
+        0.51,
+        0.512,
+        0.906,
+        0.475,
+        0.518,
+        0.459,
+        0.509,
+        0.541,
+        0.586,
+        0.921,
+        0.58,
+        0.547,
+        0.488,
+        0.537,
+        0.542,
+        0.481,
+        0.037
+      ],
+      "providers": {
+        "memory": 1
+      },
+      "models": {
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 1
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 17,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_07",
+      "topic_mix": [
+        "vehix",
+        "web_support",
+        "stocks"
+      ],
+      "ok": 19,
+      "errors": 11,
+      "latencies_s": [
+        3.975,
+        5.55,
+        5.16,
+        7.956,
+        11.614,
+        11.367,
+        8.806,
+        7.573,
+        10.511,
+        5.484,
+        5.401,
+        7.082,
+        8.03,
+        8.599,
+        7.254,
+        108.702,
+        10.821,
+        7.422,
+        4.997,
+        1.127,
+        0.64,
+        0.581,
+        1.189,
+        0.566,
+        0.572,
+        0.608,
+        0.697,
+        0.628,
+        0.945,
+        0.043
+      ],
+      "providers": {
+        "llama_cpp": 18,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 18,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 19
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 15,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_08",
+      "topic_mix": [
+        "finance_general",
+        "weather",
+        "stocks"
+      ],
+      "ok": 17,
+      "errors": 13,
+      "latencies_s": [
+        5.747,
+        4.336,
+        6.868,
+        9.457,
+        13.036,
+        9.295,
+        9.776,
+        10.104,
+        8.461,
+        7.195,
+        8.595,
+        8.745,
+        6.481,
+        107.067,
+        9.526,
+        14.951,
+        6.668,
+        1.03,
+        0.6,
+        0.655,
+        0.581,
+        1.148,
+        1.121,
+        0.616,
+        0.585,
+        0.624,
+        0.603,
+        0.604,
+        0.653,
+        0.04
+      ],
+      "providers": {
+        "llama_cpp": 16,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 16,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 17
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 11,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_09",
+      "topic_mix": [
+        "vehix",
+        "weather",
+        "web_support"
+      ],
+      "ok": 17,
+      "errors": 13,
+      "latencies_s": [
+        5.344,
+        5.619,
+        8.905,
+        12.968,
+        11.207,
+        9.271,
+        9.599,
+        11.4,
+        8.062,
+        6.196,
+        7.791,
+        7.894,
+        7.67,
+        110.736,
+        12.339,
+        7.256,
+        4.048,
+        1.03,
+        0.6,
+        1.151,
+        1.233,
+        1.121,
+        0.616,
+        0.56,
+        0.562,
+        0.562,
+        0.902,
+        1.608,
+        0.548,
+        0.035
+      ],
+      "providers": {
+        "llama_cpp": 16,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 16,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 17
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 11,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_10",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "finance_general"
+      ],
+      "ok": 18,
+      "errors": 12,
+      "latencies_s": [
+        3.657,
+        5.391,
+        6.756,
+        9.042,
+        14.192,
+        7.399,
+        9.136,
+        12.149,
+        8.404,
+        7.099,
+        5.348,
+        7.79,
+        7.066,
+        6.396,
+        108.666,
+        13.311,
+        8.361,
+        6.144,
+        1.03,
+        0.578,
+        0.552,
+        0.622,
+        0.609,
+        0.621,
+        0.608,
+        0.562,
+        0.568,
+        0.653,
+        0.524,
+        0.033
+      ],
+      "providers": {
+        "llama_cpp": 17,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 17,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 18
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 14,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp transport error: Server disconnected without sending a response.\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}",
+        "{\"detail\":\"upstream error: openrouter 402: code=402 message=Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\"}"
+      ]
+    }
+  ]
+}

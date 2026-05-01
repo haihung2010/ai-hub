@@ -257,6 +257,30 @@ def init_db():
             )
         """)
 
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS failure_risk_events (
+                id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                user_id TEXT,
+                session_id TEXT,
+                risk_score REAL NOT NULL,
+                risk_level TEXT NOT NULL,
+                risk_types_json TEXT NOT NULL DEFAULT '[]',
+                reasons_json TEXT NOT NULL DEFAULT '[]',
+                recommended_action TEXT NOT NULL,
+                applied_action TEXT NOT NULL,
+                action_applied INTEGER NOT NULL DEFAULT 0,
+                route_before TEXT,
+                route_after TEXT,
+                model_before TEXT,
+                model_after TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id),
+                FOREIGN KEY (session_id) REFERENCES sessions (id)
+            )
+        """)
+
         messages_cols = _column_names(cursor, "messages")
         if "tenant_id" not in messages_cols:
             cursor.execute(
@@ -357,6 +381,14 @@ def init_db():
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_usage_events_provider_model_created "
             "ON usage_events (provider, model, created_at)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_failure_risk_events_tenant_created "
+            "ON failure_risk_events (tenant_id, created_at)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_failure_risk_events_project_level "
+            "ON failure_risk_events (project_id, risk_level, created_at)"
         )
 
         cursor.execute("""

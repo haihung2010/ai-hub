@@ -1,0 +1,56 @@
+{
+  "base_url": "http://127.0.0.1:8000",
+  "tenant_id": "memstress",
+  "project_id": "test",
+  "model_mode": "lite",
+  "provider": "local",
+  "allow_external": false,
+  "use_sentinels": false,
+  "sentinel_turns": [
+    1
+  ],
+  "configured_users": 1,
+  "configured_questions_per_user": 4,
+  "max_concurrency": 1,
+  "user_delay_seconds": 0.0,
+  "preview_chars": 200,
+  "answer_style": "brief",
+  "brief_answer_max_chars": 500,
+  "wall_time_s": 4.47,
+  "total_questions": 4,
+  "total_ok": 4,
+  "total_errors": 0,
+  "latency_p50_s": 1.569,
+  "latency_p95_s": 2.142,
+  "latency_p99_s": 2.142,
+  "latency_max_s": 2.142,
+  "users": [
+    {
+      "user": "stress_user_01",
+      "topic": "Python Programming",
+      "total": 4,
+      "ok": 4,
+      "errors": 0,
+      "avg_latency_s": 1.118,
+      "max_latency_s": 2.142,
+      "latencies_s": [
+        0.737,
+        2.142,
+        1.569,
+        0.023
+      ],
+      "final_q_ok": true,
+      "memory_score": 0.273,
+      "keywords_found": [
+        "Python",
+        "Dictionary",
+        "comprehension"
+      ],
+      "sentinels_expected": [],
+      "sentinels_found": [],
+      "sentinel_recall_rate": null,
+      "wrong_user_sentinel_leaks": [],
+      "q50_response": "Các nội dung chính bạn đã hỏi trong cuộc trò chuyện này:\n1. Python được tạo ra năm nào và bởi ai?\n2. Sự khác biệt giữa list và tuple trong Python là gì?\n3. Dictionary comprehension trong Python dùng như thế nào?"
+    }
+  ]
+}

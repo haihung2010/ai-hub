@@ -1,0 +1,689 @@
+{
+  "config": {
+    "base_url": "http://localhost:8000",
+    "project_id": "test",
+    "tenant_id": "hybridrepeat",
+    "model_mode": "lite",
+    "allow_external": false,
+    "user_count": 10,
+    "num_questions": 20,
+    "extra_questions_users": 0,
+    "extra_questions": 0,
+    "max_concurrency": 10,
+    "seed": 20260430,
+    "shared_repeat_questions": [
+      "Thời tiết hôm nay ở TP.HCM như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Thời tiết hôm nay ở Hà Nội như thế nào? Trả lời ngắn và nói nếu không có dữ liệu realtime.",
+      "Giá VNINDEX hôm nay ra sao? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Cổ phiếu VCB hôm nay tăng hay giảm? Nếu không có dữ liệu realtime thì nói rõ.",
+      "Vehix hiện có những dòng xe nào phù hợp gia đình?",
+      "Vehix có xe điện nào đáng mua không? So sánh ngắn.",
+      "Giá xe sedan hạng B hiện khoảng bao nhiêu?",
+      "SUV 7 chỗ nào phù hợp đi gia đình và tiết kiệm nhiên liệu?",
+      "RAG database giúp chatbot trả lời câu hỏi lặp lại như thế nào?",
+      "Vector database khác keyword search ở điểm nào?"
+    ]
+  },
+  "summary": {
+    "total_questions": 200,
+    "total_ok": 43,
+    "total_errors": 157,
+    "wall_time_s": 24.41,
+    "latency_p50_s": 0.037,
+    "latency_p95_s": 7.268,
+    "latency_p99_s": 11.174,
+    "latency_max_s": 12.091,
+    "providers": {
+      "llama_cpp": 33,
+      "memory": 10
+    },
+    "models": {
+      "local-gemma4-e4b-q8": 33,
+      "history-recall": 10
+    },
+    "routes": {
+      "local": 43
+    },
+    "fallback_used": 0,
+    "memory_checks_ok": 4
+  },
+  "users": [
+    {
+      "user": "hybrid_user_01",
+      "topic_mix": [
+        "rag_ai",
+        "weather",
+        "stocks"
+      ],
+      "ok": 5,
+      "errors": 15,
+      "latencies_s": [
+        2.943,
+        3.559,
+        5.251,
+        4.819,
+        0.326,
+        0.84,
+        0.37,
+        0.206,
+        0.173,
+        0.121,
+        0.237,
+        0.104,
+        0.104,
+        0.106,
+        0.104,
+        0.105,
+        0.104,
+        0.105,
+        0.104,
+        0.03
+      ],
+      "providers": {
+        "llama_cpp": 4,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 4,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 5
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 12,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1072 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1072,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1074 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1074,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1060 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1060,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1066 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1066,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1068 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1068,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1056 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1056,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1066 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1066,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1065 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1065,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1074 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1074,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1063 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1063,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1056 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1056,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1068 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1068,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1061 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1061,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1060 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1060,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1063 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1063,\\\"n_ctx\\\":1024}}\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_02",
+      "topic_mix": [
+        "web_support",
+        "weather",
+        "stocks"
+      ],
+      "ok": 4,
+      "errors": 16,
+      "latencies_s": [
+        3.327,
+        6.243,
+        10.17,
+        0.029,
+        0.036,
+        0.035,
+        0.035,
+        0.038,
+        0.035,
+        0.036,
+        0.036,
+        0.036,
+        0.036,
+        0.036,
+        0.036,
+        0.046,
+        0.026,
+        0.035,
+        0.035,
+        0.02
+      ],
+      "providers": {
+        "llama_cpp": 3,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 3,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 4
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 6,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1061 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1061,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1061 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1061,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1057 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1057,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1066 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1066,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1063 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1063,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1074 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1074,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1056 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1056,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1072 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1072,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1074 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1074,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1057 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1057,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1056 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1056,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1063 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1063,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1057 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1057,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1057 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1057,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1060 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1060,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1067 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1067,\\\"n_ctx\\\":1024}}\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_03",
+      "topic_mix": [
+        "finance_general",
+        "stocks",
+        "vehix"
+      ],
+      "ok": 4,
+      "errors": 16,
+      "latencies_s": [
+        5.551,
+        12.091,
+        0.366,
+        0.099,
+        0.138,
+        0.175,
+        0.122,
+        0.263,
+        0.092,
+        0.105,
+        0.105,
+        0.105,
+        0.105,
+        0.104,
+        0.105,
+        0.104,
+        0.117,
+        0.06,
+        0.035,
+        0.029
+      ],
+      "providers": {
+        "llama_cpp": 3,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 3,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 4
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 10,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1071 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1071,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1062 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1062,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1062 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1062,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1067 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1067,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1062 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1062,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1054 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1054,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1064 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1064,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1064 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1064,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1057 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1057,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1064 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1064,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1060 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1060,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1061 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1061,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1055 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1055,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1071 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1071,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1060 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1060,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1070 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1070,\\\"n_ctx\\\":1024}}\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_04",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "weather"
+      ],
+      "ok": 5,
+      "errors": 15,
+      "latencies_s": [
+        3.856,
+        3.031,
+        11.174,
+        0.738,
+        0.097,
+        0.105,
+        0.104,
+        0.105,
+        0.105,
+        0.105,
+        0.105,
+        0.104,
+        0.117,
+        0.024,
+        0.036,
+        0.036,
+        0.073,
+        0.035,
+        0.036,
+        0.025
+      ],
+      "providers": {
+        "llama_cpp": 4,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 4,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 5
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 12,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1071 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1071,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1056 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1056,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1060 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1060,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1060 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1060,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1061 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1061,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1055 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1055,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1072 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1072,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1063 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1063,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1062 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1062,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1057 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1057,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1062 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1062,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1058 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1058,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1074 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1074,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1071 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1071,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1065 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1065,\\\"n_ctx\\\":1024}}\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_05",
+      "topic_mix": [
+        "weather",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 5,
+      "errors": 15,
+      "latencies_s": [
+        7.268,
+        11.211,
+        4.929,
+        0.6,
+        0.022,
+        0.025,
+        0.029,
+        0.032,
+        0.033,
+        0.032,
+        0.039,
+        0.048,
+        0.014,
+        0.017,
+        0.016,
+        0.015,
+        0.023,
+        0.024,
+        0.015,
+        0.018
+      ],
+      "providers": {
+        "llama_cpp": 4,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 4,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 5
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 13,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1066 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1066,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1058 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1058,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1061 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1061,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1056 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1056,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1063 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1063,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1065 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1065,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1068 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1068,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1071 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1071,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1063 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1063,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1063 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1063,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1060 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1060,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1057 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1057,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1072 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1072,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1072 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1072,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1058 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1058,\\\"n_ctx\\\":1024}}\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_06",
+      "topic_mix": [
+        "rag_ai",
+        "web_support",
+        "vehix"
+      ],
+      "ok": 4,
+      "errors": 16,
+      "latencies_s": [
+        6.642,
+        10.096,
+        3.945,
+        0.06,
+        0.033,
+        0.034,
+        0.034,
+        0.034,
+        0.033,
+        0.034,
+        0.034,
+        0.034,
+        0.034,
+        0.034,
+        0.034,
+        0.034,
+        0.034,
+        0.034,
+        0.034,
+        0.015
+      ],
+      "providers": {
+        "llama_cpp": 3,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 3,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 4
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 11,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1062 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1062,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1071 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1071,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1063 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1063,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1063 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1063,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1063 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1063,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1060 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1060,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1058 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1058,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1059 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1059,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1059 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1059,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1059 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1059,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1057 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1057,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1063 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1063,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1065 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1065,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1061 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1061,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1063 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1063,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1068 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1068,\\\"n_ctx\\\":1024}}\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_07",
+      "topic_mix": [
+        "vehix",
+        "web_support",
+        "stocks"
+      ],
+      "ok": 4,
+      "errors": 16,
+      "latencies_s": [
+        4.706,
+        9.235,
+        9.036,
+        0.067,
+        0.032,
+        0.032,
+        0.033,
+        0.032,
+        0.032,
+        0.033,
+        0.033,
+        0.032,
+        0.032,
+        0.032,
+        0.042,
+        0.037,
+        0.033,
+        0.033,
+        0.032,
+        0.014
+      ],
+      "providers": {
+        "llama_cpp": 3,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 3,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 4
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 12,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1049 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1049,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1039 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1039,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1044 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1044,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1046 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1046,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1046 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1046,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1041 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1041,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1041 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1041,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1053 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1053,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1042 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1042,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1044 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1044,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1043 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1043,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1053 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1053,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1038 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1038,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1041 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1041,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1037 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1037,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1040 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1040,\\\"n_ctx\\\":1024}}\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_08",
+      "topic_mix": [
+        "finance_general",
+        "weather",
+        "stocks"
+      ],
+      "ok": 5,
+      "errors": 15,
+      "latencies_s": [
+        4.58,
+        6.788,
+        10.157,
+        2.338,
+        0.022,
+        0.014,
+        0.014,
+        0.014,
+        0.014,
+        0.014,
+        0.014,
+        0.014,
+        0.022,
+        0.022,
+        0.025,
+        0.029,
+        0.032,
+        0.032,
+        0.032,
+        0.029
+      ],
+      "providers": {
+        "llama_cpp": 4,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 4,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 5
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 7,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1066 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1066,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1061 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1061,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1072 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1072,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1071 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1071,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1067 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1067,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1066 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1066,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1067 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1067,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1062 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1062,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1057 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1057,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1066 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1066,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1074 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1074,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1063 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1063,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1061 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1061,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1061 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1061,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1058 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1058,\\\"n_ctx\\\":1024}}\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_09",
+      "topic_mix": [
+        "vehix",
+        "weather",
+        "web_support"
+      ],
+      "ok": 4,
+      "errors": 16,
+      "latencies_s": [
+        4.974,
+        10.123,
+        5.111,
+        0.027,
+        0.035,
+        0.035,
+        0.088,
+        0.035,
+        0.035,
+        0.035,
+        0.035,
+        0.035,
+        0.035,
+        0.036,
+        0.045,
+        0.06,
+        0.034,
+        0.034,
+        0.033,
+        0.02
+      ],
+      "providers": {
+        "llama_cpp": 3,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 3,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 4
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 6,
+      "final_memory_ok": false,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1063 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1063,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1066 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1066,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1059 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1059,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1068 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1068,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1063 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1063,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1062 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1062,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1066 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1066,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1057 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1057,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1057 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1057,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1068 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1068,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1065 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1065,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1059 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1059,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1057 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1057,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1056 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1056,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1066 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1066,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1061 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1061,\\\"n_ctx\\\":1024}}\"}"
+      ]
+    },
+    {
+      "user": "hybrid_user_10",
+      "topic_mix": [
+        "vehix",
+        "rag_ai",
+        "finance_general"
+      ],
+      "ok": 3,
+      "errors": 17,
+      "latencies_s": [
+        4.111,
+        9.31,
+        1.752,
+        1.655,
+        0.855,
+        0.381,
+        0.105,
+        0.195,
+        0.175,
+        0.165,
+        0.138,
+        0.104,
+        0.105,
+        0.105,
+        0.104,
+        0.105,
+        0.104,
+        0.105,
+        0.104,
+        0.03
+      ],
+      "providers": {
+        "llama_cpp": 2,
+        "memory": 1
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 2,
+        "history-recall": 1
+      },
+      "routes": {
+        "local": 3
+      },
+      "fallback_used": 0,
+      "repeated_questions_seen": 9,
+      "final_memory_ok": true,
+      "error_messages": [
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1037 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1037,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1033 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1033,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1037 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1037,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1037 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1037,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1035 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1035,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1036 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1036,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1037 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1037,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1035 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1035,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1032 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1032,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1037 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1037,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1038 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1038,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1037 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1037,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1035 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1035,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1037 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1037,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1047 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1047,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1031 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1031,\\\"n_ctx\\\":1024}}\"}",
+        "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1033 tokens) exceeds the available context size (1024 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":1033,\\\"n_ctx\\\":1024}}\"}"
+      ]
+    }
+  ]
+}

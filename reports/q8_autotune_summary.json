@@ -1,0 +1,358 @@
+{
+  "best": {
+    "case": {
+      "name": "p12_ctx4k_gpu12_c10",
+      "parallel": 12,
+      "ctx_size": 49152,
+      "gpu_concurrency": 12,
+      "test_concurrency": 10,
+      "users": 10,
+      "questions": 10,
+      "timeout": 180
+    },
+    "exit_code": 0,
+    "duration_s": 70.622,
+    "stdout_tail": "=========================\nBASE_URL    : http://localhost:8000\nPROJECT     : test\nTENANT      : hybridrepeat\nMODEL_MODE  : lite\nALLOW_CLOUD : True\nUsers       : 10\nQs/user     : 10\nConcurrency : 10\n\n======================================================================\nFINAL REPORT\n======================================================================\nTotal questions : 100\nTotal OK        : 100/100\nTotal errors    : 0\nWall time       : 70.6s\nLatency p50/p95 : 5.696s / 10.838s\nLatency p99/max : 13.394s / 13.560s\nProviders       : {'llama_cpp': 90, 'memory': 10}\nModels          : {'local-gemma4-e4b-q8': 90, 'history-recall': 10}\nRoutes          : {'local': 100}\nFallback used   : 0\nMemory checks   : 8/10\n\nPer-user:\nhybrid_user_01 topics=rag_ai,weather,stocks ok=10 err=0 avg=4.013s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_02 topics=web_support,weather,stocks ok=10 err=0 avg=7.055s repeated=2 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_03 topics=finance_general,stocks,vehix ok=10 err=0 avg=6.098s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_04 topics=vehix,rag_ai,weather ok=10 err=0 avg=4.547s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_05 topics=weather,web_support,vehix ok=10 err=0 avg=5.568s repeated=6 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_06 topics=rag_ai,web_support,vehix ok=10 err=0 avg=6.010s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_07 topics=vehix,web_support,stocks ok=10 err=0 avg=6.993s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_08 topics=finance_general,weather,stocks ok=10 err=0 avg=5.166s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_09 topics=vehix,weather,web_support ok=10 err=0 avg=6.569s repeated=1 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_10 topics=vehix,rag_ai,finance_general ok=10 err=0 avg=6.367s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\n\nJSON report saved → reports/autotune_p12_ctx4k_gpu12_c10\n",
+    "stderr_tail": "",
+    "summary": {
+      "total_questions": 100,
+      "total_ok": 100,
+      "total_errors": 0,
+      "wall_time_s": 70.556,
+      "latency_p50_s": 5.696,
+      "latency_p95_s": 10.838,
+      "latency_p99_s": 13.394,
+      "latency_max_s": 13.56,
+      "providers": {
+        "llama_cpp": 90,
+        "memory": 10
+      },
+      "models": {
+        "local-gemma4-e4b-q8": 90,
+        "history-recall": 10
+      },
+      "routes": {
+        "local": 100
+      },
+      "fallback_used": 0,
+      "memory_checks_ok": 8
+    }
+  },
+  "results": [
+    {
+      "case": {
+        "name": "p6_ctx4k_gpu6_c6",
+        "parallel": 6,
+        "ctx_size": 24576,
+        "gpu_concurrency": 6,
+        "test_concurrency": 6,
+        "users": 10,
+        "questions": 10,
+        "timeout": 180
+      },
+      "exit_code": 0,
+      "duration_s": 79.325,
+      "stdout_tail": "=============================\nBASE_URL    : http://localhost:8000\nPROJECT     : test\nTENANT      : hybridrepeat\nMODEL_MODE  : lite\nALLOW_CLOUD : True\nUsers       : 10\nQs/user     : 10\nConcurrency : 6\n\n======================================================================\nFINAL REPORT\n======================================================================\nTotal questions : 100\nTotal OK        : 100/100\nTotal errors    : 0\nWall time       : 79.3s\nLatency p50/p95 : 7.230s / 12.252s\nLatency p99/max : 13.701s / 13.961s\nProviders       : {'llama_cpp': 90, 'memory': 10}\nModels          : {'local-gemma4-e4b-q8': 90, 'history-recall': 10}\nRoutes          : {'local': 100}\nFallback used   : 0\nMemory checks   : 8/10\n\nPer-user:\nhybrid_user_01 topics=rag_ai,weather,stocks ok=10 err=0 avg=5.918s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_02 topics=web_support,weather,stocks ok=10 err=0 avg=7.287s repeated=2 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_03 topics=finance_general,stocks,vehix ok=10 err=0 avg=7.412s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_04 topics=vehix,rag_ai,weather ok=10 err=0 avg=6.844s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_05 topics=weather,web_support,vehix ok=10 err=0 avg=6.845s repeated=6 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_06 topics=rag_ai,web_support,vehix ok=10 err=0 avg=6.349s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_07 topics=vehix,web_support,stocks ok=10 err=0 avg=7.625s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_08 topics=finance_general,weather,stocks ok=10 err=0 avg=7.925s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_09 topics=vehix,weather,web_support ok=10 err=0 avg=7.795s repeated=1 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_10 topics=vehix,rag_ai,finance_general ok=10 err=0 avg=6.846s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\n\nJSON report saved → reports/autotune_p6_ctx4k_gpu6_c6\n",
+      "stderr_tail": "",
+      "summary": {
+        "total_questions": 100,
+        "total_ok": 100,
+        "total_errors": 0,
+        "wall_time_s": 79.258,
+        "latency_p50_s": 7.23,
+        "latency_p95_s": 12.252,
+        "latency_p99_s": 13.701,
+        "latency_max_s": 13.961,
+        "providers": {
+          "llama_cpp": 90,
+          "memory": 10
+        },
+        "models": {
+          "local-gemma4-e4b-q8": 90,
+          "history-recall": 10
+        },
+        "routes": {
+          "local": 100
+        },
+        "fallback_used": 0,
+        "memory_checks_ok": 8
+      }
+    },
+    {
+      "case": {
+        "name": "p8_ctx8k_gpu8_c8",
+        "parallel": 8,
+        "ctx_size": 65536,
+        "gpu_concurrency": 8,
+        "test_concurrency": 8,
+        "users": 10,
+        "questions": 10,
+        "timeout": 180
+      },
+      "exit_code": 0,
+      "duration_s": 85.261,
+      "stdout_tail": "=============================\nBASE_URL    : http://localhost:8000\nPROJECT     : test\nTENANT      : hybridrepeat\nMODEL_MODE  : lite\nALLOW_CLOUD : True\nUsers       : 10\nQs/user     : 10\nConcurrency : 8\n\n======================================================================\nFINAL REPORT\n======================================================================\nTotal questions : 100\nTotal OK        : 100/100\nTotal errors    : 0\nWall time       : 85.2s\nLatency p50/p95 : 8.456s / 11.889s\nLatency p99/max : 12.653s / 13.148s\nProviders       : {'llama_cpp': 90, 'memory': 10}\nModels          : {'local-gemma4-e4b-q8': 90, 'history-recall': 10}\nRoutes          : {'local': 100}\nFallback used   : 0\nMemory checks   : 8/10\n\nPer-user:\nhybrid_user_01 topics=rag_ai,weather,stocks ok=10 err=0 avg=7.281s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_02 topics=web_support,weather,stocks ok=10 err=0 avg=8.065s repeated=2 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_03 topics=finance_general,stocks,vehix ok=10 err=0 avg=8.223s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_04 topics=vehix,rag_ai,weather ok=10 err=0 avg=7.026s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_05 topics=weather,web_support,vehix ok=10 err=0 avg=7.919s repeated=6 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_06 topics=rag_ai,web_support,vehix ok=10 err=0 avg=7.636s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_07 topics=vehix,web_support,stocks ok=10 err=0 avg=7.398s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_08 topics=finance_general,weather,stocks ok=10 err=0 avg=7.799s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_09 topics=vehix,weather,web_support ok=10 err=0 avg=8.451s repeated=1 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_10 topics=vehix,rag_ai,finance_general ok=10 err=0 avg=8.519s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\n\nJSON report saved → reports/autotune_p8_ctx8k_gpu8_c8\n",
+      "stderr_tail": "",
+      "summary": {
+        "total_questions": 100,
+        "total_ok": 100,
+        "total_errors": 0,
+        "wall_time_s": 85.189,
+        "latency_p50_s": 8.456,
+        "latency_p95_s": 11.889,
+        "latency_p99_s": 12.653,
+        "latency_max_s": 13.148,
+        "providers": {
+          "llama_cpp": 90,
+          "memory": 10
+        },
+        "models": {
+          "local-gemma4-e4b-q8": 90,
+          "history-recall": 10
+        },
+        "routes": {
+          "local": 100
+        },
+        "fallback_used": 0,
+        "memory_checks_ok": 8
+      }
+    },
+    {
+      "case": {
+        "name": "p8_ctx4k_gpu8_c8",
+        "parallel": 8,
+        "ctx_size": 32768,
+        "gpu_concurrency": 8,
+        "test_concurrency": 8,
+        "users": 10,
+        "questions": 10,
+        "timeout": 180
+      },
+      "exit_code": 0,
+      "duration_s": 94.099,
+      "stdout_tail": "=============================\nBASE_URL    : http://localhost:8000\nPROJECT     : test\nTENANT      : hybridrepeat\nMODEL_MODE  : lite\nALLOW_CLOUD : True\nUsers       : 10\nQs/user     : 10\nConcurrency : 8\n\n======================================================================\nFINAL REPORT\n======================================================================\nTotal questions : 100\nTotal OK        : 100/100\nTotal errors    : 0\nWall time       : 94.0s\nLatency p50/p95 : 9.358s / 13.235s\nLatency p99/max : 14.182s / 14.256s\nProviders       : {'llama_cpp': 90, 'memory': 10}\nModels          : {'local-gemma4-e4b-q8': 90, 'history-recall': 10}\nRoutes          : {'local': 100}\nFallback used   : 0\nMemory checks   : 8/10\n\nPer-user:\nhybrid_user_01 topics=rag_ai,weather,stocks ok=10 err=0 avg=7.811s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_02 topics=web_support,weather,stocks ok=10 err=0 avg=8.709s repeated=2 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_03 topics=finance_general,stocks,vehix ok=10 err=0 avg=8.368s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_04 topics=vehix,rag_ai,weather ok=10 err=0 avg=7.566s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_05 topics=weather,web_support,vehix ok=10 err=0 avg=9.007s repeated=6 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_06 topics=rag_ai,web_support,vehix ok=10 err=0 avg=7.983s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_07 topics=vehix,web_support,stocks ok=10 err=0 avg=8.179s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_08 topics=finance_general,weather,stocks ok=10 err=0 avg=8.786s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_09 topics=vehix,weather,web_support ok=10 err=0 avg=9.404s repeated=1 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_10 topics=vehix,rag_ai,finance_general ok=10 err=0 avg=8.992s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\n\nJSON report saved → reports/autotune_p8_ctx4k_gpu8_c8\n",
+      "stderr_tail": "",
+      "summary": {
+        "total_questions": 100,
+        "total_ok": 100,
+        "total_errors": 0,
+        "wall_time_s": 94.038,
+        "latency_p50_s": 9.358,
+        "latency_p95_s": 13.235,
+        "latency_p99_s": 14.182,
+        "latency_max_s": 14.256,
+        "providers": {
+          "llama_cpp": 90,
+          "memory": 10
+        },
+        "models": {
+          "local-gemma4-e4b-q8": 90,
+          "history-recall": 10
+        },
+        "routes": {
+          "local": 100
+        },
+        "fallback_used": 0,
+        "memory_checks_ok": 8
+      }
+    },
+    {
+      "case": {
+        "name": "p10_ctx4k_gpu10_c8",
+        "parallel": 10,
+        "ctx_size": 40960,
+        "gpu_concurrency": 10,
+        "test_concurrency": 8,
+        "users": 10,
+        "questions": 10,
+        "timeout": 180
+      },
+      "exit_code": 0,
+      "duration_s": 93.798,
+      "stdout_tail": "===========================\nBASE_URL    : http://localhost:8000\nPROJECT     : test\nTENANT      : hybridrepeat\nMODEL_MODE  : lite\nALLOW_CLOUD : True\nUsers       : 10\nQs/user     : 10\nConcurrency : 8\n\n======================================================================\nFINAL REPORT\n======================================================================\nTotal questions : 100\nTotal OK        : 100/100\nTotal errors    : 0\nWall time       : 93.7s\nLatency p50/p95 : 8.321s / 14.236s\nLatency p99/max : 16.873s / 17.518s\nProviders       : {'llama_cpp': 90, 'memory': 10}\nModels          : {'local-gemma4-e4b-q8': 90, 'history-recall': 10}\nRoutes          : {'local': 100}\nFallback used   : 0\nMemory checks   : 8/10\n\nPer-user:\nhybrid_user_01 topics=rag_ai,weather,stocks ok=10 err=0 avg=6.792s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_02 topics=web_support,weather,stocks ok=10 err=0 avg=7.886s repeated=2 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_03 topics=finance_general,stocks,vehix ok=10 err=0 avg=8.562s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_04 topics=vehix,rag_ai,weather ok=10 err=0 avg=6.792s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_05 topics=weather,web_support,vehix ok=10 err=0 avg=8.266s repeated=6 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_06 topics=rag_ai,web_support,vehix ok=10 err=0 avg=6.794s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_07 topics=vehix,web_support,stocks ok=10 err=0 avg=9.006s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_08 topics=finance_general,weather,stocks ok=10 err=0 avg=7.924s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_09 topics=vehix,weather,web_support ok=10 err=0 avg=9.220s repeated=1 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_10 topics=vehix,rag_ai,finance_general ok=10 err=0 avg=9.372s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\n\nJSON report saved → reports/autotune_p10_ctx4k_gpu10_c8\n",
+      "stderr_tail": "",
+      "summary": {
+        "total_questions": 100,
+        "total_ok": 100,
+        "total_errors": 0,
+        "wall_time_s": 93.726,
+        "latency_p50_s": 8.321,
+        "latency_p95_s": 14.236,
+        "latency_p99_s": 16.873,
+        "latency_max_s": 17.518,
+        "providers": {
+          "llama_cpp": 90,
+          "memory": 10
+        },
+        "models": {
+          "local-gemma4-e4b-q8": 90,
+          "history-recall": 10
+        },
+        "routes": {
+          "local": 100
+        },
+        "fallback_used": 0,
+        "memory_checks_ok": 8
+      }
+    },
+    {
+      "case": {
+        "name": "p10_ctx6k_gpu10_c8",
+        "parallel": 10,
+        "ctx_size": 61440,
+        "gpu_concurrency": 10,
+        "test_concurrency": 8,
+        "users": 10,
+        "questions": 10,
+        "timeout": 180
+      },
+      "exit_code": 0,
+      "duration_s": 94.24,
+      "stdout_tail": "===========================\nBASE_URL    : http://localhost:8000\nPROJECT     : test\nTENANT      : hybridrepeat\nMODEL_MODE  : lite\nALLOW_CLOUD : True\nUsers       : 10\nQs/user     : 10\nConcurrency : 8\n\n======================================================================\nFINAL REPORT\n======================================================================\nTotal questions : 100\nTotal OK        : 100/100\nTotal errors    : 0\nWall time       : 94.2s\nLatency p50/p95 : 7.714s / 14.568s\nLatency p99/max : 17.493s / 18.623s\nProviders       : {'llama_cpp': 90, 'memory': 10}\nModels          : {'local-gemma4-e4b-q8': 90, 'history-recall': 10}\nRoutes          : {'local': 100}\nFallback used   : 0\nMemory checks   : 8/10\n\nPer-user:\nhybrid_user_01 topics=rag_ai,weather,stocks ok=10 err=0 avg=7.128s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_02 topics=web_support,weather,stocks ok=10 err=0 avg=7.604s repeated=2 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_03 topics=finance_general,stocks,vehix ok=10 err=0 avg=7.684s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_04 topics=vehix,rag_ai,weather ok=10 err=0 avg=6.247s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_05 topics=weather,web_support,vehix ok=10 err=0 avg=8.277s repeated=6 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_06 topics=rag_ai,web_support,vehix ok=10 err=0 avg=6.231s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_07 topics=vehix,web_support,stocks ok=10 err=0 avg=8.005s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_08 topics=finance_general,weather,stocks ok=10 err=0 avg=8.360s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_09 topics=vehix,weather,web_support ok=10 err=0 avg=9.418s repeated=1 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_10 topics=vehix,rag_ai,finance_general ok=10 err=0 avg=8.746s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\n\nJSON report saved → reports/autotune_p10_ctx6k_gpu10_c8\n",
+      "stderr_tail": "",
+      "summary": {
+        "total_questions": 100,
+        "total_ok": 100,
+        "total_errors": 0,
+        "wall_time_s": 94.18,
+        "latency_p50_s": 7.714,
+        "latency_p95_s": 14.568,
+        "latency_p99_s": 17.493,
+        "latency_max_s": 18.623,
+        "providers": {
+          "llama_cpp": 90,
+          "memory": 10
+        },
+        "models": {
+          "local-gemma4-e4b-q8": 90,
+          "history-recall": 10
+        },
+        "routes": {
+          "local": 100
+        },
+        "fallback_used": 0,
+        "memory_checks_ok": 8
+      }
+    },
+    {
+      "case": {
+        "name": "p12_ctx4k_gpu12_c8",
+        "parallel": 12,
+        "ctx_size": 49152,
+        "gpu_concurrency": 12,
+        "test_concurrency": 8,
+        "users": 10,
+        "questions": 10,
+        "timeout": 180
+      },
+      "exit_code": 0,
+      "duration_s": 99.289,
+      "stdout_tail": "===========================\nBASE_URL    : http://localhost:8000\nPROJECT     : test\nTENANT      : hybridrepeat\nMODEL_MODE  : lite\nALLOW_CLOUD : True\nUsers       : 10\nQs/user     : 10\nConcurrency : 8\n\n======================================================================\nFINAL REPORT\n======================================================================\nTotal questions : 100\nTotal OK        : 100/100\nTotal errors    : 0\nWall time       : 99.2s\nLatency p50/p95 : 8.368s / 13.968s\nLatency p99/max : 14.850s / 15.506s\nProviders       : {'llama_cpp': 90, 'memory': 10}\nModels          : {'local-gemma4-e4b-q8': 90, 'history-recall': 10}\nRoutes          : {'local': 100}\nFallback used   : 0\nMemory checks   : 8/10\n\nPer-user:\nhybrid_user_01 topics=rag_ai,weather,stocks ok=10 err=0 avg=5.601s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_02 topics=web_support,weather,stocks ok=10 err=0 avg=8.837s repeated=2 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_03 topics=finance_general,stocks,vehix ok=10 err=0 avg=9.213s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_04 topics=vehix,rag_ai,weather ok=10 err=0 avg=6.181s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_05 topics=weather,web_support,vehix ok=10 err=0 avg=7.672s repeated=6 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_06 topics=rag_ai,web_support,vehix ok=10 err=0 avg=6.900s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_07 topics=vehix,web_support,stocks ok=10 err=0 avg=8.475s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_08 topics=finance_general,weather,stocks ok=10 err=0 avg=7.234s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_09 topics=vehix,weather,web_support ok=10 err=0 avg=8.830s repeated=1 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_10 topics=vehix,rag_ai,finance_general ok=10 err=0 avg=9.923s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\n\nJSON report saved → reports/autotune_p12_ctx4k_gpu12_c8\n",
+      "stderr_tail": "",
+      "summary": {
+        "total_questions": 100,
+        "total_ok": 100,
+        "total_errors": 0,
+        "wall_time_s": 99.233,
+        "latency_p50_s": 8.368,
+        "latency_p95_s": 13.968,
+        "latency_p99_s": 14.85,
+        "latency_max_s": 15.506,
+        "providers": {
+          "llama_cpp": 90,
+          "memory": 10
+        },
+        "models": {
+          "local-gemma4-e4b-q8": 90,
+          "history-recall": 10
+        },
+        "routes": {
+          "local": 100
+        },
+        "fallback_used": 0,
+        "memory_checks_ok": 8
+      }
+    },
+    {
+      "case": {
+        "name": "p12_ctx4k_gpu12_c10",
+        "parallel": 12,
+        "ctx_size": 49152,
+        "gpu_concurrency": 12,
+        "test_concurrency": 10,
+        "users": 10,
+        "questions": 10,
+        "timeout": 180
+      },
+      "exit_code": 0,
+      "duration_s": 70.622,
+      "stdout_tail": "=========================\nBASE_URL    : http://localhost:8000\nPROJECT     : test\nTENANT      : hybridrepeat\nMODEL_MODE  : lite\nALLOW_CLOUD : True\nUsers       : 10\nQs/user     : 10\nConcurrency : 10\n\n======================================================================\nFINAL REPORT\n======================================================================\nTotal questions : 100\nTotal OK        : 100/100\nTotal errors    : 0\nWall time       : 70.6s\nLatency p50/p95 : 5.696s / 10.838s\nLatency p99/max : 13.394s / 13.560s\nProviders       : {'llama_cpp': 90, 'memory': 10}\nModels          : {'local-gemma4-e4b-q8': 90, 'history-recall': 10}\nRoutes          : {'local': 100}\nFallback used   : 0\nMemory checks   : 8/10\n\nPer-user:\nhybrid_user_01 topics=rag_ai,weather,stocks ok=10 err=0 avg=4.013s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_02 topics=web_support,weather,stocks ok=10 err=0 avg=7.055s repeated=2 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_03 topics=finance_general,stocks,vehix ok=10 err=0 avg=6.098s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_04 topics=vehix,rag_ai,weather ok=10 err=0 avg=4.547s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_05 topics=weather,web_support,vehix ok=10 err=0 avg=5.568s repeated=6 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_06 topics=rag_ai,web_support,vehix ok=10 err=0 avg=6.010s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_07 topics=vehix,web_support,stocks ok=10 err=0 avg=6.993s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_08 topics=finance_general,weather,stocks ok=10 err=0 avg=5.166s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_09 topics=vehix,weather,web_support ok=10 err=0 avg=6.569s repeated=1 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_10 topics=vehix,rag_ai,finance_general ok=10 err=0 avg=6.367s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\n\nJSON report saved → reports/autotune_p12_ctx4k_gpu12_c10\n",
+      "stderr_tail": "",
+      "summary": {
+        "total_questions": 100,
+        "total_ok": 100,
+        "total_errors": 0,
+        "wall_time_s": 70.556,
+        "latency_p50_s": 5.696,
+        "latency_p95_s": 10.838,
+        "latency_p99_s": 13.394,
+        "latency_max_s": 13.56,
+        "providers": {
+          "llama_cpp": 90,
+          "memory": 10
+        },
+        "models": {
+          "local-gemma4-e4b-q8": 90,
+          "history-recall": 10
+        },
+        "routes": {
+          "local": 100
+        },
+        "fallback_used": 0,
+        "memory_checks_ok": 8
+      }
+    },
+    {
+      "case": {
+        "name": "p8_ctx8k_gpu8_c10",
+        "parallel": 8,
+        "ctx_size": 65536,
+        "gpu_concurrency": 8,
+        "test_concurrency": 10,
+        "users": 10,
+        "questions": 10,
+        "timeout": 180
+      },
+      "exit_code": 0,
+      "duration_s": 65.196,
+      "stdout_tail": "000\nPROJECT     : test\nTENANT      : hybridrepeat\nMODEL_MODE  : lite\nALLOW_CLOUD : True\nUsers       : 10\nQs/user     : 10\nConcurrency : 10\n\n======================================================================\nFINAL REPORT\n======================================================================\nTotal questions : 100\nTotal OK        : 93/100\nTotal errors    : 7\nWall time       : 65.1s\nLatency p50/p95 : 5.880s / 9.109s\nLatency p99/max : 10.356s / 11.482s\nProviders       : {'llama_cpp': 72, 'memory': 10, 'openrouter': 11}\nModels          : {'local-gemma4-e4b-q8': 72, 'history-recall': 10, 'openai/gpt-oss-20b:free': 11}\nRoutes          : {'local': 82, 'cloud': 11}\nFallback used   : 11\nMemory checks   : 7/10\n\nPer-user:\nhybrid_user_01 topics=rag_ai,weather,stocks ok=10 err=0 avg=4.949s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_02 topics=web_support,weather,stocks ok=10 err=0 avg=6.513s repeated=2 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_03 topics=finance_general,stocks,vehix ok=10 err=0 avg=6.356s repeated=5 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_04 topics=vehix,rag_ai,weather ok=10 err=0 avg=5.842s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_05 topics=weather,web_support,vehix ok=7 err=3 avg=3.484s repeated=6 providers={'openrouter': 6, 'memory': 1}\nhybrid_user_06 topics=rag_ai,web_support,vehix ok=10 err=0 avg=5.442s repeated=7 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_07 topics=vehix,web_support,stocks ok=10 err=0 avg=6.504s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_08 topics=finance_general,weather,stocks ok=10 err=0 avg=6.455s repeated=4 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_09 topics=vehix,weather,web_support ok=10 err=0 avg=5.978s repeated=1 providers={'llama_cpp': 9, 'memory': 1}\nhybrid_user_10 topics=vehix,rag_ai,finance_general ok=6 err=4 avg=3.978s repeated=4 providers={'openrouter': 5, 'memory': 1}\n\nJSON report saved → reports/autotune_p8_ctx8k_gpu8_c10\n",
+      "stderr_tail": "",
+      "summary": {
+        "total_questions": 100,
+        "total_ok": 93,
+        "total_errors": 7,
+        "wall_time_s": 65.133,
+        "latency_p50_s": 5.88,
+        "latency_p95_s": 9.109,
+        "latency_p99_s": 10.356,
+        "latency_max_s": 11.482,
+        "providers": {
+          "llama_cpp": 72,
+          "memory": 10,
+          "openrouter": 11
+        },
+        "models": {
+          "local-gemma4-e4b-q8": 72,
+          "history-recall": 10,
+          "openai/gpt-oss-20b:free": 11
+        },
+        "routes": {
+          "local": 82,
+          "cloud": 11
+        },
+        "fallback_used": 11,
+        "memory_checks_ok": 7
+      }
+    }
+  ]
+}
