@@ -48,7 +48,7 @@
                 <button id="current-user-badge" class="max-w-[140px] truncate rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-300 transition-all hover:bg-slate-700" title="Click to change user name">Name</button>
                 <div class="flex items-center rounded-lg border border-slate-700 bg-slate-800 p-1">
                     <button id="mode-lite" class="text-xs font-bold py-1 px-3 rounded-md transition-all bg-green-500 text-white shadow">Lite ⚡</button>
-                    <button id="mode-thinking" class="text-xs font-bold py-1 px-3 rounded-md transition-all text-slate-400 hover:text-slate-200">Thinking</button>
+                    <button id="mode-thinking" class="text-xs font-bold py-1 px-3 rounded-md transition-all text-slate-400 hover:text-slate-200 hidden">Thinking</button>
                 </div>
                 <button id="stream-toggle-btn" class="whitespace-nowrap rounded-lg border border-purple-300 bg-purple-100 px-3 py-2 text-xs font-bold text-purple-700 transition-all" title="Toggle streaming response">⚡ Stream: ON</button>
                 <button id="search-toggle-btn" class="whitespace-nowrap rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-300 transition-all" title="Toggle web search">🔍 Search: OFF</button>
@@ -61,7 +61,7 @@
 
         <div id="chat-window" class="chat-container mb-2 flex min-h-0 flex-1 flex-col space-y-3 overflow-y-auto rounded-xl border border-slate-800 bg-slate-900 p-3 shadow-2xl shadow-black/20 sm:mb-4 sm:space-y-4 sm:p-6">
             <div class="self-start rounded-2xl rounded-tl-none border border-slate-700 bg-slate-800 p-4 text-slate-100 shadow-sm message-bubble">
-                Hi! I'm running locally. Lite uses fast Gemma E4B by default; Thinking uses Qwen 27B for complex problems. I will remember our conversation.
+                Hi! I'm running locally. Lite mode uses fast Gemma E4B. I will remember our conversation.
             </div>
         </div>
 
@@ -198,14 +198,14 @@
         // ── Mode UI ────────────────────────────────────────────────────
         function applyModeUI() {
             const isLite = currentMode === 'lite';
+            modeLiteBtn.className = isLite
+                ? 'text-xs font-bold py-1 px-3 rounded-md transition-all bg-green-500 text-white shadow'
+                : 'text-xs font-bold py-1 px-3 rounded-md transition-all text-slate-400 hover:text-slate-200';
+            modeThinkingBtn.className = 'hidden';
             if (isLite) {
-                modeLiteBtn.className = 'text-xs font-bold py-1 px-3 rounded-md transition-all bg-green-500 text-white shadow';
-                modeThinkingBtn.className = 'text-xs font-bold py-1 px-3 rounded-md transition-all text-slate-400 hover:text-slate-200';
                 attachBtn.disabled = false;
                 attachBtn.classList.remove('hidden', 'opacity-40', 'cursor-not-allowed');
             } else {
-                modeThinkingBtn.className = 'text-xs font-bold py-1 px-3 rounded-md transition-all bg-blue-600 text-white shadow';
-                modeLiteBtn.className = 'text-xs font-bold py-1 px-3 rounded-md transition-all text-slate-400 hover:text-slate-200';
                 attachBtn.disabled = true;
                 attachBtn.classList.add('opacity-40', 'cursor-not-allowed');
                 resetSelectedImage();
@@ -414,6 +414,36 @@
             return /^\s*\/search\b/i.test(text);
         }
 
+        function isClearCommand(text) {
+            return /^\s*\/clear\s*$/i.test(text);
+        }
+
+        async function clearUserHistory() {
+            if (!currentApiKey || !currentUserName) {
+                statusDiv.textContent = 'No active user session to clear';
+                return;
+            }
+            try {
+                const params = new URLSearchParams({ project_id: 'test' });
+                const resp = await fetch(`/v1/users/${encodeURIComponent(currentUserName)}/history?${params}`, {
+                    method: 'DELETE',
+                    headers: buildApiHeaders(),
+                });
+                if (!resp.ok) {
+                    let detail = `Clear failed (${resp.status})`;
+                    try { const err = await resp.json(); detail = err.detail || detail; } catch (_) {}
+                    throw new Error(detail);
+                }
+                currentSessionId = null;
+                localStorage.removeItem('sessionId');
+                chatWindow.innerHTML = '';
+                addBubble('History cleared. Starting fresh!', false);
+                statusDiv.textContent = `History cleared for ${currentUserName}`;
+            } catch (err) {
+                statusDiv.textContent = 'Failed to clear history: ' + err.message;
+            }
+        }
+
         // ── Streaming send ─────────────────────────────────────────────
         async function sendStreaming(payload) {
             const response = await fetch('/v1/chat', {
@@ -499,6 +529,13 @@
 
             const message = userInput.value.trim();
             if (!message && !selectedFile) return;
+
+            if (isClearCommand(message)) {
+                userInput.value = '';
+                await clearUserHistory();
+                userInput.focus();
+                return;
+            }
 
             if (!searchEnabled && startsWithSearchCommand(message)) {
                 statusDiv.textContent = 'Search đang OFF. Bật Search rồi nhập /search: nội dung cần search';

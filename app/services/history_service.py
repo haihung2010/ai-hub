@@ -112,6 +112,35 @@ class HistoryService:
             row = conn.execute(query, (tenant_id, tenant_id, user_id, project_id)).fetchone()
         return row["cnt"] if row else 0
 
+    def clear_user_history(
+        self,
+        user_id: str,
+        project_id: str,
+        tenant_id: str = DEFAULT_TENANT_ID,
+    ) -> int:
+        """Delete all messages, sessions, and summaries for a user in a project. Returns deleted session count."""
+        with get_db_connection() as conn:
+            conn.execute(
+                "DELETE FROM messages WHERE tenant_id = ? AND session_id IN "
+                "(SELECT id FROM sessions WHERE tenant_id = ? AND user_id = ? AND project_id = ?)",
+                (tenant_id, tenant_id, user_id, project_id),
+            )
+            row = conn.execute(
+                "SELECT COUNT(*) AS cnt FROM sessions WHERE tenant_id = ? AND user_id = ? AND project_id = ?",
+                (tenant_id, user_id, project_id),
+            ).fetchone()
+            count = row["cnt"] if row else 0
+            conn.execute(
+                "DELETE FROM sessions WHERE tenant_id = ? AND user_id = ? AND project_id = ?",
+                (tenant_id, user_id, project_id),
+            )
+            conn.execute(
+                "DELETE FROM summaries WHERE tenant_id = ? AND user_id = ? AND project_id = ?",
+                (tenant_id, user_id, project_id),
+            )
+            conn.commit()
+        return count
+
     def mark_messages_summarized(
         self,
         user_id: str,

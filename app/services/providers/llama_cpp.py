@@ -54,7 +54,20 @@ class LlamaCppProvider:
 
     @classmethod
     def _serialize_message(cls, message: Message) -> dict:
-        return cls._sanitize_value(message.model_dump(exclude_none=True))
+        data = message.model_dump(exclude_none=True)
+        images: list[str] | None = data.pop("images", None)
+        if not images:
+            return cls._sanitize_value(data)
+        # For vision messages build OpenAI content-parts format.
+        # Sanitize only the text part; leave image_url data untouched.
+        text_content = cls._sanitize_content(data["content"])
+        content_parts: list[dict] = [{"type": "text", "text": text_content}]
+        for img_b64 in images:
+            url = img_b64 if img_b64.startswith("data:") else "data:image/jpeg;base64," + img_b64
+            content_parts.append({"type": "image_url", "image_url": {"url": url}})
+        sanitized = {k: cls._sanitize_value(v) for k, v in data.items() if k != "content"}
+        sanitized["content"] = content_parts
+        return sanitized
 
     @classmethod
     def _payload(

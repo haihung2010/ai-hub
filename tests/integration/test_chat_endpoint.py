@@ -286,7 +286,14 @@ def test_lite_mode_forwards_images_to_ollama(
 
     assert response.status_code == 200
     payload = _last_payload(route)
-    assert payload["messages"][-1]["images"] == ["aGVsbG8="]
+    last_msg = payload["messages"][-1]
+    # Images are embedded as OpenAI vision content-parts format
+    assert isinstance(last_msg["content"], list)
+    text_part = last_msg["content"][0]
+    image_part = last_msg["content"][1]
+    assert text_part["type"] == "text"
+    assert image_part["type"] == "image_url"
+    assert image_part["image_url"]["url"] == "data:image/jpeg;base64,aGVsbG8="
 
 
 @pytest.mark.integration
