@@ -25,9 +25,14 @@ log = logging.getLogger(__name__)
 SQLITE_PATH = os.getenv("SQLITE_PATH", "ai_hub.db")
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
+def _coerce_embedding(row: dict) -> dict:
+    if "embedding" in row and row["embedding"] is not None:
+        row["embedding"] = bytes(row["embedding"])
+    return row
+
+
 # Tables in FK-safe insertion order.
 # Each entry: (table_name, pk_columns, extra_transform_fn | None)
-# extra_transform_fn(row_dict) -> row_dict — for any column-level coercions
 TABLES: list[tuple[str, list[str], object]] = [
     ("users", ["id"], None),
     ("sessions", ["id"], None),
@@ -47,13 +52,6 @@ TABLES: list[tuple[str, list[str], object]] = [
 
 # Tables with BIGSERIAL PKs — we must reset their sequences after bulk insert.
 BIGSERIAL_TABLES = ["messages", "summaries"]
-
-
-def _coerce_embedding(row: dict) -> dict:
-    """Convert SQLite BLOB bytes to psycopg bytes (passed through for BYTEA)."""
-    if "embedding" in row and row["embedding"] is not None:
-        row["embedding"] = bytes(row["embedding"])
-    return row
 
 
 def _pg_table_exists(pg_conn, table: str) -> bool:
