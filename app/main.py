@@ -25,13 +25,7 @@ from app.core.errors import (
     VramExhausted,
 )
 from app.core.logging import configure_logging
-from app.middleware.security import (
-    AuthFailureTracker,
-    InMemoryRateLimiter,
-    SecurityMiddleware,
-    SqliteFailureTracker,
-    SqliteRateLimiter,
-)
+from app.middleware.security import SecurityMiddleware
 from app.routes import admin as admin_routes
 from app.routes import audio as audio_routes
 from app.routes import chat as chat_routes
@@ -42,7 +36,7 @@ from app.routes import memory as memory_routes
 from app.routes import predictions as predictions_routes
 from app.routes import users as users_routes
 from app.agents.crew_service import CrewService
-from app.core.database import DB_PATH
+from app.core.database import _get_database_url
 from app.services.ai_service import AIService
 from app.services.failure_risk_service import FailureRiskService
 from app.services.history_service import HistoryService
@@ -99,8 +93,8 @@ def _register_exception_handlers(app: FastAPI) -> None:
 
 def create_app(
     settings: Settings | None = None,
-    limiter: InMemoryRateLimiter | SqliteRateLimiter | None = None,
-    failure_tracker: AuthFailureTracker | SqliteFailureTracker | None = None,
+    limiter=None,
+    failure_tracker=None,
 ) -> FastAPI:
     settings = settings or get_settings()
     configure_logging(settings.log_level, settings.security_log_file)
@@ -207,7 +201,7 @@ def create_app(
             app.state.structmem_service = structmem
             app.state.web_search_service = web_search
             app.state.crew_service = (
-                CrewService(settings, str(DB_PATH))
+                CrewService(settings, _get_database_url())
                 if settings.enable_crew_agents
                 else None
             )

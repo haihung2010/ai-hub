@@ -65,7 +65,7 @@ class PredictionService:
                 "INSERT INTO prediction_records "
                 "(id, tenant_id, project_id, user_id, session_id, assistant_message_id, symbol, horizon, "
                 "prediction_text, confidence, inputs_json, model, provider) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (
                     record_id,
                     tenant_id,
@@ -86,7 +86,7 @@ class PredictionService:
                 "SELECT id, tenant_id, project_id, user_id, session_id, assistant_message_id, "
                 "symbol, horizon, prediction_text, confidence, inputs_json, model, provider, "
                 "created_at, actual_outcome, evaluated_at "
-                "FROM prediction_records WHERE id = ?",
+                "FROM prediction_records WHERE id = %s",
                 (record_id,),
             ).fetchone()
             conn.commit()
@@ -106,16 +106,16 @@ class PredictionService:
             "SELECT id, tenant_id, project_id, user_id, session_id, assistant_message_id, "
             "symbol, horizon, prediction_text, confidence, inputs_json, model, provider, "
             "created_at, actual_outcome, evaluated_at "
-            "FROM prediction_records WHERE tenant_id = ? AND project_id = ?"
+            "FROM prediction_records WHERE tenant_id = %s AND project_id = %s"
         )
         params: list[str | int] = [tenant_id, project_id]
         if user_id is not None:
-            query += " AND user_id = ?"
+            query += " AND user_id = %s"
             params.append(user_id)
         if symbol is not None:
-            query += " AND symbol = ?"
+            query += " AND symbol = %s"
             params.append(symbol.upper())
-        query += " ORDER BY created_at DESC LIMIT ?"
+        query += " ORDER BY created_at DESC LIMIT %s"
         params.append(bounded_limit)
         with get_db_connection() as conn:
             rows = conn.execute(query, tuple(params)).fetchall()
@@ -130,7 +130,7 @@ class PredictionService:
 
     def _extract_labeled_value(self, content: str, labels: list[str]) -> str | None:
         for label in labels:
-            pattern = rf"(?:^|\n)\s*(?:\d+\.\s*)?{re.escape(label)}\s*:\s*(.+)"
+            pattern = rf"(%s:^|\n)\s*(%s:\d+\.\s*)%s{re.escape(label)}\s*:\s*(.+)"
             match = re.search(pattern, content, flags=re.IGNORECASE)
             if match:
                 value = match.group(1).strip().strip(" -*")

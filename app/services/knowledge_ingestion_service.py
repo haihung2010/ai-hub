@@ -36,7 +36,7 @@ class KnowledgeIngestionService:
                     id, tenant_id, project_id, knowledge_domain, title, summary, content,
                     source_type, trust_level, status, version, effective_from, effective_to,
                     tags, owner
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     card_id,
@@ -70,11 +70,11 @@ class KnowledgeIngestionService:
             cursor = conn.execute(
                 """
                 UPDATE knowledge_cards
-                SET tenant_id = ?, project_id = ?, knowledge_domain = ?, title = ?, summary = ?,
-                    content = ?, source_type = ?, trust_level = ?, status = ?, version = ?,
-                    effective_from = ?, effective_to = ?, tags = ?, owner = ?,
+                SET tenant_id = %s, project_id = %s, knowledge_domain = %s, title = %s, summary = %s,
+                    content = %s, source_type = %s, trust_level = %s, status = %s, version = %s,
+                    effective_from = %s, effective_to = %s, tags = %s, owner = %s,
                     updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
+                WHERE id = %s
                 """,
                 (
                     req.tenant_id,
@@ -103,7 +103,7 @@ class KnowledgeIngestionService:
 
     def get_card(self, card_id: str) -> KnowledgeCardRecord:
         with get_db_connection() as conn:
-            row = conn.execute("SELECT * FROM knowledge_cards WHERE id = ?", (card_id,)).fetchone()
+            row = conn.execute("SELECT * FROM knowledge_cards WHERE id = %s", (card_id,)).fetchone()
         if row is None:
             raise KeyError(card_id)
         return self._row_to_card(row)
@@ -117,15 +117,15 @@ class KnowledgeIngestionService:
         status: str | None = None,
         limit: int = 50,
     ) -> list[KnowledgeCardRecord]:
-        query = "SELECT * FROM knowledge_cards WHERE tenant_id = ? AND project_id = ?"
+        query = "SELECT * FROM knowledge_cards WHERE tenant_id = %s AND project_id = %s"
         params: list[object] = [tenant_id, project_id]
         if knowledge_domain:
-            query += " AND knowledge_domain = ?"
+            query += " AND knowledge_domain = %s"
             params.append(knowledge_domain)
         if status:
-            query += " AND status = ?"
+            query += " AND status = %s"
             params.append(status)
-        query += " ORDER BY updated_at DESC, created_at DESC LIMIT ?"
+        query += " ORDER BY updated_at DESC, created_at DESC LIMIT %s"
         params.append(limit)
         with get_db_connection() as conn:
             rows = conn.execute(query, tuple(params)).fetchall()
@@ -156,14 +156,14 @@ class KnowledgeIngestionService:
         return chunks
 
     def _replace_chunks(self, conn, card_id: str, tenant_id: str, project_id: str, chunks: list[str]) -> None:
-        conn.execute("DELETE FROM knowledge_card_chunks WHERE card_id = ?", (card_id,))
+        conn.execute("DELETE FROM knowledge_card_chunks WHERE card_id = %s", (card_id,))
         for index, chunk in enumerate(chunks):
             embedding = self._embedding.embed(chunk) if self._embedding else None
             conn.execute(
                 """
                 INSERT INTO knowledge_card_chunks (
                     id, card_id, tenant_id, project_id, chunk_index, content, token_estimate, embedding
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     str(uuid.uuid4()),
@@ -191,10 +191,10 @@ class KnowledgeIngestionService:
         sql = "SELECT id, content FROM knowledge_card_chunks WHERE embedding IS NULL"
         params: list[object] = []
         if tenant_id:
-            sql += " AND tenant_id = ?"
+            sql += " AND tenant_id = %s"
             params.append(tenant_id)
         if project_id:
-            sql += " AND project_id = ?"
+            sql += " AND project_id = %s"
             params.append(project_id)
         sql += f" LIMIT {batch_size * 20}"
 
@@ -209,7 +209,7 @@ class KnowledgeIngestionService:
                 embedding = self._embedding.embed(row["content"])
                 with get_db_connection() as conn:
                     conn.execute(
-                        "UPDATE knowledge_card_chunks SET embedding = ? WHERE id = ?",
+                        "UPDATE knowledge_card_chunks SET embedding = %s WHERE id = %s",
                         (embedding, row["id"]),
                     )
                     conn.commit()

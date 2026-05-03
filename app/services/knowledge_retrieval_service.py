@@ -66,13 +66,13 @@ class KnowledgeRetrievalService:
                 cards.tags
             FROM knowledge_card_chunks chunks
             JOIN knowledge_cards cards ON cards.id = chunks.card_id
-            WHERE cards.tenant_id = ?
-              AND cards.project_id = ?
+            WHERE cards.tenant_id = %s
+              AND cards.project_id = %s
               AND cards.status = 'active'
         """
         params: list[object] = [tenant_id, project_id]
         if knowledge_domain:
-            sql += " AND cards.knowledge_domain = ?"
+            sql += " AND cards.knowledge_domain = %s"
             params.append(knowledge_domain)
         sql += " ORDER BY cards.trust_level DESC, cards.updated_at DESC, chunks.chunk_index ASC LIMIT 200"
 

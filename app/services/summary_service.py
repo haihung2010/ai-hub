@@ -33,16 +33,16 @@ class SummaryService:
     @staticmethod
     def _sanitize_text(text: str) -> str:
         for _ in range(2):
-            text = re.sub(r"(?is)^\s*&lt;\|channel(?:\|&gt;|&gt;)?[^\n]*", "", text)
-            text = re.sub(r"(?is)^\s*&lt;channel\|&gt;[^\n]*", "", text)
-            text = re.sub(r"&lt;\|[^\n&]*(?:\|&gt;|&gt;)?", "", text)
+            text = re.sub(r"(%sis)^\s*&lt;\|channel(%s:\|&gt;|&gt;)%s[^\n]*", "", text)
+            text = re.sub(r"(%sis)^\s*&lt;channel\|&gt;[^\n]*", "", text)
+            text = re.sub(r"&lt;\|[^\n&]*(%s:\|&gt;|&gt;)%s", "", text)
             text = re.sub(r"&lt;channel\|&gt;", "", text, flags=re.IGNORECASE)
             text = html.unescape(text)
-            text = re.sub(r"(?is)^\s*<\|channel(?:\|>|>)?[^\n]*", "", text)
-            text = re.sub(r"(?is)^\s*<channel\|>[^\n]*", "", text)
-            text = re.sub(r"<\|[^\n>]*(?:\|>|>)?", "", text)
+            text = re.sub(r"(%sis)^\s*<\|channel(%s:\|>|>)%s[^\n]*", "", text)
+            text = re.sub(r"(%sis)^\s*<channel\|>[^\n]*", "", text)
+            text = re.sub(r"<\|[^\n>]*(%s:\|>|>)%s", "", text)
             text = re.sub(r"<channel\|>", "", text, flags=re.IGNORECASE)
-        text = re.sub(r"(?m)^\s*text(?:acular)?[-\w{}.:\"')]*\s*", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"(%sm)^\s*text(%s:acular)%s[-\w{}.:\"')]*\s*", "", text, flags=re.IGNORECASE)
         return text.strip()
 
     def get_latest_summary(
@@ -53,7 +53,7 @@ class SummaryService:
     ) -> str | None:
         with get_db_connection() as conn:
             row = conn.execute(
-                "SELECT content FROM summaries WHERE tenant_id = ? AND user_id = ? AND project_id = ? "
+                "SELECT content FROM summaries WHERE tenant_id = %s AND user_id = %s AND project_id = %s "
                 "ORDER BY version DESC LIMIT 1",
                 (tenant_id, user_id, project_id),
             ).fetchone()
@@ -139,20 +139,20 @@ class SummaryService:
     ) -> None:
         with get_db_connection() as conn:
             existing = conn.execute(
-                "SELECT version FROM summaries WHERE tenant_id = ? AND user_id = ? AND project_id = ?",
+                "SELECT version FROM summaries WHERE tenant_id = %s AND user_id = %s AND project_id = %s",
                 (tenant_id, user_id, project_id),
             ).fetchone()
             if existing:
                 new_version = existing["version"] + 1
                 conn.execute(
-                    "UPDATE summaries SET content = ?, version = ?, updated_at = CURRENT_TIMESTAMP "
-                    "WHERE tenant_id = ? AND user_id = ? AND project_id = ?",
+                    "UPDATE summaries SET content = %s, version = %s, updated_at = CURRENT_TIMESTAMP "
+                    "WHERE tenant_id = %s AND user_id = %s AND project_id = %s",
                     (content, new_version, tenant_id, user_id, project_id),
                 )
             else:
                 conn.execute(
                     "INSERT INTO summaries (tenant_id, user_id, project_id, content, version) "
-                    "VALUES (?, ?, ?, ?, 1)",
+                    "VALUES (%s, %s, %s, %s, 1)",
                     (tenant_id, user_id, project_id, content),
                 )
             conn.commit()

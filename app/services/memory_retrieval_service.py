@@ -61,7 +61,7 @@ class MemoryRetrievalService:
     def _fetch_items(self, user_id: str, tenant_id: str, project_id: str) -> list[MemoryItemRecord]:
         with get_db_connection() as conn:
             rows = conn.execute(
-                "SELECT * FROM memory_items WHERE user_id = ? AND tenant_id = ? AND project_id = ?",
+                "SELECT * FROM memory_items WHERE user_id = %s AND tenant_id = %s AND project_id = %s",
                 (user_id, tenant_id, project_id),
             ).fetchall()
         return [self._map_item(row) for row in rows]
@@ -69,7 +69,7 @@ class MemoryRetrievalService:
     def _fetch_consolidations(self, user_id: str, tenant_id: str, project_id: str) -> list[MemoryConsolidationRecord]:
         with get_db_connection() as conn:
             rows = conn.execute(
-                "SELECT * FROM memory_consolidations WHERE user_id = ? AND tenant_id = ? AND project_id = ? ORDER BY updated_at DESC",
+                "SELECT * FROM memory_consolidations WHERE user_id = %s AND tenant_id = %s AND project_id = %s ORDER BY updated_at DESC",
                 (user_id, tenant_id, project_id),
             ).fetchall()
         return [self._map_consolidation(row) for row in rows]
@@ -77,11 +77,10 @@ class MemoryRetrievalService:
     def _touch_items(self, item_ids: list[str]) -> None:
         if not item_ids:
             return
-        placeholders = ", ".join("?" for _ in item_ids)
         with get_db_connection() as conn:
             conn.execute(
-                f"UPDATE memory_items SET last_accessed_at = CURRENT_TIMESTAMP WHERE id IN ({placeholders})",
-                tuple(item_ids),
+                "UPDATE memory_items SET last_accessed_at = CURRENT_TIMESTAMP WHERE id = ANY(%s)",
+                (item_ids,),
             )
             conn.commit()
 

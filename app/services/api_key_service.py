@@ -28,7 +28,7 @@ class ApiKeyService:
         with get_db_connection() as conn:
             row = conn.execute(
                 "SELECT id, tenant_id, name, allow_external, rpm_limit, max_parallel_requests "
-                "FROM api_keys WHERE key_hash = ? AND enabled = 1 "
+                "FROM api_keys WHERE key_hash = %s AND enabled = 1 "
                 "AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)",
                 (key_hash,),
             ).fetchone()

@@ -49,7 +49,7 @@ class UsageService:
                     provider, model, route_alias, prompt_tokens, completion_tokens,
                     total_tokens, cost_usd, latency_ms, status_code, error_type,
                     fallback_used, queue_wait_ms, route_reason
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     event_id,

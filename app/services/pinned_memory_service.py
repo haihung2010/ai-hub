@@ -55,7 +55,7 @@ class PinnedMemoryService:
             existing = conn.execute(
                 """
                 SELECT id FROM pinned_memories
-                WHERE tenant_id = ? AND project_id = ? AND user_id = ? AND key = ?
+                WHERE tenant_id = %s AND project_id = %s AND user_id = %s AND key = %s
                 """,
                 (tenant_id, project_id, user_id, clean_key),
             ).fetchone()
@@ -64,9 +64,9 @@ class PinnedMemoryService:
                 conn.execute(
                     """
                     UPDATE pinned_memories
-                    SET value = ?, scope = ?, confidence = ?, source_session_id = ?,
-                        source_message_id = ?, is_active = 1, updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ?
+                    SET value = %s, scope = %s, confidence = %s, source_session_id = %s,
+                        source_message_id = %s, is_active = 1, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
                     """,
                     (clean_value, scope, confidence, source_session_id, source_message_id, memory_id),
                 )
@@ -76,7 +76,7 @@ class PinnedMemoryService:
                     INSERT INTO pinned_memories (
                         id, tenant_id, project_id, user_id, scope, key, value,
                         source_session_id, source_message_id, confidence, is_active
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
                     """,
                     (
                         memory_id,
@@ -100,7 +100,7 @@ class PinnedMemoryService:
                 """
                 SELECT id, tenant_id, project_id, user_id, scope, key, value,
                        confidence, is_active, updated_at
-                FROM pinned_memories WHERE id = ?
+                FROM pinned_memories WHERE id = %s
                 """,
                 (memory_id,),
             ).fetchone()
@@ -121,12 +121,12 @@ class PinnedMemoryService:
             SELECT id, tenant_id, project_id, user_id, scope, key, value,
                    confidence, is_active, updated_at
             FROM pinned_memories
-            WHERE tenant_id = ? AND project_id = ? AND user_id = ?
+            WHERE tenant_id = %s AND project_id = %s AND user_id = %s
         """
         params: list[object] = [tenant_id, project_id, user_id]
         if active_only:
             query += " AND is_active = 1"
-        query += " ORDER BY updated_at DESC, created_at DESC LIMIT ?"
+        query += " ORDER BY updated_at DESC, created_at DESC LIMIT %s"
         params.append(limit)
         with get_db_connection() as conn:
             rows = conn.execute(query, tuple(params)).fetchall()
@@ -135,7 +135,7 @@ class PinnedMemoryService:
     def deactivate_memory(self, memory_id: str) -> None:
         with get_db_connection() as conn:
             conn.execute(
-                "UPDATE pinned_memories SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                "UPDATE pinned_memories SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
                 (memory_id,),
             )
             conn.commit()

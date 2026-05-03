@@ -26,6 +26,7 @@ data/
 ollama_storage/
 
 *.log
+*.patch
 reports/
 *result*.json
 .coverage

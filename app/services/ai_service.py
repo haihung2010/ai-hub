@@ -325,8 +325,10 @@ class AIService:
         if req.model_mode == "external" or req.provider == "cloud":
             return self._settings.openrouter_model, 0
         if req.model_mode == "thinking" or req.model_mode == "normal":
-            return self._settings.default_model, self._settings.default_num_ctx
-        return self._settings.lite_model, self._settings.lite_num_ctx
+            ctx = self._settings.project_context_sizes.get(req.project_id, self._settings.default_num_ctx)
+            return self._settings.default_model, ctx
+        ctx = self._settings.project_context_sizes.get(req.project_id, self._settings.lite_num_ctx)
+        return self._settings.lite_model, ctx
 
     def _external_allowed(self, req: ChatRequest) -> bool:
         project = req.project_id.lower()
@@ -347,7 +349,7 @@ class AIService:
             raise UpstreamError(f"external llm is not allowed for project={req.project_id}")
         return self._cloud
 
-    def _provider_options(self, provider: ChatProvider, model_mode: str) -> dict:
+    def _provider_options(self, provider: ChatProvider, model_mode: str, num_ctx: int = 0) -> dict:
         options: dict = {}
         if provider.name == self._local.name:
             max_tokens = (
@@ -357,6 +359,8 @@ class AIService:
             )
             if max_tokens:
                 options["max_tokens"] = max_tokens
+            if num_ctx:
+                options["num_ctx"] = num_ctx
         else:
             max_tokens = self._settings.openrouter_max_tokens or self._settings.ai_max_tokens
             if max_tokens:
@@ -807,7 +811,7 @@ class AIService:
             req, prompt.system_prompt, combined_history, summary, memory_bundle, pinned_memory_block,
             prompt_enable_search=prompt.enable_search,
         )
-        options = self._provider_options(provider, req.model_mode)
+        options = self._provider_options(provider, req.model_mode, num_ctx)
         route_alias = "cloud" if provider.name == getattr(self._cloud, "name", None) else "local"
 
         yield {"type": "start", "session_id": session_id, "model": model, "provider": provider.name, "route": route_alias}
@@ -1040,7 +1044,7 @@ class AIService:
                 req.project_id,
                 req.tenant_id,
             )
-        options = self._provider_options(provider, req.model_mode)
+        options = self._provider_options(provider, req.model_mode, num_ctx)
 
         try:
             if provider.name == self._local.name:

@@ -92,7 +92,9 @@
                 <input type="text" id="user-input" class="min-w-0 flex-1 bg-transparent px-2 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none sm:p-4 sm:text-base" placeholder="Ask AI Hub something...">
                 <button id="send-btn" class="flex shrink-0 items-center rounded-xl bg-blue-600 px-4 py-2 font-bold text-white shadow-lg transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-50 sm:px-6">Send</button>
             </div>
-            <div id="status" class="mt-2 min-h-4 truncate px-2 font-mono text-[10px] text-slate-500"></div>
+            <div id="status" class="mt-2 min-h-4 truncate px-2 font-mono text-[10px] text-slate-500">
+                <span id="queue-badge" class="hidden mr-2 rounded bg-yellow-800 px-1 text-yellow-200">&#9203; Queue: <span id="queue-active">0</span>/<span id="queue-cap">8</span></span>
+            </div>
         </div>
     </div>
 
@@ -637,6 +639,7 @@
                     : `<span class="loader mr-2"></span> ${currentMode === 'lite' ? 'Gemma E4B' : 'Qwen 27B'} is generating...`;
             }
             sendBtn.disabled = true;
+            _startQueuePoll();
 
             const payload = {
                 project_id: 'test',
@@ -670,12 +673,38 @@
                 statusDiv.textContent = 'ERROR: ' + error.message;
             } finally {
                 sendBtn.disabled = false;
+                _stopQueuePoll();
                 userInput.focus();
             }
         }
 
         sendBtn.addEventListener('click', sendMessage);
         userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+
+        // ── Queue depth polling ─────────────────────────────────────────
+        const queueBadge = document.getElementById('queue-badge');
+        const queueActive = document.getElementById('queue-active');
+        const queueCap = document.getElementById('queue-cap');
+        let _queueTimer = null;
+
+        function _startQueuePoll() {
+            _stopQueuePoll();
+            _queueTimer = setInterval(async () => {
+                try {
+                    const r = await fetch('/v1/admin/queue', { headers: { 'X-API-KEY': currentApiKey || '' } });
+                    if (!r.ok) return;
+                    const d = await r.json();
+                    queueCap.textContent = d.capacity;
+                    queueActive.textContent = d.active;
+                    queueBadge.classList.toggle('hidden', d.active === 0);
+                } catch (_) {}
+            }, 3000);
+        }
+        function _stopQueuePoll() {
+            clearInterval(_queueTimer);
+            _queueTimer = null;
+            queueBadge.classList.add('hidden');
+        }
 
         // ── Mic / Voice input ──────────────────────────────────────────
         const micBtn = document.getElementById('mic-btn');

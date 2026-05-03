@@ -20,7 +20,7 @@ _CURRENT_DATA_RE = re.compile(
     re.IGNORECASE,
 )
 _MULTI_STEP_RE = re.compile(
-    r"\b(analy[sz]e|compare|plan|strategy|debug|optimi[sz]e|multi[- ]?step|"
+    r"\b(analy[sz]e|compare|plan|strategy|debug|optimi[sz]e|multi[- ]%sstep|"
     r"phan tich|so sanh|chien luoc|toi uu|ke hoach|nhieu buoc)\b",
     re.IGNORECASE,
 )
@@ -134,7 +134,7 @@ class FailureRiskService:
                 route_reason_suffix="risk_clarification",
                 message=(
                     "Mình cần thêm một chút ngữ cảnh để tránh trả lời sai. "
-                    "Bạn có thể nói rõ phần dữ liệu/bối cảnh nào cần ưu tiên không?"
+                    "Bạn có thể nói rõ phần dữ liệu/bối cảnh nào cần ưu tiên không%s"
                 ),
             )
         if risk.recommended_action == "inject_risk_context":
@@ -164,7 +164,7 @@ class FailureRiskService:
                     risk_level, risk_types_json, reasons_json, recommended_action,
                     applied_action, action_applied, route_before, route_after,
                     model_before, model_after
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     record_id,

@@ -15,7 +15,7 @@ from app.models.chat import Message
 
 logger = logging.getLogger(__name__)
 
-_ALLOWED_OPTIONS = {"max_tokens", "top_p"}
+_ALLOWED_OPTIONS = {"max_tokens", "top_p", "num_ctx"}
 _CHANNEL_ARTIFACT_RE = re.compile(r"(?:&lt;|<)(?:\\|)?channel(?:\\|&gt;|\\|>|\\||\||&gt;|>)?", re.IGNORECASE)
 _CHANNEL_STOP_SEQUENCES = ["<|channel>", "<|channel|>", "<channel|>", "&lt;|channel&gt;", "&lt;channel|&gt;"]
 

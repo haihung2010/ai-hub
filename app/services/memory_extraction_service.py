@@ -59,7 +59,7 @@ class MemoryExtractionService:
         episode_id = str(uuid.uuid4())
         with get_db_connection() as conn:
             conn.execute(
-                "INSERT INTO memory_episodes (id, user_id, tenant_id, project_id, session_id, start_message_id, end_message_id, source_text) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO memory_episodes (id, user_id, tenant_id, project_id, session_id, start_message_id, end_message_id, source_text) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
                 (episode_id, user_id, tenant_id, project_id, session_id, start_message_id, end_message_id, source_text),
             )
             conn.commit()
@@ -81,7 +81,7 @@ class MemoryExtractionService:
                     if not content:
                         continue
                     conn.execute(
-                        "INSERT INTO memory_items (id, episode_id, user_id, tenant_id, project_id, memory_type, subject, predicate, object, content, salience) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO memory_items (id, episode_id, user_id, tenant_id, project_id, memory_type, subject, predicate, object, content, salience) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                         (
                             str(uuid.uuid4()),
                             episode_id,

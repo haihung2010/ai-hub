@@ -151,6 +151,17 @@ async def reindex_knowledge(
     return result
 
 
+@router.get("/queue")
+async def queue_status(request: Request) -> dict[str, object]:
+    """GPU queue depth: active requests and available slots."""
+    settings = request.app.state.settings
+    ai_service = request.app.state.ai_service
+    capacity = settings.gpu_concurrency
+    available = ai_service._gpu_lock._value
+    active = capacity - available
+    return {"capacity": capacity, "active": active, "waiting": max(0, active - capacity)}
+
+
 @router.get("/health/providers")
 async def provider_health(request: Request) -> dict[str, object]:
     settings = request.app.state.settings

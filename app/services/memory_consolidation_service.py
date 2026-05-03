@@ -26,7 +26,7 @@ class MemoryConsolidationService:
     def _fetch_items(self, user_id: str, tenant_id: str, project_id: str) -> list[MemoryItemRecord]:
         with get_db_connection() as conn:
             rows = conn.execute(
-                "SELECT * FROM memory_items WHERE user_id = ? AND tenant_id = ? AND project_id = ?",
+                "SELECT * FROM memory_items WHERE user_id = %s AND tenant_id = %s AND project_id = %s",
                 (user_id, tenant_id, project_id),
             ).fetchall()
         return [self._map(row) for row in rows]
@@ -34,7 +34,7 @@ class MemoryConsolidationService:
     def _fetch_episode_ids(self, user_id: str, tenant_id: str, project_id: str) -> list[str]:
         with get_db_connection() as conn:
             rows = conn.execute(
-                "SELECT id FROM memory_episodes WHERE user_id = ? AND tenant_id = ? AND project_id = ? ORDER BY created_at",
+                "SELECT id FROM memory_episodes WHERE user_id = %s AND tenant_id = %s AND project_id = %s ORDER BY created_at",
                 (user_id, tenant_id, project_id),
             ).fetchall()
         return [row["id"] for row in rows]
@@ -85,14 +85,14 @@ class MemoryConsolidationService:
     ) -> str:
         with get_db_connection() as conn:
             existing = conn.execute(
-                "SELECT id, version FROM memory_consolidations WHERE user_id = ? AND tenant_id = ? AND project_id = ? AND scope_key = ?",
+                "SELECT id, version FROM memory_consolidations WHERE user_id = %s AND tenant_id = %s AND project_id = %s AND scope_key = %s",
                 (user_id, tenant_id, project_id, scope_key),
             ).fetchone()
 
             if existing:
                 new_version = existing["version"] + 1
                 conn.execute(
-                    "UPDATE memory_consolidations SET source_episode_ids = ?, content = ?, version = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    "UPDATE memory_consolidations SET source_episode_ids = %s, content = %s, version = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
                     (json.dumps(source_episode_ids), content, new_version, existing["id"]),
                 )
                 conn.commit()
@@ -100,7 +100,7 @@ class MemoryConsolidationService:
 
             record_id = str(uuid.uuid4())
             conn.execute(
-                "INSERT INTO memory_consolidations (id, user_id, tenant_id, project_id, scope_key, source_episode_ids, content, version) VALUES (?, ?, ?, ?, ?, ?, ?, 1)",
+                "INSERT INTO memory_consolidations (id, user_id, tenant_id, project_id, scope_key, source_episode_ids, content, version) VALUES (%s, %s, %s, %s, %s, %s, %s, 1)",
                 (record_id, user_id, tenant_id, project_id, scope_key, json.dumps(source_episode_ids), content),
             )
             conn.commit()

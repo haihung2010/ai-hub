@@ -131,6 +131,9 @@ class Settings(BaseSettings):
         default_factory=lambda: list(DEFAULT_ALLOWED_HOSTS),
         alias="ALLOWED_HOSTS",
     )
+    database_url: str = Field(default="", alias="DATABASE_URL")
+    redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
+    project_context_sizes: dict = Field(default_factory=dict, alias="PROJECT_CONTEXT_SIZES")
 
     @field_validator("allowed_origins", "allowed_hosts", "openrouter_allowed_projects", "openrouter_denied_projects", mode="before")
     @classmethod
@@ -142,6 +145,15 @@ class Settings(BaseSettings):
             if isinstance(parsed, list) and all(isinstance(item, str) for item in parsed):
                 return parsed
         raise ValueError("value must be a list of strings")
+
+    @field_validator("project_context_sizes", mode="before")
+    @classmethod
+    def _parse_dict(cls, value: dict | str) -> dict:
+        if isinstance(value, dict):
+            return value
+        if isinstance(value, str):
+            return json.loads(value)
+        return {}
 
 
 @lru_cache(maxsize=1)

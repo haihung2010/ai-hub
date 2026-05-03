@@ -22,7 +22,7 @@ class UserService:
     ) -> UserRecord:
         with get_db_connection() as conn:
             row = conn.execute(
-                "SELECT id, tenant_id, name FROM users WHERE tenant_id = ? AND name = ?",
+                "SELECT id, tenant_id, name FROM users WHERE tenant_id = %s AND name = %s",
                 (tenant_id, name),
             ).fetchone()
             if row is not None:
@@ -30,7 +30,7 @@ class UserService:
 
             new_id = str(uuid.uuid4())
             conn.execute(
-                "INSERT INTO users (id, tenant_id, name) VALUES (?, ?, ?)",
+                "INSERT INTO users (id, tenant_id, name) VALUES (%s, %s, %s)",
                 (new_id, tenant_id, name),
             )
             conn.commit()
@@ -44,7 +44,7 @@ class UserService:
     ) -> UserRecord | None:
         with get_db_connection() as conn:
             row = conn.execute(
-                "SELECT id, tenant_id, name FROM users WHERE tenant_id = ? AND name = ?",
+                "SELECT id, tenant_id, name FROM users WHERE tenant_id = %s AND name = %s",
                 (tenant_id, name),
             ).fetchone()
         if row is None:
@@ -60,15 +60,15 @@ class UserService:
     ) -> list[SessionRecord]:
         query = (
             "SELECT s.id, s.project_id, s.user_id, s.created_at, "
-            "(SELECT m.content FROM messages m WHERE m.tenant_id = ? AND m.session_id = s.id "
+            "(SELECT m.content FROM messages m WHERE m.tenant_id = %s AND m.session_id = s.id "
             "ORDER BY m.id DESC LIMIT 1) AS last_content "
-            "FROM sessions s WHERE s.tenant_id = ? AND s.user_id = ?"
+            "FROM sessions s WHERE s.tenant_id = %s AND s.user_id = %s"
         )
         params: list = [tenant_id, tenant_id, user_id]
         if project_id is not None:
-            query += " AND s.project_id = ?"
+            query += " AND s.project_id = %s"
             params.append(project_id)
-        query += " ORDER BY s.created_at DESC LIMIT ?"
+        query += " ORDER BY s.created_at DESC LIMIT %s"
         params.append(limit)
 
         with get_db_connection() as conn:

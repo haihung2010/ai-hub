@@ -12,7 +12,7 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 
 ### Core Chat
 - **Local inference**: llama.cpp Q8 backend (port 8080), OpenAI-compatible API
-- **Cloud fallback**: OpenRouter (`openai/gpt-oss-120b:free`), project allow/deny policy
+- **Cloud fallback**: OpenRouter (`openai/gpt-oss-20b:free`), project allow/deny policy
 - **Streaming**: SSE streaming with `[DONE]` sentinel
 - **Multimodal**: Image input (Base64 → OpenAI `image_url` content-parts format) — Lite mode only
 - **Model modes**: `lite` (Gemma4 E4B Q8, 32k ctx), `thinking` (Qwen 27B), `external` (cloud only)
@@ -43,10 +43,16 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 
 ### Security
 - `X-API-KEY` header auth
-- Per-key rate limiting (default 60 RPM), SQLite-backed in production
-- IP-based auth failure tracking and blocking
+- Per-key rate limiting — **Redis sliding window** (auto-fallback to in-memory nếu Redis down)
+- IP-based auth failure tracking and blocking (Redis-backed, fallback in-memory)
 - CORS restricted to allowed origins
 - Security denial logging to `security.log`
+
+### Infrastructure (Phase 1 — done 2026-05-03)
+- **PostgreSQL** thay SQLite: `psycopg3` + `psycopg-pool` connection pool (min=2, max=10)
+- **Redis rate limiter**: sliding window ZSET, auto-fallback về InMemory
+- **Queue visibility**: `GET /v1/admin/queue` + badge trong UI (poll 3s khi đang request)
+- **Per-project context size**: `PROJECT_CONTEXT_SIZES={"proj": num_ctx}` trong `.env`
 
 ### Other
 - **Failure risk assessment**: risk scoring (0–1.0), log-only or action mode
@@ -54,12 +60,20 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 - **Whisper Audio Input**: `faster-whisper` (`large-v3-turbo` float16 on CUDA) via `POST /v1/audio/transcriptions`
 - **Usage tracking**: token counting, cost calculation, latency, provider/route logging
 - **Prediction audit trail**: stock prediction records with outcome evaluation
-- **Admin metrics**: `GET /v1/admin/usage`
+- **Admin metrics**: `GET /v1/admin/usage`, `GET /v1/admin/stats`, `GET /v1/admin/queue`
 
 ## Technical Details
 
-### Database Path
-- `/app/data/ai_hub.db` (container) or `ai_hub.db` (local)
+### Database
+- **PostgreSQL** `ai_hub` (user: `aihub`, pass: `aihub_pass`, port 5432)
+- Connection URL: `DATABASE_URL=postgresql://aihub:aihub_pass@localhost:5432/ai_hub`
+- Schema tạo tự động qua `init_db()` khi server khởi động
+- Migration script: `scripts/migrate_sqlite_to_pg.py` (idempotent, dùng ON CONFLICT DO NOTHING)
+
+### Redis
+- URL: `REDIS_URL=redis://localhost:6379/0`
+- Dùng cho: rate limiting (ZSET sliding window) + auth failure tracker
+- Auto-fallback về InMemory nếu Redis không available
 
 ### Core Services
 | Service | Purpose |
@@ -79,11 +93,11 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 | `app/services/providers/openrouter.py` | Cloud fallback via OpenRouter |
 
 ### Security Layer
-- `app/middleware/security.py`: API key auth, per-key rate limiting, denial logging
+- `app/middleware/security.py`: API key auth, Redis rate limiting, denial logging
 - `app/core/config.py`: All settings — `API_KEY`, `RATE_LIMIT_PER_MINUTE`, `ALLOWED_ORIGINS`, model/memory/search config
 
 ### Frontend
-- `static/index.html`: API key prompt (localStorage), user-name resume, Lite-only image upload, `/clear` command support, streaming toggle, search toggle
+- `static/index.html`: API key prompt (localStorage), user-name resume, Lite-only image upload, `/clear` command support, streaming toggle, search toggle, queue badge (⏳ Queue: active/capacity)
 
 ## Security Defaults
 - **API Key Header**: `X-API-KEY`
@@ -93,17 +107,22 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 
 ## Build & Run Commands (Local Dev)
 ```bash
-# Start server
+# Start server (PostgreSQL + Redis phải đang chạy)
 ./venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-# Full stack (llama.cpp Q8 + API server)
+# Full stack (llama.cpp Q8 + Q4 background + reranker + API server)
 ./start.sh
 
 # Run tests
 ./venv/bin/pytest tests/
 
-# Security test slice
-./venv/bin/pytest --no-cov tests/integration/test_security_middleware.py tests/unit/test_security_middleware.py tests/unit/test_config.py
+# Migrate dữ liệu cũ từ SQLite sang PG (chạy một lần)
+SQLITE_PATH=ai_hub.db DATABASE_URL=postgresql://aihub:aihub_pass@localhost:5432/ai_hub \
+  ./venv/bin/python scripts/migrate_sqlite_to_pg.py
+
+# Kiểm tra health
+curl -H "X-API-KEY: ..." http://localhost:8000/health
+curl -H "X-API-KEY: ..." http://localhost:8000/v1/admin/queue
 ```
 
 ## Build & Run Commands (Docker)
@@ -121,43 +140,72 @@ curl http://localhost:8000/health
 *   **Search Reranker (Port 8082)**: `bge-reranker-v2-m3` (Context: 4K). Re-scores knowledge RAG.
 *   **FastEmbed**: Runs directly inside API server using `CUDAExecutionProvider`.
 *   **Whisper**: Lazy-loaded `large-v3-turbo` model in float16.
-*   **Benchmark**: 30 users × 40 questions (1200 requests) processed with 0 errors in 646s (p50: 13.6s) without OOM.
+*   **Benchmark**: 30 users × 40 questions (1200 requests) processed with 0 errors in 646s (p50: 13.6s) ~111 RPM without OOM.
 
-## Known Limitations
-- SQLite not suitable for high concurrent writes at scale
-- Single llama.cpp instance — no horizontal scaling
-- No real-time queue depth visibility in UI
-- Two large models (e4b + qwen3.5:9b) cannot stay resident simultaneously on 16GB GPU
+## Phase Roadmap
 
-## Next TODOs
-- PostgreSQL migration for concurrent-write scalability
-- Queue wait time display in UI
-- Per-project context size config instead of one global `LITE_NUM_CTX`
+### Phase 1 — Software (DONE 2026-05-03)
+- [x] PostgreSQL migration (psycopg3 + connection pool)
+- [x] Redis rate limiter + auth failure tracker
+- [x] Queue depth endpoint + UI badge
+- [x] Per-project context size config
+- [x] Migration script SQLite → PostgreSQL
+
+### Phase 2 — Hardware Upgrade (Khi cần >200 RPM)
+Nâng cấp GPU để tăng throughput thực sự:
+- **RTX 5080 (16GB)**: ~220 RPM (+100% vs hiện tại), ~$900. Tốt nếu muốn tăng slot từ 8→16
+- **RTX 5090 (32GB)**: ~400 RPM (+260%), ~$2000. Load 2 model đồng thời (chat + thinking)
+- **2× RTX 5060 Ti (32GB tổng)**: ~250 RPM, ~$800 tổng. Phù hợp chạy song song primary + background trên GPU riêng
+- Cân nhắc: PSU phải đủ (850W+ cho 5090), PCIe slot phải có
+
+### Phase 3 — Horizontal Scale (Khi cần >500 RPM)
+- Load balancer (nginx/traefik) phân request qua nhiều instance
+- `LlamaCppLoadBalancer` đã có trong `app/services/providers/load_balancer.py` — cần wire vào `main.py`
+- Mỗi node: 1 GPU + 1 API server process
+- Shared state: PostgreSQL (đã dùng) + Redis (đã dùng) → sẵn sàng multi-node
+- Session affinity không cần thiết (history lưu trong PG, không in-memory)
+
+### Phase 4 — Features
+- **Billing/quota per API key**: monthly_budget_usd đã có trong schema, cần tracking thực
+- **Admin dashboard**: nâng cấp `static/admin.html` với biểu đồ real-time (dùng `/v1/admin/stats`)
+- **Model hot-swap API**: `POST /v1/admin/model/switch` đã có, cần UI button
+- **Streaming memory extraction**: hiện tại chạy sau khi reply xong, có thể chạy parallel
+- **Multi-tenant isolation**: tenant_id đã có trong mọi bảng, cần enforce ở route layer
+
+## Known Limitations (còn lại sau Phase 1)
+- Single llama.cpp instance — no horizontal scaling (Phase 3)
+- Two large models (e4b + qwen3.5:27b) cannot stay resident simultaneously on 16GB GPU
+- No billing enforcement (schema có nhưng chưa implement logic)
+- `static/admin.html` dashboard còn basic, chưa có real-time charts
 
 ## File Structure (key files)
 ```
 app/
-├── core/config.py              # All settings
-├── core/database.py            # SQLite schema + migrations
+├── core/config.py              # All settings (DATABASE_URL, REDIS_URL, PROJECT_CONTEXT_SIZES)
+├── core/database.py            # PostgreSQL schema + psycopg3 pool
 ├── models/chat.py              # ChatRequest, ChatResponse, Message
 ├── routes/chat.py              # POST /v1/chat
 ├── routes/users.py             # GET/DELETE /v1/users/{user_name}/...
 ├── routes/knowledge.py         # /v1/knowledge/*
 ├── routes/memory.py            # GET /v1/memory
-├── routes/admin.py             # GET /v1/admin/usage
-├── middleware/security.py      # Auth + rate limiting
-├── services/ai_service.py      # Core orchestrator
+├── routes/admin.py             # GET /v1/admin/usage, /queue, /health/providers
+├── middleware/security.py      # Auth + Redis rate limiting
+├── services/ai_service.py      # Core orchestrator (per-project ctx, num_ctx injection)
 ├── services/providers/
-│   ├── llama_cpp.py            # Local provider (vision: content-parts format)
-│   └── openrouter.py           # Cloud provider
+│   ├── llama_cpp.py            # Local provider (num_ctx in _ALLOWED_OPTIONS)
+│   ├── openrouter.py           # Cloud provider
+│   └── load_balancer.py        # Multi-node load balancer (ready, not wired yet)
 ├── services/tools/
 │   └── web_search_service.py   # Multi-backend search
 scripts/
-├── start_lite_q8.sh            # Launch llama.cpp Q8
+├── start_lite_q8.sh            # Launch llama.cpp Q8 (port 8080)
+├── start_background_q4.sh      # Launch llama.cpp Q4 background (port 8081)
+├── start_reranker.sh           # Launch reranker (port 8082)
+├── migrate_sqlite_to_pg.py     # One-shot data migration SQLite → PostgreSQL
 ├── perf_hybrid_test.py         # Hybrid local+cloud benchmark
 ├── autotune_q8_multiuser.py    # Multi-config autotune sweep
 static/
-├── index.html                  # Main chat UI
+├── index.html                  # Main chat UI (queue badge, streaming, search)
 └── admin.html                  # Admin dashboard
 reports/                        # Benchmark results and notes
 ```

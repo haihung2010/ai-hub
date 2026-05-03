@@ -10,6 +10,7 @@ from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from threading import Lock
+from uuid import uuid4
 
 from fastapi import status
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -109,6 +110,64 @@ class AuthFailureTracker:
             return state
 
 
+class RedisRateLimiter:
+    """Sliding-window rate limiter backed by Redis sorted sets."""
+
+    def __init__(self, limit: int, window_seconds: int = RATE_LIMIT_WINDOW_SECONDS) -> None:
+        import redis as redis_lib
+        from app.core.config import get_settings
+        self._limit = limit
+        self._window_seconds = window_seconds
+        self._r = redis_lib.from_url(get_settings().redis_url, decode_responses=True)
+
+    def allow(self, key: str, now: float | None = None) -> bool:
+        current_time = time.time() if now is None else now
+        redis_key = f"rl:{key}"
+        pipe = self._r.pipeline()
+        pipe.zremrangebyscore(redis_key, 0, current_time - self._window_seconds)
+        pipe.zadd(redis_key, {str(uuid4()): current_time})
+        pipe.zcard(redis_key)
+        pipe.expire(redis_key, self._window_seconds + 1)
+        _, _, count, _ = pipe.execute()
+        return count <= self._limit
+
+
+class RedisFailureTracker:
+    """Fail2ban-style block list backed by Redis."""
+
+    def __init__(self, limit: int, block_seconds: int, window_seconds: int = 300) -> None:
+        import redis as redis_lib
+        from app.core.config import get_settings
+        self._limit = limit
+        self._block_seconds = block_seconds
+        self._window_seconds = window_seconds
+        self._r = redis_lib.from_url(get_settings().redis_url, decode_responses=True)
+
+    def is_blocked(self, key: str, now: float | None = None) -> bool:
+        current_time = time.time() if now is None else now
+        blocked_until = self._r.hget(f"af:{key}", "blocked_until")
+        if blocked_until is None:
+            return False
+        return current_time < float(blocked_until)
+
+    def record_failure(self, key: str, now: float | None = None) -> None:
+        current_time = time.time() if now is None else now
+        redis_key = f"af:{key}"
+        pipe = self._r.pipeline()
+        pipe.zremrangebyscore(f"aff:{key}", 0, current_time - self._window_seconds)
+        pipe.zadd(f"aff:{key}", {str(uuid4()): current_time})
+        pipe.zcard(f"aff:{key}")
+        pipe.expire(f"aff:{key}", self._window_seconds + 1)
+        _, _, count, _ = pipe.execute()
+        if count >= self._limit:
+            blocked_until = current_time + self._block_seconds
+            self._r.hset(redis_key, "blocked_until", blocked_until)
+            self._r.expire(redis_key, self._block_seconds + 60)
+
+    def reset(self, key: str) -> None:
+        self._r.delete(f"af:{key}", f"aff:{key}")
+
+
 class SqliteRateLimiter:
     """Rate limiter backed by SQLite — survives server restarts.
 
@@ -140,7 +199,8 @@ class SqliteRateLimiter:
         try:
             with get_db_connection() as conn:
                 conn.execute(
-                    "INSERT OR REPLACE INTO rate_limit_buckets (key, timestamps_json, updated_at) VALUES (?, ?, ?)",
+                    """INSERT INTO rate_limit_buckets (key, timestamps_json, updated_at) VALUES (%s, %s, %s)
+                    ON CONFLICT (key) DO UPDATE SET timestamps_json = EXCLUDED.timestamps_json, updated_at = EXCLUDED.updated_at""",
                     (key, json.dumps(timestamps), time.time()),
                 )
                 conn.commit()
@@ -192,7 +252,8 @@ class SqliteFailureTracker:
         try:
             with get_db_connection() as conn:
                 conn.execute(
-                    "INSERT OR REPLACE INTO auth_failures (key, failures_json, blocked_until, updated_at) VALUES (?, ?, ?, ?)",
+                    """INSERT INTO auth_failures (key, failures_json, blocked_until, updated_at) VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (key) DO UPDATE SET failures_json = EXCLUDED.failures_json, blocked_until = EXCLUDED.blocked_until, updated_at = EXCLUDED.updated_at""",
                     (key, json.dumps(failures), blocked_until, time.time()),
                 )
                 conn.commit()
@@ -241,17 +302,30 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self,
         app,
         settings: Settings,
-        limiter: InMemoryRateLimiter | SqliteRateLimiter | None = None,
-        failure_tracker: AuthFailureTracker | SqliteFailureTracker | None = None,
+        limiter=None,
+        failure_tracker=None,
     ) -> None:
         super().__init__(app)
         self._settings = settings
-        self._limiter = limiter or SqliteRateLimiter(settings.rate_limit_per_minute)
-        self._limiters_by_limit: dict[int, SqliteRateLimiter | InMemoryRateLimiter] = {settings.rate_limit_per_minute: self._limiter}
-        self._failure_tracker = failure_tracker or SqliteFailureTracker(
-            settings.auth_failure_limit,
-            settings.auth_failure_block_seconds,
-        )
+        if limiter is None:
+            try:
+                limiter = RedisRateLimiter(settings.rate_limit_per_minute)
+            except Exception:
+                limiter = InMemoryRateLimiter(settings.rate_limit_per_minute)
+        self._limiter = limiter
+        self._limiters_by_limit: dict[int, object] = {settings.rate_limit_per_minute: self._limiter}
+        if failure_tracker is None:
+            try:
+                failure_tracker = RedisFailureTracker(
+                    settings.auth_failure_limit,
+                    settings.auth_failure_block_seconds,
+                )
+            except Exception:
+                failure_tracker = AuthFailureTracker(
+                    settings.auth_failure_limit,
+                    settings.auth_failure_block_seconds,
+                )
+        self._failure_tracker = failure_tracker
         self._allowed_hosts = {host.lower() for host in settings.allowed_hosts}
         self._api_keys = ApiKeyService()
 
@@ -321,9 +395,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         host = request.headers.get("host", "").split(":", 1)[0].lower()
         return "*" in self._allowed_hosts or host in self._allowed_hosts
 
-    def _limiter_for_limit(self, limit: int) -> SqliteRateLimiter | InMemoryRateLimiter:
+    def _limiter_for_limit(self, limit: int) -> object:
         if limit not in self._limiters_by_limit:
-            self._limiters_by_limit[limit] = SqliteRateLimiter(limit)
+            try:
+                self._limiters_by_limit[limit] = RedisRateLimiter(limit)
+            except Exception:
+                self._limiters_by_limit[limit] = InMemoryRateLimiter(limit)
         return self._limiters_by_limit[limit]
 
     @staticmethod

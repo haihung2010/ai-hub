@@ -1,92 +1,79 @@
 import logging
 import os
-import sqlite3
 from contextlib import contextmanager
-from pathlib import Path
+
+import psycopg
+from psycopg.rows import dict_row
+from psycopg_pool import ConnectionPool
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = Path(os.getenv("DATABASE_PATH", "ai_hub.db"))
-
 DEFAULT_TENANT_ID = "default"
 
-
-def _column_names(cursor: sqlite3.Cursor, table: str) -> set[str]:
-    return {row["name"] for row in cursor.execute(f"PRAGMA table_info({table})").fetchall()}
+_pool: ConnectionPool | None = None
 
 
-def _has_unique_index(cursor: sqlite3.Cursor, table: str, columns: tuple[str, ...]) -> bool:
-    for index in cursor.execute(f"PRAGMA index_list({table})").fetchall():
-        if not index["unique"]:
-            continue
-        indexed_columns = tuple(
-            row["name"]
-            for row in cursor.execute(f"PRAGMA index_info({index['name']})").fetchall()
+def _get_database_url() -> str:
+    url = os.getenv("DATABASE_URL", "")
+    if not url:
+        raise RuntimeError("DATABASE_URL is not set")
+    return url
+
+
+def _get_pool() -> ConnectionPool:
+    global _pool
+    if _pool is None:
+        _pool = ConnectionPool(
+            _get_database_url(),
+            min_size=2,
+            max_size=10,
+            kwargs={"row_factory": dict_row},
+            open=True,
         )
-        if indexed_columns == columns:
-            return True
-    return False
+    return _pool
 
 
-def _rebuild_summaries_table(cursor: sqlite3.Cursor) -> None:
-    cursor.execute("ALTER TABLE summaries RENAME TO summaries_old")
-    cursor.execute("""
-        CREATE TABLE summaries (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tenant_id TEXT NOT NULL DEFAULT 'default',
-            user_id TEXT NOT NULL,
-            project_id TEXT NOT NULL,
-            content TEXT NOT NULL,
-            version INTEGER NOT NULL DEFAULT 1,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id),
-            UNIQUE (tenant_id, user_id, project_id)
-        )
-    """)
-    cursor.execute(f"""
-        INSERT OR IGNORE INTO summaries (
-            id, tenant_id, user_id, project_id, content, version, updated_at
-        )
-        SELECT
-            id,
-            COALESCE(tenant_id, '{DEFAULT_TENANT_ID}'),
-            user_id,
-            project_id,
-            content,
-            version,
-            updated_at
-        FROM summaries_old
-        ORDER BY updated_at DESC, id DESC
-    """)
-    cursor.execute("DROP TABLE summaries_old")
+@contextmanager
+def get_db_connection():
+    with _get_pool().connection() as conn:
+        yield conn
 
 
-def init_db():
+def _column_exists(conn, table: str, column: str) -> bool:
+    row = conn.execute(
+        "SELECT 1 FROM information_schema.columns WHERE table_name = %s AND column_name = %s",
+        (table, column),
+    ).fetchone()
+    return row is not None
+
+
+def init_db() -> None:
     with get_db_connection() as conn:
-        cursor = conn.cursor()
-
-        cursor.execute("""
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS sessions (
                 id TEXT PRIMARY KEY,
                 tenant_id TEXT NOT NULL DEFAULT 'default',
                 project_id TEXT NOT NULL,
+                user_id TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
 
-        cursor.execute(f"""
+        conn.execute(f"""
             CREATE TABLE IF NOT EXISTS messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id BIGSERIAL PRIMARY KEY,
                 tenant_id TEXT NOT NULL DEFAULT '{DEFAULT_TENANT_ID}',
                 session_id TEXT NOT NULL,
                 role TEXT NOT NULL,
                 content TEXT NOT NULL,
+                user_id TEXT,
+                is_summarized INTEGER NOT NULL DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (session_id) REFERENCES sessions (id)
             )
         """)
 
-        cursor.execute(f"""
+        conn.execute(f"""
             CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY,
                 tenant_id TEXT NOT NULL DEFAULT '{DEFAULT_TENANT_ID}',
@@ -96,9 +83,9 @@ def init_db():
             )
         """)
 
-        cursor.execute("""
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS summaries (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id BIGSERIAL PRIMARY KEY,
                 tenant_id TEXT NOT NULL DEFAULT 'default',
                 user_id TEXT NOT NULL,
                 project_id TEXT NOT NULL,
@@ -110,15 +97,15 @@ def init_db():
             )
         """)
 
-        cursor.execute("""
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS memory_episodes (
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL,
                 tenant_id TEXT NOT NULL,
                 project_id TEXT NOT NULL,
                 session_id TEXT NOT NULL,
-                start_message_id INTEGER NOT NULL,
-                end_message_id INTEGER NOT NULL,
+                start_message_id BIGINT NOT NULL,
+                end_message_id BIGINT NOT NULL,
                 source_text TEXT NOT NULL,
                 event_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -127,7 +114,7 @@ def init_db():
             )
         """)
 
-        cursor.execute("""
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS memory_items (
                 id TEXT PRIMARY KEY,
                 episode_id TEXT NOT NULL,
@@ -139,7 +126,7 @@ def init_db():
                 predicate TEXT,
                 object TEXT,
                 content TEXT NOT NULL,
-                salience REAL NOT NULL DEFAULT 0,
+                salience DOUBLE PRECISION NOT NULL DEFAULT 0,
                 valid_from TIMESTAMP,
                 valid_to TIMESTAMP,
                 last_accessed_at TIMESTAMP,
@@ -149,7 +136,7 @@ def init_db():
             )
         """)
 
-        cursor.execute("""
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS memory_consolidations (
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL,
@@ -165,7 +152,7 @@ def init_db():
             )
         """)
 
-        cursor.execute("""
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS pinned_memories (
                 id TEXT PRIMARY KEY,
                 tenant_id TEXT NOT NULL DEFAULT 'default',
@@ -175,8 +162,8 @@ def init_db():
                 key TEXT NOT NULL,
                 value TEXT NOT NULL,
                 source_session_id TEXT,
-                source_message_id INTEGER,
-                confidence REAL NOT NULL DEFAULT 1.0,
+                source_message_id BIGINT,
+                confidence DOUBLE PRECISION NOT NULL DEFAULT 1.0,
                 is_active INTEGER NOT NULL DEFAULT 1,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -185,14 +172,14 @@ def init_db():
             )
         """)
 
-        cursor.execute("""
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS prediction_records (
                 id TEXT PRIMARY KEY,
                 tenant_id TEXT NOT NULL,
                 project_id TEXT NOT NULL,
                 user_id TEXT,
                 session_id TEXT NOT NULL,
-                assistant_message_id INTEGER,
+                assistant_message_id BIGINT,
                 symbol TEXT,
                 horizon TEXT,
                 prediction_text TEXT NOT NULL,
@@ -208,7 +195,7 @@ def init_db():
             )
         """)
 
-        cursor.execute("""
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS api_keys (
                 id TEXT PRIMARY KEY,
                 key_hash TEXT NOT NULL UNIQUE,
@@ -222,14 +209,14 @@ def init_db():
                 allow_external INTEGER NOT NULL DEFAULT 0,
                 rpm_limit INTEGER NOT NULL DEFAULT 60,
                 max_parallel_requests INTEGER NOT NULL DEFAULT 2,
-                monthly_budget_usd REAL,
+                monthly_budget_usd DOUBLE PRECISION,
                 expires_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (owner_user_id) REFERENCES users (id)
             )
         """)
 
-        cursor.execute("""
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS usage_events (
                 id TEXT PRIMARY KEY,
                 tenant_id TEXT NOT NULL,
@@ -243,12 +230,12 @@ def init_db():
                 prompt_tokens INTEGER,
                 completion_tokens INTEGER,
                 total_tokens INTEGER,
-                cost_usd REAL,
-                latency_ms REAL NOT NULL,
+                cost_usd DOUBLE PRECISION,
+                latency_ms DOUBLE PRECISION NOT NULL,
                 status_code INTEGER,
                 error_type TEXT,
                 fallback_used INTEGER NOT NULL DEFAULT 0,
-                queue_wait_ms REAL,
+                queue_wait_ms DOUBLE PRECISION,
                 route_reason TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (api_key_id) REFERENCES api_keys (id),
@@ -257,14 +244,14 @@ def init_db():
             )
         """)
 
-        cursor.execute("""
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS failure_risk_events (
                 id TEXT PRIMARY KEY,
                 tenant_id TEXT NOT NULL,
                 project_id TEXT NOT NULL,
                 user_id TEXT,
                 session_id TEXT,
-                risk_score REAL NOT NULL,
+                risk_score DOUBLE PRECISION NOT NULL,
                 risk_level TEXT NOT NULL,
                 risk_types_json TEXT NOT NULL DEFAULT '[]',
                 reasons_json TEXT NOT NULL DEFAULT '[]',
@@ -281,7 +268,7 @@ def init_db():
             )
         """)
 
-        cursor.execute("""
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS knowledge_cards (
                 id TEXT PRIMARY KEY,
                 tenant_id TEXT NOT NULL DEFAULT 'default',
@@ -303,7 +290,7 @@ def init_db():
             )
         """)
 
-        cursor.execute("""
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS knowledge_card_chunks (
                 id TEXT PRIMARY KEY,
                 card_id TEXT NOT NULL,
@@ -312,165 +299,36 @@ def init_db():
                 chunk_index INTEGER NOT NULL,
                 content TEXT NOT NULL,
                 token_estimate INTEGER NOT NULL DEFAULT 0,
+                embedding BYTEA,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (card_id) REFERENCES knowledge_cards (id) ON DELETE CASCADE,
                 UNIQUE (card_id, chunk_index)
             )
         """)
 
-        messages_cols = _column_names(cursor, "messages")
-        if "tenant_id" not in messages_cols:
-            cursor.execute(
-                f"ALTER TABLE messages ADD COLUMN tenant_id TEXT NOT NULL DEFAULT '{DEFAULT_TENANT_ID}'"
-            )
-            logger.info("Migrated messages table: added tenant_id column")
-        if "user_id" not in messages_cols:
-            cursor.execute("ALTER TABLE messages ADD COLUMN user_id TEXT")
-            logger.info("Migrated messages table: added user_id column")
-        if "is_summarized" not in messages_cols:
-            cursor.execute(
-                "ALTER TABLE messages ADD COLUMN is_summarized INTEGER NOT NULL DEFAULT 0"
-            )
-            logger.info("Migrated messages table: added is_summarized column")
-
-        sessions_cols = _column_names(cursor, "sessions")
-        if "tenant_id" not in sessions_cols:
-            cursor.execute(
-                f"ALTER TABLE sessions ADD COLUMN tenant_id TEXT NOT NULL DEFAULT '{DEFAULT_TENANT_ID}'"
-            )
-            logger.info("Migrated sessions table: added tenant_id column")
-        if "user_id" not in sessions_cols:
-            cursor.execute("ALTER TABLE sessions ADD COLUMN user_id TEXT")
-            logger.info("Migrated sessions table: added user_id column")
-
-        chunks_cols = _column_names(cursor, "knowledge_card_chunks")
-        if "embedding" not in chunks_cols:
-            cursor.execute("ALTER TABLE knowledge_card_chunks ADD COLUMN embedding BLOB")
-            logger.info("Migrated knowledge_card_chunks table: added embedding column")
-
-        usage_cols = _column_names(cursor, "usage_events")
-        if "queue_wait_ms" not in usage_cols:
-            cursor.execute("ALTER TABLE usage_events ADD COLUMN queue_wait_ms REAL")
-            logger.info("Migrated usage_events table: added queue_wait_ms column")
-        if "route_reason" not in usage_cols:
-            cursor.execute("ALTER TABLE usage_events ADD COLUMN route_reason TEXT")
-            logger.info("Migrated usage_events table: added route_reason column")
-
-        summaries_cols = _column_names(cursor, "summaries")
-        if "tenant_id" not in summaries_cols:
-            cursor.execute(
-                f"ALTER TABLE summaries ADD COLUMN tenant_id TEXT NOT NULL DEFAULT '{DEFAULT_TENANT_ID}'"
-            )
-            logger.info("Migrated summaries table: added tenant_id column")
-        if not _has_unique_index(
-            cursor, "summaries", ("tenant_id", "user_id", "project_id")
-        ):
-            _rebuild_summaries_table(cursor)
-            logger.info("Migrated summaries table: rebuilt tenant-scoped unique constraint")
-
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_messages_tenant_session "
-            "ON messages (tenant_id, session_id, id)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_messages_user_unsummarized "
-            "ON messages (user_id, is_summarized, id)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_sessions_tenant_user_project "
-            "ON sessions (tenant_id, user_id, project_id, created_at)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_users_tenant_name "
-            "ON users (tenant_id, name)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_summaries_tenant_user_project "
-            "ON summaries (tenant_id, user_id, project_id)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_memory_episodes_user_project_created "
-            "ON memory_episodes (user_id, project_id, created_at)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_memory_items_user_project_type "
-            "ON memory_items (user_id, project_id, memory_type)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_memory_items_project_salience "
-            "ON memory_items (project_id, salience)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_pinned_memories_lookup "
-            "ON pinned_memories (tenant_id, project_id, user_id, is_active, updated_at)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_memory_consolidations_user_project_created "
-            "ON memory_consolidations (user_id, project_id, created_at)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_prediction_records_tenant_project_user_symbol "
-            "ON prediction_records (tenant_id, project_id, user_id, symbol, created_at)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_api_keys_hash_enabled "
-            "ON api_keys (key_hash, enabled)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_usage_events_tenant_created "
-            "ON usage_events (tenant_id, created_at)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_usage_events_provider_model_created "
-            "ON usage_events (provider, model, created_at)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_failure_risk_events_tenant_created "
-            "ON failure_risk_events (tenant_id, created_at)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_failure_risk_events_project_level "
-            "ON failure_risk_events (project_id, risk_level, created_at)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_knowledge_cards_scope "
-            "ON knowledge_cards (tenant_id, project_id, status, knowledge_domain, updated_at)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_knowledge_cards_project_status "
-            "ON knowledge_cards (project_id, status, trust_level)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_scope "
-            "ON knowledge_card_chunks (tenant_id, project_id, card_id, chunk_index)"
-        )
-
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS rate_limit_buckets (
-                key TEXT PRIMARY KEY,
-                timestamps_json TEXT NOT NULL DEFAULT '[]',
-                updated_at REAL NOT NULL DEFAULT 0
-            )
-        """)
-
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS auth_failures (
-                key TEXT PRIMARY KEY,
-                failures_json TEXT NOT NULL DEFAULT '[]',
-                blocked_until REAL NOT NULL DEFAULT 0,
-                updated_at REAL NOT NULL DEFAULT 0
-            )
-        """)
+        # Create indexes
+        for stmt in [
+            "CREATE INDEX IF NOT EXISTS idx_messages_tenant_session ON messages (tenant_id, session_id, id)",
+            "CREATE INDEX IF NOT EXISTS idx_messages_user_unsummarized ON messages (user_id, is_summarized, id)",
+            "CREATE INDEX IF NOT EXISTS idx_sessions_tenant_user_project ON sessions (tenant_id, user_id, project_id, created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_users_tenant_name ON users (tenant_id, name)",
+            "CREATE INDEX IF NOT EXISTS idx_summaries_tenant_user_project ON summaries (tenant_id, user_id, project_id)",
+            "CREATE INDEX IF NOT EXISTS idx_memory_episodes_user_project_created ON memory_episodes (user_id, project_id, created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_memory_items_user_project_type ON memory_items (user_id, project_id, memory_type)",
+            "CREATE INDEX IF NOT EXISTS idx_memory_items_project_salience ON memory_items (project_id, salience)",
+            "CREATE INDEX IF NOT EXISTS idx_pinned_memories_lookup ON pinned_memories (tenant_id, project_id, user_id, is_active, updated_at)",
+            "CREATE INDEX IF NOT EXISTS idx_memory_consolidations_user_project_created ON memory_consolidations (user_id, project_id, created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_prediction_records_tenant_project_user_symbol ON prediction_records (tenant_id, project_id, user_id, symbol, created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_api_keys_hash_enabled ON api_keys (key_hash, enabled)",
+            "CREATE INDEX IF NOT EXISTS idx_usage_events_tenant_created ON usage_events (tenant_id, created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_usage_events_provider_model_created ON usage_events (provider, model, created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_failure_risk_events_tenant_created ON failure_risk_events (tenant_id, created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_failure_risk_events_project_level ON failure_risk_events (project_id, risk_level, created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_knowledge_cards_scope ON knowledge_cards (tenant_id, project_id, status, knowledge_domain, updated_at)",
+            "CREATE INDEX IF NOT EXISTS idx_knowledge_cards_project_status ON knowledge_cards (project_id, status, trust_level)",
+            "CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_scope ON knowledge_card_chunks (tenant_id, project_id, card_id, chunk_index)",
+        ]:
+            conn.execute(stmt)
 
         conn.commit()
-    logger.info("Database initialized at %s", DB_PATH)
-
-@contextmanager
-def get_db_connection():
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    try:
-        yield conn
-    finally:
-        conn.close()
+    logger.info("Database initialized (PostgreSQL)")
