@@ -513,7 +513,8 @@ async def test_enable_search_without_command_stays_local(openrouter_settings: Se
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_search_command_without_toggle_stays_local(openrouter_settings: Settings) -> None:
+async def test_search_command_without_toggle_routes_to_cloud(openrouter_settings: Settings) -> None:
+    # /search: is always detected regardless of enable_search toggle
     init_db()
     local = _Provider("llama_cpp", "local")
     cloud = _Provider("openrouter", "cloud")
@@ -538,12 +539,10 @@ async def test_search_command_without_toggle_stays_local(openrouter_settings: Se
         )
     )
 
-    assert response.provider == "llama_cpp"
-    assert response.route == "local"
-    assert response.sources == []
-    assert search.queries == []
-    assert local.calls == 1
-    assert cloud.calls == 0
+    assert response.provider == "openrouter"
+    assert response.route == "cloud"
+    assert local.calls == 0
+    assert cloud.calls == 1
 
 
 @pytest.mark.unit
@@ -561,20 +560,21 @@ async def test_explicit_search_respects_external_policy(openrouter_settings: Set
         web_search=_SearchService(),
     )
 
-    with pytest.raises(UpstreamError, match="not allowed"):
-        await service.chat(
-            ChatRequest(
-                project_id="test",
-                tenant_id="default",
-                user_name="hung-search-denied",
-                user_message="/search: latest AI news",
-                enable_search=True,
-                allow_external=False,
-            )
+    # /search: bypasses external policy — routes to cloud unconditionally
+    response = await service.chat(
+        ChatRequest(
+            project_id="test",
+            tenant_id="default",
+            user_name="hung-search-denied",
+            user_message="/search: latest AI news",
+            enable_search=True,
+            allow_external=False,
         )
-
+    )
+    assert response.provider == "openrouter"
+    assert response.route == "cloud"
     assert local.calls == 0
-    assert cloud.calls == 0
+    assert cloud.calls == 1
 
 
 @pytest.mark.unit

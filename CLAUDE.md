@@ -24,10 +24,12 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 - SummaryService and StructMem are mutually exclusive per conversation
 
 ### RAG / Knowledge Base
-- Knowledge cards with chunking (2000 chars/chunk default)
-- Token-based relevance search (not vector embeddings — known limitation)
+- Knowledge cards chunking (2000 chars/chunk default)
+- **Hybrid Search**: 70% Semantic (FastEmbed `paraphrase-multilingual-MiniLM-L12-v2` with `onnxruntime-gpu`) + 30% Token overlap
+- **Reranking**: `bge-reranker-v2-m3` via local llama.cpp (port 8082)
 - Domain-based organization, trust levels, versioning, tags
 - Endpoints: `POST /v1/knowledge/cards`, `GET /v1/knowledge/cards`, `POST /v1/knowledge/search`
+- **Admin Reindex**: `POST /v1/admin/knowledge/reindex` to backfill embeddings
 
 ### Web Search
 - Multi-backend: Google Custom Search → DDGS → DuckDuckGo HTML → Bing HTML
@@ -49,6 +51,7 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 ### Other
 - **Failure risk assessment**: risk scoring (0–1.0), log-only or action mode
 - **CrewAI agents**: Researcher + Analyst crew (`POST /v1/crew/research`)
+- **Whisper Audio Input**: `faster-whisper` (`large-v3-turbo` float16 on CUDA) via `POST /v1/audio/transcriptions`
 - **Usage tracking**: token counting, cost calculation, latency, provider/route logging
 - **Prediction audit trail**: stock prediction records with outcome evaluation
 - **Admin metrics**: `GET /v1/admin/usage`
@@ -66,11 +69,13 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 | `app/services/user_service.py` | User lookup/creation, session listing |
 | `app/services/summary_service.py` | Async rolling summaries |
 | `app/services/structmem_service.py` | Structured memory pipeline |
-| `app/services/knowledge_ingestion_service.py` | RAG card creation + chunking |
-| `app/services/knowledge_retrieval_service.py` | Token-based knowledge search |
+| `app/services/knowledge_ingestion_service.py` | RAG card chunking + embeddings extraction |
+| `app/services/knowledge_retrieval_service.py` | Hybrid search (vector + token) |
+| `app/services/rerank_service.py` | Re-scores search results using cross-encoder |
+| `app/services/whisper_service.py` | GPU-accelerated voice transcription |
 | `app/services/tools/web_search_service.py` | Multi-backend web search |
 | `app/services/failure_risk_service.py` | Failure risk scoring and actions |
-| `app/services/providers/llama_cpp.py` | llama.cpp provider — vision messages use OpenAI content-parts format |
+| `app/services/providers/llama_cpp.py` | llama.cpp API integration (handles prompt formatting) |
 | `app/services/providers/openrouter.py` | Cloud fallback via OpenRouter |
 
 ### Security Layer
@@ -109,41 +114,22 @@ docker compose logs -f app
 curl http://localhost:8000/health
 ```
 
-## Q8 Benchmark Results (2026-04-27)
+## Multi-Model GPU Architecture (16GB VRAM)
 
-### Hardware
-- Model: `gemma4:e4b` Q8, fully GPU-offloaded (~10 GB VRAM)
-- Backend: llama.cpp single instance
-
-### Optimal config (10 users × 10 questions = 100 requests, 0 errors)
-```
-parallel_slots=12, ctx_per_slot=4096 (total 49152), gpu_concurrency=12
-```
-| p50 | p95 | p99 | max | wall_time |
-|---|---|---|---|---|
-| 5.70s | 10.84s | 13.39s | 13.56s | 70.6s |
-
-### Endurance (10 users × 40 questions = 400 requests, baseline p8/ctx65k)
-| p50 | p95 | p99 | wall_time | errors |
-|---|---|---|---|---|
-| 8.44s | 11.27s | 11.90s | 347.6s | 0 |
-
-### Key findings
-- `ctx_per_slot=4096` is optimal for general chat — larger context (32k) increases latency with no quality benefit
-- `gpu_concurrency = parallel_slots` — setting concurrency higher than slots causes latency spikes
-- Cloud (OpenRouter) is 3× faster than local under heavy 5-user sequential load (p50 16s vs 45s)
-- Dynamic cloud routing (queue-depth based) would outperform fixed every-N routing
+*   **Primary Chat (Port 8080)**: `E4B Q8` (Context: 32K, Slots: 8). Handles 100% of user chat queries.
+*   **Background Tasks (Port 8081)**: `E4B Q4` (Context: 16K, Slots: 2). Dedicated to generating async Summaries and Structured Memory.
+*   **Search Reranker (Port 8082)**: `bge-reranker-v2-m3` (Context: 4K). Re-scores knowledge RAG.
+*   **FastEmbed**: Runs directly inside API server using `CUDAExecutionProvider`.
+*   **Whisper**: Lazy-loaded `large-v3-turbo` model in float16.
+*   **Benchmark**: 30 users × 40 questions (1200 requests) processed with 0 errors in 646s (p50: 13.6s) without OOM.
 
 ## Known Limitations
-- Knowledge search is **token-based** (not semantic/vector) — lower recall accuracy
 - SQLite not suitable for high concurrent writes at scale
 - Single llama.cpp instance — no horizontal scaling
 - No real-time queue depth visibility in UI
 - Two large models (e4b + qwen3.5:9b) cannot stay resident simultaneously on 16GB GPU
 
 ## Next TODOs
-- Replace token-based knowledge search with vector embeddings (pgvector or Chroma)
-- Dynamic cloud routing: route to OpenRouter when local queue depth > threshold
 - PostgreSQL migration for concurrent-write scalability
 - Queue wait time display in UI
 - Per-project context size config instead of one global `LITE_NUM_CTX`

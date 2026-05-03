@@ -466,9 +466,7 @@ async def main() -> None:
     api_key = load_api_key()
     if USER_COUNT < 1:
         raise ValueError("AIHUB_PERF_USERS must be at least 1")
-    if USER_COUNT > len(TOPICS):
-        raise ValueError(f"AIHUB_PERF_USERS cannot exceed {len(TOPICS)} prepared topics")
-    topics = TOPICS[:USER_COUNT]
+    topics = [TOPICS[i % len(TOPICS)] for i in range(USER_COUNT)]
     user_count = len(topics)
     print(f"base_url={BASE_URL}  tenant={TENANT_ID}  project={PROJECT_ID}")
     print(

@@ -83,6 +83,11 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                 </button>
+                <button id="mic-btn" class="shrink-0 p-2 text-slate-400 transition-all hover:text-red-400 active:scale-90 sm:p-3" title="Hold to record voice">
+                    <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                </button>
                 <input type="file" id="file-input" class="hidden" accept="image/*">
                 <input type="text" id="user-input" class="min-w-0 flex-1 bg-transparent px-2 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none sm:p-4 sm:text-base" placeholder="Ask AI Hub something...">
                 <button id="send-btn" class="flex shrink-0 items-center rounded-xl bg-blue-600 px-4 py-2 font-bold text-white shadow-lg transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-50 sm:px-6">Send</button>
@@ -110,14 +115,78 @@
         const streamToggleBtn = document.getElementById('stream-toggle-btn');
         const searchToggleBtn = document.getElementById('search-toggle-btn');
 
-        let currentSessionId = localStorage.getItem('sessionId') || null;
-        let currentMode = localStorage.getItem('modelMode') || 'lite';
+        // ── localStorage fallback (in-app browsers may block it) ───────
+        const storage = (() => {
+            try {
+                localStorage.setItem('__chk', '1');
+                localStorage.removeItem('__chk');
+                return localStorage;
+            } catch (_) {
+                const mem = new Map();
+                return {
+                    getItem: (k) => mem.has(k) ? mem.get(k) : null,
+                    setItem: (k, v) => mem.set(k, String(v)),
+                    removeItem: (k) => mem.delete(k),
+                };
+            }
+        })();
+
+        // ── Custom modals (window.prompt/confirm blocked in WebView) ───
+        function showInputModal(title, defaultValue = '', inputType = 'text') {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75);padding:1rem';
+                overlay.innerHTML = `
+                    <div style="width:100%;max-width:22rem;background:#0f172a;border:1px solid #334155;border-radius:1rem;padding:1.5rem;box-shadow:0 25px 50px rgba(0,0,0,.6)">
+                        <p style="margin:0 0 1rem;font-size:.875rem;font-weight:600;color:#f1f5f9">${title}</p>
+                        <input type="${inputType}" style="width:100%;box-sizing:border-box;background:#1e293b;border:1px solid #475569;border-radius:.5rem;padding:.5rem .75rem;font-size:.875rem;color:#f1f5f9;outline:none" value="${defaultValue.replace(/"/g, '&quot;')}">
+                        <div style="margin-top:1rem;display:flex;gap:.5rem;justify-content:flex-end">
+                            <button class="m-cancel" style="background:transparent;border:1px solid #475569;border-radius:.5rem;padding:.5rem 1rem;font-size:.875rem;font-weight:600;color:#94a3b8;cursor:pointer">Cancel</button>
+                            <button class="m-ok" style="background:#2563eb;border:none;border-radius:.5rem;padding:.5rem 1rem;font-size:.875rem;font-weight:700;color:#fff;cursor:pointer">OK</button>
+                        </div>
+                    </div>`;
+                document.body.appendChild(overlay);
+                const inp = overlay.querySelector('input');
+                const okBtn = overlay.querySelector('.m-ok');
+                const cancelBtn = overlay.querySelector('.m-cancel');
+                inp.focus(); inp.select();
+                const done = (v) => { overlay.remove(); resolve(v); };
+                okBtn.addEventListener('click', () => done(inp.value));
+                cancelBtn.addEventListener('click', () => done(null));
+                inp.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') done(inp.value);
+                    if (e.key === 'Escape') done(null);
+                });
+            });
+        }
+
+        function showConfirmModal(message) {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75);padding:1rem';
+                overlay.innerHTML = `
+                    <div style="width:100%;max-width:22rem;background:#0f172a;border:1px solid #334155;border-radius:1rem;padding:1.5rem;box-shadow:0 25px 50px rgba(0,0,0,.6)">
+                        <p style="margin:0 0 1.25rem;font-size:.875rem;color:#f1f5f9">${message}</p>
+                        <div style="display:flex;gap:.5rem;justify-content:flex-end">
+                            <button class="m-cancel" style="background:transparent;border:1px solid #475569;border-radius:.5rem;padding:.5rem 1rem;font-size:.875rem;font-weight:600;color:#94a3b8;cursor:pointer">Cancel</button>
+                            <button class="m-ok" style="background:#2563eb;border:none;border-radius:.5rem;padding:.5rem 1rem;font-size:.875rem;font-weight:700;color:#fff;cursor:pointer">OK</button>
+                        </div>
+                    </div>`;
+                document.body.appendChild(overlay);
+                const done = (v) => { overlay.remove(); resolve(v); };
+                overlay.querySelector('.m-ok').addEventListener('click', () => done(true));
+                overlay.querySelector('.m-cancel').addEventListener('click', () => done(false));
+            });
+        }
+
+        let currentSessionId = storage.getItem('sessionId') || null;
+        let currentMode = storage.getItem('modelMode') || 'lite';
         if (currentMode === 'normal') {
             currentMode = 'thinking';
-            localStorage.setItem('modelMode', currentMode);
+            storage.setItem('modelMode', currentMode);
         }
-        let currentUserName = localStorage.getItem('userName') || null;
-        let currentApiKey = localStorage.getItem('apiKey') || null;
+        let currentUserName = storage.getItem('userName') || null;
+        let currentApiKey = storage.getItem('apiKey') || null;
         let selectedFile = null;
         let searchEnabled = false;
         let streamEnabled = true;
@@ -176,12 +245,12 @@
         }
 
         async function promptForApiKey(defaultValue = currentApiKey || '') {
-            const provided = window.prompt('Enter your API key:', defaultValue);
+            const provided = await showInputModal('Enter your API key:', defaultValue);
             if (provided === null) return false;
             const trimmed = provided.trim();
             if (!trimmed) { statusDiv.textContent = 'API key is required before chatting'; return false; }
             currentApiKey = trimmed;
-            localStorage.setItem('apiKey', currentApiKey);
+            storage.setItem('apiKey', currentApiKey);
             updateCurrentApiKeyBadge();
             return true;
         }
@@ -247,10 +316,10 @@
             const message = isLite
                 ? 'Switch back to Lite Q8? The server will switch in the background; wait a moment before chatting.'
                 : 'Switch to Thinking Qwen 27B? The server will switch in the background; wait a moment before chatting.';
-            if (!window.confirm(message)) return;
+            if (!await showConfirmModal(message)) return;
 
             currentMode = mode;
-            localStorage.setItem('modelMode', currentMode);
+            storage.setItem('modelMode', currentMode);
             applyModeUI();
             statusDiv.textContent = `Switching to ${label} in background...`;
 
@@ -272,27 +341,27 @@
 
         // ── Session restore ────────────────────────────────────────────
         async function restoreLatestSessionForUser() {
-            if (!currentUserName) { currentSessionId = null; localStorage.removeItem('sessionId'); return; }
+            if (!currentUserName) { currentSessionId = null; storage.removeItem('sessionId'); return; }
             const response = await fetch(`/v1/users/${encodeURIComponent(currentUserName)}/sessions?project_id=test`, { headers: buildApiHeaders() });
             if (!response.ok) throw new Error('Failed to load previous sessions');
             const sessions = await response.json();
             if (sessions.length > 0) {
                 currentSessionId = sessions[0].session_id;
-                localStorage.setItem('sessionId', currentSessionId);
+                storage.setItem('sessionId', currentSessionId);
                 statusDiv.textContent = `Resumed latest session for ${currentUserName}`;
                 return;
             }
-            currentSessionId = null; localStorage.removeItem('sessionId');
+            currentSessionId = null; storage.removeItem('sessionId');
             statusDiv.textContent = `Started a fresh session for ${currentUserName}`;
         }
 
         async function promptForUserName(defaultValue = currentUserName || '', shouldRestoreSession = true) {
-            const provided = window.prompt('Enter your name:', defaultValue);
+            const provided = await showInputModal('Enter your name:', defaultValue);
             if (provided === null) return false;
             const trimmed = provided.trim();
             if (!trimmed) { statusDiv.textContent = 'User name is required'; return false; }
             currentUserName = trimmed;
-            localStorage.setItem('userName', currentUserName);
+            storage.setItem('userName', currentUserName);
             updateCurrentUserBadge();
             if (shouldRestoreSession) await restoreLatestSessionForUser();
             return true;
@@ -328,7 +397,7 @@
             if (!await ensureApiKey()) return;
             if (!await promptForUserName(currentUserName || '', false)) return;
             currentSessionId = null;
-            localStorage.removeItem('sessionId');
+            storage.removeItem('sessionId');
             resetSelectedImage();
             chatWindow.innerHTML = '';
             statusDiv.textContent = `Started a new session for ${currentUserName}`;
@@ -435,7 +504,7 @@
                     throw new Error(detail);
                 }
                 currentSessionId = null;
-                localStorage.removeItem('sessionId');
+                storage.removeItem('sessionId');
                 chatWindow.innerHTML = '';
                 addBubble('History cleared. Starting fresh!', false);
                 statusDiv.textContent = `History cleared for ${currentUserName}`;
@@ -587,7 +656,7 @@
 
                 if (sessionId) {
                     currentSessionId = sessionId;
-                    localStorage.setItem('sessionId', currentSessionId);
+                    storage.setItem('sessionId', currentSessionId);
                 }
 
                 const elapsed = latencyMs != null
@@ -607,6 +676,70 @@
 
         sendBtn.addEventListener('click', sendMessage);
         userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+
+        // ── Mic / Voice input ──────────────────────────────────────────
+        const micBtn = document.getElementById('mic-btn');
+        const micIcon = document.getElementById('mic-icon');
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let micStream = null;
+
+        function setMicRecording(active) {
+            if (active) {
+                micBtn.classList.remove('text-slate-400', 'hover:text-red-400');
+                micBtn.classList.add('text-red-500', 'animate-pulse');
+                micIcon.setAttribute('stroke', 'currentColor');
+            } else {
+                micBtn.classList.add('text-slate-400', 'hover:text-red-400');
+                micBtn.classList.remove('text-red-500', 'animate-pulse');
+            }
+        }
+
+        micBtn.addEventListener('click', async () => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                return;
+            }
+            try {
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (_) {
+                statusDiv.textContent = 'Microphone access denied';
+                return;
+            }
+            audioChunks = [];
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+                ? 'audio/webm;codecs=opus'
+                : 'audio/mp4';
+            mediaRecorder = new MediaRecorder(micStream, { mimeType });
+            mediaRecorder.addEventListener('dataavailable', (e) => { if (e.data.size > 0) audioChunks.push(e.data); });
+            mediaRecorder.addEventListener('stop', async () => {
+                setMicRecording(false);
+                micStream.getTracks().forEach((t) => t.stop());
+                if (!audioChunks.length) return;
+                statusDiv.innerHTML = '<span class="loader mr-2"></span> Transcribing...';
+                const blob = new Blob(audioChunks, { type: mimeType });
+                const formData = new FormData();
+                formData.append('file', blob, 'recording.audio');
+                try {
+                    if (!currentApiKey) { statusDiv.textContent = 'Set API key first'; return; }
+                    const resp = await fetch('/v1/audio/transcriptions', {
+                        method: 'POST',
+                        headers: { 'X-API-KEY': currentApiKey },
+                        body: formData,
+                    });
+                    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                    const { text } = await resp.json();
+                    userInput.value = text;
+                    statusDiv.textContent = 'Transcribed. Edit if needed, then Send.';
+                    userInput.focus();
+                } catch (err) {
+                    statusDiv.textContent = 'Transcription failed: ' + err.message;
+                }
+            });
+            mediaRecorder.start();
+            setMicRecording(true);
+            statusDiv.textContent = 'Recording... click mic again to stop';
+        });
 
         // ── Init ───────────────────────────────────────────────────────
         updateCurrentApiKeyBadge();

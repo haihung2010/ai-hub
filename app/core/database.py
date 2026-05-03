@@ -343,6 +343,11 @@ def init_db():
             cursor.execute("ALTER TABLE sessions ADD COLUMN user_id TEXT")
             logger.info("Migrated sessions table: added user_id column")
 
+        chunks_cols = _column_names(cursor, "knowledge_card_chunks")
+        if "embedding" not in chunks_cols:
+            cursor.execute("ALTER TABLE knowledge_card_chunks ADD COLUMN embedding BLOB")
+            logger.info("Migrated knowledge_card_chunks table: added embedding column")
+
         usage_cols = _column_names(cursor, "usage_events")
         if "queue_wait_ms" not in usage_cols:
             cursor.execute("ALTER TABLE usage_events ADD COLUMN queue_wait_ms REAL")

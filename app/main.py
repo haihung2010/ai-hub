@@ -33,6 +33,7 @@ from app.middleware.security import (
     SqliteRateLimiter,
 )
 from app.routes import admin as admin_routes
+from app.routes import audio as audio_routes
 from app.routes import chat as chat_routes
 from app.routes import crew as crew_routes
 from app.routes import health as health_routes
@@ -45,14 +46,18 @@ from app.core.database import DB_PATH
 from app.services.ai_service import AIService
 from app.services.failure_risk_service import FailureRiskService
 from app.services.history_service import HistoryService
+from app.services.knowledge_embedding_service import KnowledgeEmbeddingService
 from app.services.knowledge_ingestion_service import KnowledgeIngestionService
 from app.services.knowledge_retrieval_service import KnowledgeRetrievalService
+from app.services.rerank_service import RerankService
+from app.services.whisper_service import WhisperService
 from app.services.memory_consolidation_service import MemoryConsolidationService
 from app.services.memory_extraction_service import MemoryExtractionService
 from app.services.memory_retrieval_service import MemoryRetrievalService
 from app.services.pinned_memory_service import PinnedMemoryService
 from app.services.prediction_service import PredictionService
 from app.services.providers.llama_cpp import LlamaCppProvider
+from app.services.providers.load_balancer import LlamaCppLoadBalancer
 from app.services.providers.openrouter import OpenRouterProvider
 from app.services.structmem_service import StructMemService
 from app.services.summary_service import SummaryService
@@ -106,7 +111,20 @@ def create_app(
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         timeout = httpx.Timeout(max(settings.request_timeout_seconds, settings.openrouter_timeout_seconds))
         async with httpx.AsyncClient(timeout=timeout) as client:
-            local_provider = LlamaCppProvider(client=client, openai_url=settings.llama_cpp_openai_url)
+            primary_provider = LlamaCppProvider(client=client, openai_url=settings.llama_cpp_openai_url)
+            if settings.background_llama_cpp_enabled:
+                background_provider = LlamaCppProvider(
+                    client=client, openai_url=settings.background_llama_cpp_openai_url
+                )
+                local_provider = primary_provider
+                logger.info(
+                    "background provider active: primary=%s background=%s",
+                    settings.llama_cpp_openai_url,
+                    settings.background_llama_cpp_openai_url,
+                )
+            else:
+                local_provider = primary_provider
+                background_provider = None
             openrouter = (
                 OpenRouterProvider(
                     client=client,
@@ -125,11 +143,34 @@ def create_app(
             memory_retrieval = MemoryRetrievalService()
             memory_consolidation = MemoryConsolidationService()
             pinned_memory = PinnedMemoryService()
+            knowledge_embedding = KnowledgeEmbeddingService(
+                model_name=settings.knowledge_embedding_model,
+            )
             knowledge_ingestion = KnowledgeIngestionService(
                 chunk_chars=settings.knowledge_chunk_chars,
                 max_card_chars=settings.knowledge_max_card_chars,
+                embedding_service=knowledge_embedding,
             )
-            knowledge_retrieval = KnowledgeRetrievalService()
+            reranker = (
+                RerankService(
+                    base_url=settings.reranker_url,
+                    timeout=settings.reranker_timeout_seconds,
+                )
+                if settings.reranker_enabled
+                else None
+            )
+            knowledge_retrieval = KnowledgeRetrievalService(
+                embedding_service=knowledge_embedding,
+                rerank_service=reranker,
+            )
+            whisper = (
+                WhisperService(
+                    model_size=settings.whisper_model,
+                    device=settings.whisper_device,
+                )
+                if settings.whisper_enabled
+                else None
+            )
             usage = UsageService()
             failure_risk = FailureRiskService(
                 high_threshold=settings.failure_risk_high_threshold,
@@ -159,6 +200,8 @@ def create_app(
             app.state.pinned_memory_service = pinned_memory
             app.state.knowledge_ingestion_service = knowledge_ingestion
             app.state.knowledge_retrieval_service = knowledge_retrieval
+            app.state.rerank_service = reranker
+            app.state.whisper_service = whisper
             app.state.usage_service = usage
             app.state.failure_risk_service = failure_risk
             app.state.structmem_service = structmem
@@ -183,6 +226,7 @@ def create_app(
                 usage=usage,
                 failure_risk=failure_risk,
                 knowledge_retrieval=knowledge_retrieval,
+                background_local=background_provider,
             )
             logger.info("ai-hub started on port %s", settings.app_port)
             yield
@@ -209,6 +253,7 @@ def create_app(
 
     app.include_router(health_routes.router)
     app.include_router(chat_routes.router)
+    app.include_router(audio_routes.router)
     app.include_router(users_routes.router)
     app.include_router(memory_routes.router)
     app.include_router(knowledge_routes.router)

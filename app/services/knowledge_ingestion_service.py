@@ -6,14 +6,22 @@ import uuid
 
 from app.core.database import get_db_connection
 from app.models.knowledge import KnowledgeCardCreate, KnowledgeCardRecord
+from app.services.knowledge_embedding_service import KnowledgeEmbeddingService
 
 _PARAGRAPH_RE = re.compile(r"\n\s*\n+")
 
 
 class KnowledgeIngestionService:
-    def __init__(self, *, chunk_chars: int = 2000, max_card_chars: int = 100000) -> None:
+    def __init__(
+        self,
+        *,
+        chunk_chars: int = 2000,
+        max_card_chars: int = 100000,
+        embedding_service: KnowledgeEmbeddingService | None = None,
+    ) -> None:
         self._chunk_chars = chunk_chars
         self._max_card_chars = max_card_chars
+        self._embedding = embedding_service
 
     def create_card(self, req: KnowledgeCardCreate) -> KnowledgeCardRecord:
         content = req.content[: self._max_card_chars]
@@ -150,11 +158,12 @@ class KnowledgeIngestionService:
     def _replace_chunks(self, conn, card_id: str, tenant_id: str, project_id: str, chunks: list[str]) -> None:
         conn.execute("DELETE FROM knowledge_card_chunks WHERE card_id = ?", (card_id,))
         for index, chunk in enumerate(chunks):
+            embedding = self._embedding.embed(chunk) if self._embedding else None
             conn.execute(
                 """
                 INSERT INTO knowledge_card_chunks (
-                    id, card_id, tenant_id, project_id, chunk_index, content, token_estimate
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    id, card_id, tenant_id, project_id, chunk_index, content, token_estimate, embedding
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     str(uuid.uuid4()),
@@ -164,8 +173,51 @@ class KnowledgeIngestionService:
                     index,
                     chunk,
                     max(1, len(chunk) // 4),
+                    embedding,
                 ),
             )
+
+    def fill_missing_embeddings(
+        self,
+        *,
+        tenant_id: str | None = None,
+        project_id: str | None = None,
+        batch_size: int = 50,
+    ) -> dict[str, int]:
+        """Embed chunks that have a NULL embedding blob. Returns updated/skipped counts."""
+        if not self._embedding:
+            return {"total": 0, "updated": 0, "skipped": 0, "error": "no embedding service"}
+
+        sql = "SELECT id, content FROM knowledge_card_chunks WHERE embedding IS NULL"
+        params: list[object] = []
+        if tenant_id:
+            sql += " AND tenant_id = ?"
+            params.append(tenant_id)
+        if project_id:
+            sql += " AND project_id = ?"
+            params.append(project_id)
+        sql += f" LIMIT {batch_size * 20}"
+
+        with get_db_connection() as conn:
+            rows = conn.execute(sql, tuple(params)).fetchall()
+
+        total = len(rows)
+        updated = 0
+        skipped = 0
+        for row in rows:
+            try:
+                embedding = self._embedding.embed(row["content"])
+                with get_db_connection() as conn:
+                    conn.execute(
+                        "UPDATE knowledge_card_chunks SET embedding = ? WHERE id = ?",
+                        (embedding, row["id"]),
+                    )
+                    conn.commit()
+                updated += 1
+            except Exception:
+                skipped += 1
+
+        return {"total": total, "updated": updated, "skipped": skipped}
 
     @staticmethod
     def _row_to_card(row) -> KnowledgeCardRecord:

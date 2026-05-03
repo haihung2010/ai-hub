@@ -134,6 +134,23 @@ async def switch_model(payload: ModelSwitchRequest, request: Request) -> dict[st
     return result
 
 
+@router.post("/knowledge/reindex")
+async def reindex_knowledge(
+    request: Request,
+    tenant_id: str | None = None,
+    project_id: str | None = None,
+    batch_size: int = 50,
+) -> dict[str, object]:
+    """Back-fill embeddings for knowledge chunks that were ingested without a vector."""
+    ingestion = request.app.state.knowledge_ingestion_service
+    result = ingestion.fill_missing_embeddings(
+        tenant_id=tenant_id,
+        project_id=project_id,
+        batch_size=batch_size,
+    )
+    return result
+
+
 @router.get("/health/providers")
 async def provider_health(request: Request) -> dict[str, object]:
     settings = request.app.state.settings

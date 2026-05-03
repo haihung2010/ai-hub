@@ -11,3 +11,6 @@ langchain>=0.3
 langchain-community>=0.3
 sqlalchemy>=2.0
 lxml>=5.0
+fastembed>=0.3
+numpy>=1.26
+faster-whisper>=1.2

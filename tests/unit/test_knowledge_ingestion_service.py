@@ -1,10 +1,25 @@
 from __future__ import annotations
 
+import struct
+
 import pytest
 
 from app.core.database import get_db_connection
 from app.models.knowledge import KnowledgeCardCreate
+from app.services.knowledge_embedding_service import KnowledgeEmbeddingService
 from app.services.knowledge_ingestion_service import KnowledgeIngestionService
+
+
+class _FakeEmbedding(KnowledgeEmbeddingService):
+    """Deterministic embedding: first 4 floats from char codes, rest zeros."""
+    def __init__(self) -> None:
+        super().__init__()
+
+    def embed(self, text: str) -> bytes:
+        dim = 8
+        vals = [float(ord(c)) / 1000.0 for c in text[:dim]]
+        vals += [0.0] * (dim - len(vals))
+        return struct.pack(f"{dim}f", *vals)
 
 
 @pytest.mark.unit
@@ -76,3 +91,51 @@ def test_invalid_status_is_rejected() -> None:
             content="Answer",
             status="deleted",
         )
+
+
+@pytest.mark.unit
+def test_create_card_stores_embedding_blob() -> None:
+    service = KnowledgeIngestionService(
+        chunk_chars=200,
+        embedding_service=_FakeEmbedding(),
+    )
+    card = service.create_card(
+        KnowledgeCardCreate(
+            project_id="chatbot",
+            knowledge_domain="faq",
+            title="Embed test",
+            content="Some content to embed.",
+        )
+    )
+
+    with get_db_connection() as conn:
+        rows = conn.execute(
+            "SELECT embedding FROM knowledge_card_chunks WHERE card_id = ?",
+            (card.id,),
+        ).fetchall()
+
+    assert len(rows) >= 1
+    for row in rows:
+        assert row["embedding"] is not None
+        assert len(row["embedding"]) > 0
+
+
+@pytest.mark.unit
+def test_create_card_without_embedding_stores_null() -> None:
+    service = KnowledgeIngestionService(chunk_chars=200, embedding_service=None)
+    card = service.create_card(
+        KnowledgeCardCreate(
+            project_id="chatbot",
+            knowledge_domain="faq",
+            title="No embed",
+            content="Content without embeddings.",
+        )
+    )
+
+    with get_db_connection() as conn:
+        rows = conn.execute(
+            "SELECT embedding FROM knowledge_card_chunks WHERE card_id = ?",
+            (card.id,),
+        ).fetchall()
+
+    assert all(row["embedding"] is None for row in rows)

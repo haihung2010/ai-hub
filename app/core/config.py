@@ -65,6 +65,8 @@ class Settings(BaseSettings):
     hybrid_force_cloud_when_locked: bool = Field(default=True, alias="HYBRID_FORCE_CLOUD_WHEN_LOCKED")
     hybrid_force_cloud_for_allowed: bool = Field(default=False, alias="HYBRID_FORCE_CLOUD_FOR_ALLOWED")
     hybrid_long_prompt_char_threshold: int = Field(default=0, ge=0, alias="HYBRID_LONG_PROMPT_CHAR_THRESHOLD")
+    hybrid_latency_threshold_ms: float = Field(default=8000.0, gt=0, alias="HYBRID_LATENCY_THRESHOLD_MS")
+    hybrid_latency_window: int = Field(default=20, ge=3, le=100, alias="HYBRID_LATENCY_WINDOW")
     ai_max_tokens: int = Field(default=0, ge=0, alias="AI_MAX_TOKENS")
     local_max_tokens: int = Field(default=0, ge=0, alias="LOCAL_MAX_TOKENS")
     thinking_max_tokens: int = Field(default=0, ge=0, alias="THINKING_MAX_TOKENS")
@@ -103,6 +105,18 @@ class Settings(BaseSettings):
     knowledge_max_chunks: int = Field(default=4, ge=0, le=10, alias="KNOWLEDGE_MAX_CHUNKS")
     knowledge_chunk_chars: int = Field(default=2000, ge=500, le=8000, alias="KNOWLEDGE_CHUNK_CHARS")
     knowledge_max_card_chars: int = Field(default=100000, ge=1000, alias="KNOWLEDGE_MAX_CARD_CHARS")
+    knowledge_embedding_model: str = Field(
+        default="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        alias="KNOWLEDGE_EMBEDDING_MODEL",
+    )
+    reranker_enabled: bool = Field(default=True, alias="RERANKER_ENABLED")
+    reranker_url: str = Field(default="http://127.0.0.1:8082", alias="RERANKER_URL")
+    reranker_timeout_seconds: float = Field(default=10.0, gt=0, alias="RERANKER_TIMEOUT_SECONDS")
+    whisper_enabled: bool = Field(default=True, alias="WHISPER_ENABLED")
+    whisper_model: str = Field(default="large-v3-turbo", alias="WHISPER_MODEL")
+    whisper_device: str = Field(default="cuda", alias="WHISPER_DEVICE")
+    background_llama_cpp_openai_url: str = Field(default="http://localhost:8081/v1", alias="BACKGROUND_LLAMA_CPP_OPENAI_URL")
+    background_llama_cpp_enabled: bool = Field(default=False, alias="BACKGROUND_LLAMA_CPP_ENABLED")
     web_search_max_results: int = Field(default=5, ge=1, le=10, alias="WEB_SEARCH_MAX_RESULTS")
     web_search_timeout_seconds: float = Field(default=8.0, gt=0, alias="WEB_SEARCH_TIMEOUT_SECONDS")
     enable_crew_agents: bool = Field(default=False, alias="ENABLE_CREW_AGENTS")

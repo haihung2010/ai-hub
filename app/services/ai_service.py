@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import collections
 import html
 import json
 import logging
@@ -33,6 +34,23 @@ from app.services.user_service import UserService
 logger = logging.getLogger(__name__)
 
 
+class _LatencyTracker:
+    """Rolling average tracker for local provider latency."""
+
+    def __init__(self, window: int, threshold_ms: float) -> None:
+        self._threshold_ms = threshold_ms
+        self._samples: collections.deque[float] = collections.deque(maxlen=window)
+        self._min_samples = max(3, window // 4)
+
+    def record(self, latency_ms: float) -> None:
+        self._samples.append(latency_ms)
+
+    def is_elevated(self) -> bool:
+        if len(self._samples) < self._min_samples:
+            return False
+        return (sum(self._samples) / len(self._samples)) > self._threshold_ms
+
+
 class AIService:
     def __init__(
         self,
@@ -50,8 +68,10 @@ class AIService:
         usage: UsageService | None = None,
         failure_risk: FailureRiskService | None = None,
         knowledge_retrieval: KnowledgeRetrievalService | None = None,
+        background_local: ChatProvider | None = None,
     ) -> None:
         self._local = local
+        self._background_local = background_local
         self._cloud = cloud
         self._history = history
         self._settings = settings
@@ -66,8 +86,14 @@ class AIService:
         self._failure_risk = failure_risk
         self._knowledge_retrieval = knowledge_retrieval
         self._gpu_lock = asyncio.Semaphore(settings.gpu_concurrency)
+        self._latency_tracker = _LatencyTracker(
+            window=settings.hybrid_latency_window,
+            threshold_ms=settings.hybrid_latency_threshold_ms,
+        )
         logger.info(
-            "AIService initialized with gpu_concurrency=%s", settings.gpu_concurrency
+            "AIService initialized with gpu_concurrency=%s latency_threshold_ms=%s",
+            settings.gpu_concurrency,
+            settings.hybrid_latency_threshold_ms,
         )
 
     @staticmethod
@@ -163,6 +189,9 @@ class AIService:
         session_id: str,
         provider: ChatProvider,
     ) -> None:
+        # Use background provider if available, otherwise fallback to main local provider
+        bg_provider = self._background_local or provider
+
         # Mutually exclusive: StructMem and SummaryService must never both run for
         # the same message. StructMem takes priority when ENABLE_STRUCTMEM=true.
         if self._settings.enable_structmem and user_id and self._structmem:
@@ -172,7 +201,7 @@ class AIService:
                     tenant_id=tenant_id,
                     project_id=project_id,
                     session_id=session_id,
-                    provider=provider,
+                    provider=bg_provider,
                     model=self._settings.structmem_extraction_model,
                     threshold=self._settings.structmem_extraction_threshold,
                     consolidation_model=self._settings.structmem_consolidation_model,
@@ -184,7 +213,7 @@ class AIService:
                 self._summaries.summarize(
                     user_id,
                     project_id,
-                    provider,
+                    bg_provider,
                     self._settings.summary_model,
                     self._settings.summary_threshold,
                     tenant_id,
@@ -225,16 +254,14 @@ class AIService:
         return query or None
 
     def _explicit_search_query(self, req: ChatRequest) -> str | None:
-        if not req.enable_search:
-            return None
+        # /search: command always detected regardless of enable_search toggle
         return self._extract_explicit_search_query(req.user_message)
 
     def _select_explicit_search_provider(self, req: ChatRequest) -> ChatProvider:
-        if not self._settings.openrouter_enabled or not self._cloud:
-            raise UpstreamError("external llm provider is not enabled")
-        if not self._external_allowed(req):
-            raise UpstreamError(f"external llm is not allowed for project={req.project_id}")
-        return self._cloud
+        # /search always prefers cloud; fall back to local if cloud unavailable
+        if self._settings.openrouter_enabled and self._cloud:
+            return self._cloud
+        return self._local
 
     def _build_search_context(self, query: str) -> tuple[str | None, list[str]]:
         if not self._web_search or not self._settings.enable_web_search_tool:
@@ -998,6 +1025,21 @@ class AIService:
                 req.project_id,
                 req.tenant_id,
             )
+        if (
+            provider.name == self._local.name
+            and self._latency_tracker.is_elevated()
+            and self._overload_fallback_allowed(req)
+        ):
+            provider = self._cloud  # type: ignore[assignment]
+            model = self._settings.openrouter_model
+            num_ctx = 0
+            fallback_used = True
+            route_reason = "local_latency_elevated"
+            logger.warning(
+                "Local latency elevated; routing to cloud fallback project=%s tenant=%s",
+                req.project_id,
+                req.tenant_id,
+            )
         options = self._provider_options(provider, req.model_mode)
 
         try:
@@ -1056,6 +1098,8 @@ class AIService:
         self._schedule_memory_jobs(user_id, req.tenant_id, req.project_id, session_id, self._local)
         latency_ms = round((time.perf_counter() - started) * 1000, 3)
         route_alias = "cloud" if provider.name == getattr(self._cloud, "name", None) else "local"
+        if route_alias == "local" and not fallback_used:
+            self._latency_tracker.record(latency_ms)
         self._record_failure_risk(
             risk=risk,
             decision=risk_decision,
