@@ -69,7 +69,7 @@ async def test_llama_cpp_posts_openai_compatible_payload() -> None:
         "&lt;|channel&gt;",
         "&lt;channel|&gt;",
     ]
-    assert "num_ctx" not in seen["payload"]
+    assert seen["payload"]["num_ctx"] == 8192
 
 
 @pytest.mark.unit

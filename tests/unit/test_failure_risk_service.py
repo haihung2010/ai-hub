@@ -8,6 +8,7 @@ from app.core.database import get_db_connection
 from app.models.chat import ChatRequest, Message
 from app.models.failure_risk import RiskPolicyDecision
 from app.services.failure_risk_service import FailureRiskService
+from app.services.history_service import HistoryService
 
 
 @pytest.mark.unit
@@ -74,11 +75,12 @@ def test_failure_risk_record_persists_json_payload() -> None:
         search_injected=False,
     )
 
+    session_id = HistoryService().create_session("test", tenant_id="default")
     record_id = service.record(
         tenant_id="default",
         project_id="test",
         user_id=None,
-        session_id="session-1",
+        session_id=session_id,
         risk=risk,
         decision=RiskPolicyDecision(action="enable_search", applied=False),
         route_before="local",
@@ -88,7 +90,7 @@ def test_failure_risk_record_persists_json_payload() -> None:
     )
 
     with get_db_connection() as conn:
-        row = conn.execute("SELECT * FROM failure_risk_events WHERE id = ?", (record_id,)).fetchone()
+        row = conn.execute("SELECT * FROM failure_risk_events WHERE id = %s", (record_id,)).fetchone()
 
     assert row is not None
     assert row["risk_level"] == risk.level

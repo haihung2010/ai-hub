@@ -130,7 +130,7 @@ class PredictionService:
 
     def _extract_labeled_value(self, content: str, labels: list[str]) -> str | None:
         for label in labels:
-            pattern = rf"(%s:^|\n)\s*(%s:\d+\.\s*)%s{re.escape(label)}\s*:\s*(.+)"
+            pattern = rf"(?:^|\n)\s*\d+\.\s*{re.escape(label)}\s*:\s*(.+)"
             match = re.search(pattern, content, flags=re.IGNORECASE)
             if match:
                 value = match.group(1).strip().strip(" -*")

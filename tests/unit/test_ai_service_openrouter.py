@@ -257,7 +257,7 @@ async def test_openrouter_token_cap_is_passed_to_cloud_provider(openrouter_setti
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_llama_cpp_local_provider_filters_ollama_only_num_ctx(openrouter_settings: Settings) -> None:
+async def test_llama_cpp_local_provider_passes_num_ctx(openrouter_settings: Settings) -> None:
     init_db()
     local = _Provider("llama_cpp", "local")
     settings = openrouter_settings.model_copy(update={"local_max_tokens": 128, "ai_top_p": 0.9})
@@ -278,7 +278,7 @@ async def test_llama_cpp_local_provider_filters_ollama_only_num_ctx(openrouter_s
         )
     )
 
-    assert local.options == [{"max_tokens": 128, "top_p": 0.9}]
+    assert local.options == [{"max_tokens": 128, "num_ctx": 8192, "top_p": 0.9}]
 
 
 @pytest.mark.unit
@@ -307,12 +307,12 @@ async def test_thinking_mode_uses_thinking_max_tokens(openrouter_settings: Setti
         )
     )
 
-    assert local.options == [{"max_tokens": 512, "top_p": 0.9}]
+    assert local.options == [{"max_tokens": 512, "num_ctx": 8192, "top_p": 0.9}]
 
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_llama_cpp_local_provider_skips_num_ctx(openrouter_settings: Settings) -> None:
+async def test_llama_cpp_local_provider_includes_num_ctx(openrouter_settings: Settings) -> None:
     init_db()
     local = _Provider("llama_cpp", "local")
     settings = openrouter_settings.model_copy(update={"local_max_tokens": 128, "ai_top_p": 0.9})
@@ -333,7 +333,7 @@ async def test_llama_cpp_local_provider_skips_num_ctx(openrouter_settings: Setti
         )
     )
 
-    assert local.options == [{"max_tokens": 128, "top_p": 0.9}]
+    assert local.options == [{"max_tokens": 128, "num_ctx": 8192, "top_p": 0.9}]
 
 
 @pytest.mark.unit

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from pathlib import Path
 from typing import Any
 
 import httpx
@@ -13,16 +12,38 @@ from fastapi.testclient import TestClient
 
 import app.core.database as _db_module
 from app.core.config import Settings
-from app.core.database import init_db
+from app.core.database import get_db_connection, init_db
 from app.main import create_app
 from app.middleware.security import AuthFailureTracker, InMemoryRateLimiter
 
 
+def ensure_user(user_id: str, tenant_id: str = "default", name: str | None = None) -> None:
+    """Insert a user row — needed for FK-constrained tables in PostgreSQL.
+    Uses user_id as name by default to avoid UNIQUE(tenant_id, name) conflicts."""
+    with get_db_connection() as conn:
+        conn.execute(
+            "INSERT INTO users (id, tenant_id, name) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
+            (user_id, tenant_id, name or user_id),
+        )
+        conn.commit()
+
+_TEST_TABLES = [
+    "usage_events", "failure_risk_events",
+    "knowledge_card_chunks", "knowledge_cards",
+    "memory_items", "memory_episodes", "memory_consolidations",
+    "pinned_memories", "prediction_records",
+    "messages", "sessions", "summaries", "users",
+    "rate_limit_buckets", "auth_failures", "api_keys",
+]
+
+
 @pytest.fixture(autouse=True)
-def isolated_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Redirect DB_PATH to a per-test temp dir so tests never share SQLite state."""
-    monkeypatch.setattr(_db_module, "DB_PATH", tmp_path / "test.db")
+def isolated_db() -> None:
+    """Truncate all tables before each test for isolation (PostgreSQL)."""
     init_db()
+    with get_db_connection() as conn:
+        conn.execute(f"TRUNCATE TABLE {', '.join(_TEST_TABLES)} CASCADE")
+        conn.commit()
 
 
 @pytest.fixture

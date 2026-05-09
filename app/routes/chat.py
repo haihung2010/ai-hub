@@ -6,7 +6,7 @@ import inspect
 import json
 
 from fastapi import APIRouter, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.core.errors import OllamaUnavailable, UpstreamError, UpstreamTimeout, VramExhausted
 from app.models.chat import ChatRequest, ChatResponse
@@ -32,6 +32,9 @@ def _error_code(exc: Exception) -> int:
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(payload: ChatRequest, request: Request) -> ChatResponse | StreamingResponse:
     service: AIService = request.app.state.ai_service
+    api_key_tenant = getattr(request.state, "api_key_tenant_id", None)
+    if api_key_tenant is not None and api_key_tenant != payload.tenant_id:
+        return JSONResponse(status_code=403, content={"detail": "tenant_id mismatch"})
     if getattr(request.state, "api_key_allow_external", True) is False:
         payload.allow_external = False
 

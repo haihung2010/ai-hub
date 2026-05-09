@@ -211,6 +211,7 @@ def init_db() -> None:
                 max_parallel_requests INTEGER NOT NULL DEFAULT 2,
                 monthly_budget_usd DOUBLE PRECISION,
                 expires_at TIMESTAMP,
+                is_admin INTEGER NOT NULL DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (owner_user_id) REFERENCES users (id)
             )
@@ -306,6 +307,23 @@ def init_db() -> None:
             )
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS rate_limit_buckets (
+                key TEXT PRIMARY KEY,
+                timestamps_json TEXT NOT NULL DEFAULT '[]',
+                updated_at DOUBLE PRECISION NOT NULL DEFAULT 0
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS auth_failures (
+                key TEXT PRIMARY KEY,
+                failures_json TEXT NOT NULL DEFAULT '[]',
+                blocked_until DOUBLE PRECISION NOT NULL DEFAULT 0,
+                updated_at DOUBLE PRECISION NOT NULL DEFAULT 0
+            )
+        """)
+
         # Create indexes
         for stmt in [
             "CREATE INDEX IF NOT EXISTS idx_messages_tenant_session ON messages (tenant_id, session_id, id)",
@@ -331,4 +349,11 @@ def init_db() -> None:
             conn.execute(stmt)
 
         conn.commit()
+
+        # Add is_admin column if it doesn't exist
+        if not _column_exists(conn, "api_keys", "is_admin"):
+            logger.info("Adding is_admin column to api_keys")
+            conn.execute("ALTER TABLE api_keys ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0")
+            conn.commit()
+
     logger.info("Database initialized (PostgreSQL)")

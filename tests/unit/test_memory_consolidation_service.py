@@ -19,21 +19,11 @@ class _FakeProvider:
         return self._response
 
 
-@pytest.fixture(autouse=True)
-def _isolated_db(tmp_path, monkeypatch):
-    """Each test gets its own SQLite file."""
-    import app.core.database as db_module
-
-    db_path = tmp_path / "test.db"
-    monkeypatch.setattr(db_module, "DB_PATH", db_path)
-    db_module.init_db()
-
-
 def _insert_user(user_id: str = "u1", tenant_id: str = "default", name: str = "alice"):
     from app.core.database import get_db_connection
     with get_db_connection() as conn:
         conn.execute(
-            "INSERT OR IGNORE INTO users (id, tenant_id, name) VALUES (?, ?, ?)",
+            "INSERT INTO users (id, tenant_id, name) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
             (user_id, tenant_id, name),
         )
         conn.commit()
@@ -43,8 +33,12 @@ def _insert_episode(episode_id: str, user_id: str = "u1", tenant_id: str = "defa
     from app.core.database import get_db_connection
     with get_db_connection() as conn:
         conn.execute(
+            "INSERT INTO sessions (id, tenant_id, project_id) VALUES ('sess1', %s, %s) ON CONFLICT DO NOTHING",
+            (tenant_id, project_id),
+        )
+        conn.execute(
             "INSERT INTO memory_episodes (id, user_id, tenant_id, project_id, session_id, start_message_id, end_message_id, source_text) "
-            "VALUES (?, ?, ?, ?, 'sess1', 1, 2, 'some text')",
+            "VALUES (%s, %s, %s, %s, 'sess1', 1, 2, 'some text')",
             (episode_id, user_id, tenant_id, project_id),
         )
         conn.commit()
@@ -55,7 +49,7 @@ def _insert_item(item_id: str, episode_id: str, memory_type: str = "semantic", u
     with get_db_connection() as conn:
         conn.execute(
             "INSERT INTO memory_items (id, episode_id, user_id, tenant_id, project_id, memory_type, content, salience) "
-            "VALUES (?, ?, ?, ?, ?, ?, 'user likes Python', 0.8)",
+            "VALUES (%s, %s, %s, %s, %s, %s, 'user likes Python', 0.8)",
             (item_id, episode_id, user_id, tenant_id, project_id, memory_type),
         )
         conn.commit()
@@ -90,7 +84,7 @@ async def test_consolidate_writes_record():
 
     with get_db_connection() as conn:
         row = conn.execute(
-            "SELECT * FROM memory_consolidations WHERE id = ?", (record_id,)
+            "SELECT * FROM memory_consolidations WHERE id = %s", (record_id,)
         ).fetchone()
     assert row is not None
     assert "fact one" in row["content"]

@@ -13,7 +13,11 @@ async def transcribe(
     request: Request,
     file: UploadFile = File(...),
     language: str | None = Form(default=None),
+    tenant_id: str | None = Form(default=None),
 ) -> dict[str, str]:
+    api_key_tenant = getattr(request.state, "api_key_tenant_id", None)
+    if api_key_tenant is not None and tenant_id is not None and api_key_tenant != tenant_id:
+        return JSONResponse(status_code=403, content={"detail": "tenant_id mismatch"})
     whisper = getattr(request.app.state, "whisper_service", None)
     if whisper is None:
         return JSONResponse(status_code=503, content={"detail": "whisper not enabled"})

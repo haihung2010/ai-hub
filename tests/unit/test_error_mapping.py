@@ -17,6 +17,7 @@ from app.core.errors import (
     VramExhausted,
 )
 from app.main import create_app
+from app.middleware.security import AuthFailureTracker, InMemoryRateLimiter
 
 
 class _Stub:
@@ -43,7 +44,9 @@ class _Stub:
 def test_exception_maps_to_status(
     settings: Settings, exc: AIHubError, expected_status: int
 ) -> None:
-    app = create_app(settings=settings)
+    limiter = InMemoryRateLimiter(limit=settings.rate_limit_per_minute)
+    tracker = AuthFailureTracker(limit=settings.auth_failure_limit, block_seconds=settings.auth_failure_block_seconds)
+    app = create_app(settings=settings, limiter=limiter, failure_tracker=tracker)
     with TestClient(app) as tc:
         app.state.ai_service = _Stub(exc)
         resp = tc.post(

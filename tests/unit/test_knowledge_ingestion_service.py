@@ -42,7 +42,7 @@ def test_create_card_persists_card_and_chunks() -> None:
     assert card.tags == ["pricing", "sla"]
     with get_db_connection() as conn:
         chunks = conn.execute(
-            "SELECT content FROM knowledge_card_chunks WHERE card_id = ? ORDER BY chunk_index",
+            "SELECT content FROM knowledge_card_chunks WHERE card_id = %s ORDER BY chunk_index",
             (card.id,),
         ).fetchall()
     assert len(chunks) >= 2
@@ -75,7 +75,7 @@ def test_update_card_replaces_chunks() -> None:
     assert updated.version == 2
     with get_db_connection() as conn:
         chunks = conn.execute(
-            "SELECT content FROM knowledge_card_chunks WHERE card_id = ?",
+            "SELECT content FROM knowledge_card_chunks WHERE card_id = %s",
             (card.id,),
         ).fetchall()
     assert [row["content"] for row in chunks] == ["New answer only"]
@@ -110,7 +110,7 @@ def test_create_card_stores_embedding_blob() -> None:
 
     with get_db_connection() as conn:
         rows = conn.execute(
-            "SELECT embedding FROM knowledge_card_chunks WHERE card_id = ?",
+            "SELECT embedding FROM knowledge_card_chunks WHERE card_id = %s",
             (card.id,),
         ).fetchall()
 
@@ -134,7 +134,7 @@ def test_create_card_without_embedding_stores_null() -> None:
 
     with get_db_connection() as conn:
         rows = conn.execute(
-            "SELECT embedding FROM knowledge_card_chunks WHERE card_id = ?",
+            "SELECT embedding FROM knowledge_card_chunks WHERE card_id = %s",
             (card.id,),
         ).fetchall()
 

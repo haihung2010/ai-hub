@@ -10,6 +10,7 @@ from app.core.database import init_db
 from app.models.chat import Message
 from app.services.history_service import HistoryService
 from app.services.summary_service import SummaryService
+from tests.conftest import ensure_user
 
 
 @pytest.fixture(autouse=True)
@@ -30,7 +31,9 @@ def summary(history: HistoryService) -> SummaryService:
 @pytest.fixture
 def uid() -> str:
     import uuid
-    return f"test-{uuid.uuid4().hex[:8]}"
+    user_id = f"test-{uuid.uuid4().hex[:8]}"
+    ensure_user(user_id)
+    return user_id
 
 
 @pytest.mark.unit
@@ -195,6 +198,7 @@ async def test_summarize_limits_concurrent_provider_calls(history: HistoryServic
     provider.complete.side_effect = complete
     user_ids = ["summary-queue-a", "summary-queue-b"]
     for user_id in user_ids:
+        ensure_user(user_id)
         session_id = history.create_session("queue-proj", user_id=user_id)
         for i in range(2):
             history.save_message(session_id, "user", f"msg {i}", user_id=user_id)

@@ -8,6 +8,7 @@ from uuid import uuid4
 from app.core.database import init_db
 from app.services.history_service import HistoryService
 from app.services.prediction_service import PredictionService
+from tests.conftest import ensure_user
 
 
 @pytest.fixture(autouse=True)
@@ -20,6 +21,7 @@ def test_maybe_store_from_chat_creates_stock_prediction_record() -> None:
     history = HistoryService()
     service = PredictionService()
     user_id = f"user-{uuid4().hex}"
+    ensure_user(user_id, tenant_id="stock")
     session_id = history.create_session("stock_prediction", user_id=user_id, tenant_id="stock")
     content = """
 1. Mã/cổ phiếu: VNM
@@ -69,6 +71,8 @@ def test_list_records_filters_by_tenant_and_symbol() -> None:
     history = HistoryService()
     service = PredictionService()
     user_id = f"user-{uuid4().hex}"
+    ensure_user(user_id, tenant_id="stock")
+    ensure_user(user_id, tenant_id="other")
     stock_session = history.create_session("stock_prediction", user_id=user_id, tenant_id="stock")
     other_session = history.create_session("stock_prediction", user_id=user_id, tenant_id="other")
 

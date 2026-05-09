@@ -178,7 +178,7 @@ def test_ollama_failure_does_not_persist_empty_assistant_message(
         row = conn.execute(
             "SELECT COUNT(*) AS cnt FROM messages m "
             "JOIN sessions s ON m.session_id = s.id "
-            "WHERE s.tenant_id = ? AND s.project_id = ?",
+            "WHERE s.tenant_id = %s AND s.project_id = %s",
             (tenant_id, "iot"),
         ).fetchone()
     assert row["cnt"] == 0

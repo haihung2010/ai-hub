@@ -117,6 +117,7 @@ class Settings(BaseSettings):
     whisper_device: str = Field(default="cuda", alias="WHISPER_DEVICE")
     background_llama_cpp_openai_url: str = Field(default="http://localhost:8081/v1", alias="BACKGROUND_LLAMA_CPP_OPENAI_URL")
     background_llama_cpp_enabled: bool = Field(default=False, alias="BACKGROUND_LLAMA_CPP_ENABLED")
+    llama_cpp_nodes: list[str] = Field(default_factory=list, alias="LLAMA_CPP_NODES")
     web_search_max_results: int = Field(default=5, ge=1, le=10, alias="WEB_SEARCH_MAX_RESULTS")
     web_search_timeout_seconds: float = Field(default=8.0, gt=0, alias="WEB_SEARCH_TIMEOUT_SECONDS")
     enable_crew_agents: bool = Field(default=False, alias="ENABLE_CREW_AGENTS")
@@ -135,7 +136,7 @@ class Settings(BaseSettings):
     redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
     project_context_sizes: dict = Field(default_factory=dict, alias="PROJECT_CONTEXT_SIZES")
 
-    @field_validator("allowed_origins", "allowed_hosts", "openrouter_allowed_projects", "openrouter_denied_projects", mode="before")
+    @field_validator("allowed_origins", "allowed_hosts", "openrouter_allowed_projects", "openrouter_denied_projects", "llama_cpp_nodes", mode="before")
     @classmethod
     def _parse_string_list(cls, value: list[str] | str) -> list[str]:
         if isinstance(value, list):

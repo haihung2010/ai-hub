@@ -2,264 +2,353 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Hub Observability</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#020617">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AI Hub">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <title>AI Hub | Admin OS</title>
+    <link rel="stylesheet" href="/admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <script src="/admin.js" defer></script>
 </head>
-<body class="min-h-screen bg-slate-100 text-slate-800">
-    <main class="mx-auto max-w-7xl p-4 sm:p-6">
-        <header class="mb-4 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <h1 class="text-2xl font-bold">AI Hub Observability</h1>
-                <p class="text-sm text-slate-500">Local routing, latency, fallback, queueing, and provider health.</p>
+<body>
+    <div class="app-shell">
+
+    <!-- ===== Sidebar ===== -->
+    <aside class="sidebar-blur app-sidebar">
+        <div class="sidebar-brand">
+            <div style="width:38px; height:38px; border-radius:0.75rem; background:linear-gradient(135deg,var(--accent-1),var(--accent-2)); display:flex; align-items:center; justify-content:center; box-shadow:0 4px 18px rgba(99,102,241,0.35)">
+                <svg width="20" height="20" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
-            <div class="flex flex-wrap gap-2">
-                <a href="/" class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100">Chat</a>
-                <button id="api-key-btn" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-100">Add Key</button>
-                <button id="refresh-btn" class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Refresh</button>
-                <button id="auto-refresh-btn" class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100">Auto: OFF</button>
+            <div>
+                <div style="font-size:1rem; font-weight:800; letter-spacing:-0.02em">AI HUB</div>
+                <div style="font-size:0.65rem; font-weight:700; color:var(--accent-1); letter-spacing:0.18em">ADMIN OS</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="tab-link" data-tab="dashboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+                Dashboard
+            </button>
+            <button class="tab-link" data-tab="gpu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+                GPU Command
+            </button>
+            <button class="tab-link" data-tab="management">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                Access Keys
+            </button>
+            <button class="tab-link" data-tab="knowledge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                RAG Knowledge
+            </button>
+            <button class="tab-link" data-tab="tenants">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                Tenants
+            </button>
+            <button class="tab-link" data-tab="system">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                System
+            </button>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="glass-panel sidebar-gpu-card">
+                <div style="font-size:0.625rem; font-weight:800; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.18em; margin-bottom:0.5rem">GPU Health</div>
+                <div style="height:6px; width:100%; background:rgba(255,255,255,0.05); border-radius:999px; overflow:hidden">
+                    <div id="gpu-util-bar" style="height:100%; width:0%; background:var(--accent-1); transition:width 0.6s ease, background 0.3s ease"></div>
+                </div>
+                <div class="mono" style="display:flex; justify-content:space-between; font-size:0.625rem; color:var(--text-muted); margin-top:0.5rem">
+                    <span id="gpu-temp-text">0°C</span>
+                    <span id="gpu-mem-text">0/0 GB</span>
+                </div>
+            </div>
+            <button class="btn btn-ghost" id="api-key-btn" style="width:100%">Config Token</button>
+        </div>
+    </aside>
+
+    <!-- ===== Main ===== -->
+    <main class="app-main">
+
+        <header class="app-header">
+            <div>
+                <h2 id="current-tab-title" style="font-size:1.625rem; font-weight:800; letter-spacing:-0.02em; margin:0">System Overview</h2>
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.4rem">
+                    <span class="status-dot" style="background:var(--status-ok); animation:pulse 2s infinite"></span>
+                    <span id="sync-status" class="mono" style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.15em">Idle</span>
+                </div>
+            </div>
+            <div class="header-tools">
+                <div class="model-switcher">
+                    <button id="switch-lite" class="btn-ghost" style="border:none; padding:0.4rem 0.85rem; font-size:0.65rem; font-weight:800; letter-spacing:0.1em; color:var(--accent-1); background:transparent; border-radius:0.375rem; cursor:pointer">LITE</button>
+                    <button id="switch-thinking" class="btn-ghost" style="border:none; padding:0.4rem 0.85rem; font-size:0.65rem; font-weight:800; letter-spacing:0.1em; color:var(--text-muted); background:transparent; border-radius:0.375rem; cursor:pointer">THINKING</button>
+                </div>
+                <button class="btn btn-ghost" id="cmd-palette-btn" title="Ctrl+K" style="font-size:0.65rem; padding:0.4rem 0.7rem">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <kbd style="font-size:0.6rem; background:rgba(255,255,255,0.06); padding:0.1rem 0.3rem; border-radius:3px; border:1px solid var(--border-subtle); color:var(--text-faint); font-family:'JetBrains Mono',monospace">⌘K</kbd>
+                </button>
+                <button class="theme-toggle" id="theme-toggle-btn" title="Toggle theme">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                </button>
+                <button class="btn btn-primary" id="auto-refresh-btn">⚪ LIVE: OFF</button>
             </div>
         </header>
 
-        <div id="status" class="mb-4 rounded-lg bg-white px-4 py-2 text-sm text-slate-500 shadow-sm">Ready.</div>
+        <!-- ===== DASHBOARD TAB ===== -->
+        <section id="tab-dashboard" class="tab-content">
+            <div class="grid-stat-cards">
+                <div class="stat-card indigo">
+                    <div class="stat-icon">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    </div>
+                    <div class="stat-label">Total Pulse</div>
+                    <div id="total-requests" class="stat-value">0</div>
+                    <div id="success-error" class="stat-sub mono">0 OK · 0 ERR</div>
+                </div>
+                <div class="stat-card emerald">
+                    <div class="stat-icon">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <div class="stat-label">Latency p95</div>
+                    <div id="latency-p95" class="stat-value" style="color:#6ee7b7">0ms</div>
+                    <div id="latency-detail" class="stat-sub mono">avg 0ms · max 0ms</div>
+                </div>
+                <div class="stat-card amber">
+                    <div class="stat-icon">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
+                    </div>
+                    <div class="stat-label">GPU Slots</div>
+                    <div id="gpu-active" class="stat-value">0/0</div>
+                    <div id="gpu-queue-text" class="stat-sub mono">0 free</div>
+                </div>
+                <div class="stat-card violet">
+                    <div class="stat-icon">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                    </div>
+                    <div class="stat-label">Cost This Month</div>
+                    <div id="month-cost" class="stat-value">$0.00</div>
+                    <div id="total-cost" class="stat-sub mono">total $0.00</div>
+                </div>
+            </div>
 
-        <section class="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <div class="rounded-2xl bg-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Requests</p>
-                <p id="total-requests" class="mt-2 text-3xl font-bold">0</p>
-                <p id="success-error" class="text-xs text-slate-500">0 OK / 0 errors</p>
+            <div class="grid-charts">
+                <div class="glass-panel panel-padded">
+                    <div class="section-title indigo">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                        REQUEST FREQUENCY
+                    </div>
+                    <div class="chart-wrap"><canvas id="requests-chart"></canvas></div>
+                </div>
+                <div class="glass-panel panel-padded">
+                    <div class="section-title emerald">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        LATENCY PERFORMANCE
+                    </div>
+                    <div class="chart-wrap"><canvas id="latency-chart"></canvas></div>
+                </div>
             </div>
-            <div class="rounded-2xl bg-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Latency p95</p>
-                <p id="latency-p95" class="mt-2 text-3xl font-bold">0 ms</p>
-                <p id="latency-detail" class="text-xs text-slate-500">avg 0 ms / max 0 ms</p>
-            </div>
-            <div class="rounded-2xl bg-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Fallback</p>
-                <p id="fallback-count" class="mt-2 text-3xl font-bold">0</p>
-                <p id="fallback-rate" class="text-xs text-slate-500">0%</p>
-            </div>
-            <div class="rounded-2xl bg-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Queue wait</p>
-                <p id="queue-avg" class="mt-2 text-3xl font-bold">0 ms</p>
-                <p id="queue-detail" class="text-xs text-slate-500">max 0 ms / 0 requests</p>
-            </div>
-            <div class="rounded-2xl bg-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Providers</p>
-                <div id="provider-health" class="mt-2 space-y-1 text-sm text-slate-600">Loading...</div>
+
+            <div class="glass-panel panel-padded">
+                <div class="section-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    REAL-TIME STREAM AUDIT
+                </div>
+                <div id="recent-table"></div>
             </div>
         </section>
 
-        <section class="mb-4 grid gap-4 lg:grid-cols-2">
-            <div class="rounded-2xl bg-white p-4 shadow-sm">
-                <h2 class="mb-3 font-bold">Route reasons</h2>
-                <div id="route-reasons" class="overflow-x-auto"></div>
-            </div>
-            <div class="rounded-2xl bg-white p-4 shadow-sm">
-                <h2 class="mb-3 font-bold">Routes</h2>
-                <div id="routes" class="overflow-x-auto"></div>
-            </div>
-            <div class="rounded-2xl bg-white p-4 shadow-sm">
-                <h2 class="mb-3 font-bold">Providers</h2>
-                <div id="providers" class="overflow-x-auto"></div>
-            </div>
-            <div class="rounded-2xl bg-white p-4 shadow-sm">
-                <h2 class="mb-3 font-bold">Models</h2>
-                <div id="models" class="overflow-x-auto"></div>
+        <!-- ===== GPU TAB ===== -->
+        <section id="tab-gpu" class="tab-content">
+            <div id="gpu-detailed-cards" class="grid-gpu-cards"></div>
+            <div class="glass-panel panel-padded">
+                <div class="panel-header">
+                    <div class="section-title indigo" style="margin-bottom:0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                        LIVE GPU PULSE
+                        <span class="mono panel-header-sub">— 60-sample rolling</span>
+                    </div>
+                    <div class="panel-badges">
+                        <span class="badge badge-accent"><span class="badge-dot"></span>Util %</span>
+                        <span class="badge badge-ok"><span class="badge-dot"></span>Temp °C</span>
+                        <span class="badge badge-info"><span class="badge-dot"></span>VRAM %</span>
+                    </div>
+                </div>
+                <div class="chart-wrap chart-wrap-tall"><canvas id="gpu-sparkline"></canvas></div>
             </div>
         </section>
 
-        <section class="rounded-2xl bg-white p-4 shadow-sm">
-            <h2 class="mb-3 font-bold">Recent requests</h2>
-            <div id="recent" class="overflow-x-auto"></div>
+        <!-- ===== MANAGEMENT TAB ===== -->
+        <section id="tab-management" class="tab-content">
+            <div class="grid-management">
+                <div class="glass-panel panel-padded">
+                    <div class="section-title indigo">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        PROVISION ACCESS
+                    </div>
+                    <div class="form-stack">
+                        <input id="key-name" type="text" class="input" placeholder="Key label (e.g. mobile-app-prod)">
+                        <input id="key-tenant" type="text" class="input" placeholder="Tenant ID" value="default">
+                        <div class="form-row-toggle">
+                            <input id="key-rpm" type="number" class="input mono form-flex" placeholder="RPM" value="60">
+                            <label class="toggle">
+                                <input id="key-admin" type="checkbox">
+                                <span class="toggle-track"></span>
+                            </label>
+                            <span class="form-toggle-label">Admin</span>
+                        </div>
+                        <button id="create-key-btn" class="btn btn-primary btn-block">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Mint New Token
+                        </button>
+                    </div>
+                </div>
+                <div class="glass-panel panel-padded">
+                    <div class="section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                        KEY INVENTORY
+                    </div>
+                    <div id="keys-table"></div>
+                </div>
+            </div>
+            <div class="glass-panel panel-padded">
+                <div class="section-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    ACTIVE SESSION PULSE
+                </div>
+                <div id="sessions-table"></div>
+            </div>
         </section>
+
+        <!-- ===== KNOWLEDGE TAB ===== -->
+        <section id="tab-knowledge" class="tab-content">
+            <div class="grid-knowledge">
+                <div class="glass-panel panel-padded">
+                    <div class="section-title emerald">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13"/></svg>
+                        INGEST INTELLIGENCE
+                    </div>
+                    <div class="form-stack">
+                        <input id="rag-project" type="text" class="input" placeholder="Target project (e.g. medical)">
+                        <input id="rag-title" type="text" class="input" placeholder="Title">
+                        <select id="rag-domain" class="select">
+                            <option value="general">General</option>
+                            <option value="medical">Medical</option>
+                            <option value="legal">Legal</option>
+                            <option value="finance">Finance</option>
+                            <option value="tech">Tech</option>
+                            <option value="science">Science</option>
+                        </select>
+                        <div class="drop-zone" id="rag-drop-zone">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <div class="dz-title">Drop file here or click to upload</div>
+                            <div class="dz-hint">.txt, .md, .json, .csv — max 500KB</div>
+                            <div class="dz-filename" id="rag-filename"></div>
+                            <input type="file" id="rag-file-input" accept=".txt,.md,.json,.csv" style="display:none">
+                        </div>
+                        <textarea id="rag-content" class="textarea textarea-tall" placeholder="Knowledge content source... (or drop file above)"></textarea>
+                        <button id="upload-rag-btn" class="btn btn-success btn-block">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            Vectorize Content
+                        </button>
+                    </div>
+                </div>
+                <div class="glass-panel panel-padded">
+                    <div class="panel-header">
+                        <div class="section-title" style="margin-bottom:0">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                            GLOBAL INDEX CARDS
+                        </div>
+                        <button id="reindex-btn" class="btn btn-ghost">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                            Reindex Embeddings
+                        </button>
+                    </div>
+                    <div id="rag-table"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== TENANTS TAB ===== -->
+        <section id="tab-tenants" class="tab-content">
+            <div id="tenants-breadcrumb" class="crumbs tenants-crumbs"></div>
+
+            <div id="tenants-view-list">
+                <div id="tenants-grid"></div>
+            </div>
+
+            <div id="tenants-view-users" style="display:none">
+                <div class="glass-panel panel-padded">
+                    <div id="tenant-users-title" class="section-title">USERS</div>
+                    <div id="tenant-users-table"></div>
+                </div>
+            </div>
+
+            <div id="tenants-view-detail" style="display:none">
+                <div id="user-detail-content"></div>
+            </div>
+
+            <div id="tenants-view-chat" style="display:none">
+                <div class="glass-panel panel-padded">
+                    <div id="user-chat-content"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== SYSTEM TAB ===== -->
+        <section id="tab-system" class="tab-content">
+            <div class="glass-panel panel-padded" style="margin-bottom:1.25rem">
+                <div class="panel-header">
+                    <div class="section-title emerald" style="margin-bottom:0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                        PROVIDER HEALTH
+                    </div>
+                    <button class="btn btn-ghost" id="refresh-health-btn">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                        Refresh
+                    </button>
+                </div>
+                <div id="health-grid" class="health-grid"></div>
+            </div>
+
+            <div class="grid-charts">
+                <div class="glass-panel panel-padded">
+                    <div class="section-title indigo">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                        COST BREAKDOWN (7D)
+                    </div>
+                    <div class="chart-wrap"><canvas id="cost-chart"></canvas></div>
+                </div>
+                <div class="glass-panel panel-padded">
+                    <div class="section-title violet">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
+                        MODEL USAGE SPLIT
+                    </div>
+                    <div class="chart-wrap"><canvas id="model-usage-chart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="glass-panel panel-padded" style="margin-bottom:1.25rem">
+                <div class="panel-header">
+                    <div class="section-title" style="margin-bottom:0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        RECENT SECURITY EVENTS
+                    </div>
+                    <button class="btn btn-ghost" id="refresh-logs-btn">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                        Refresh
+                    </button>
+                </div>
+                <div id="log-viewer" class="log-viewer">Loading logs...</div>
+            </div>
+        </section>
+
     </main>
+    </div>
 
-    <script>
-        const apiKeyBtn = document.getElementById('api-key-btn');
-        const refreshBtn = document.getElementById('refresh-btn');
-        const autoRefreshBtn = document.getElementById('auto-refresh-btn');
-        const statusEl = document.getElementById('status');
-        let currentApiKey = localStorage.getItem('apiKey') || '';
-        let autoRefreshTimer = null;
-
-        function setText(id, value) {
-            document.getElementById(id).textContent = String(value);
-        }
-
-        function fmtMs(value) {
-            return `${Math.round(Number(value || 0))} ms`;
-        }
-
-        function updateApiKeyBadge() {
-            if (!currentApiKey) {
-                apiKeyBtn.textContent = 'Add Key';
-                apiKeyBtn.className = 'rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-100';
-                return;
-            }
-            apiKeyBtn.textContent = `Key: ...${currentApiKey.slice(-4)}`;
-            apiKeyBtn.className = 'rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-semibold text-green-600 hover:bg-green-100';
-        }
-
-        function promptForApiKey() {
-            const provided = window.prompt('Enter your API key:', currentApiKey);
-            if (provided === null) return false;
-            const trimmed = provided.trim();
-            if (!trimmed) {
-                statusEl.textContent = 'API key is required.';
-                return false;
-            }
-            currentApiKey = trimmed;
-            localStorage.setItem('apiKey', currentApiKey);
-            updateApiKeyBadge();
-            return true;
-        }
-
-        function headers() {
-            return { 'X-API-KEY': currentApiKey };
-        }
-
-        function table(headers, rows, emptyText = 'No data yet.') {
-            if (!rows || rows.length === 0) {
-                const div = document.createElement('div');
-                div.className = 'rounded-lg bg-slate-50 p-3 text-sm text-slate-500';
-                div.textContent = emptyText;
-                return div;
-            }
-            const tbl = document.createElement('table');
-            tbl.className = 'min-w-full text-left text-sm';
-            const thead = document.createElement('thead');
-            const headerRow = document.createElement('tr');
-            headers.forEach((item) => {
-                const th = document.createElement('th');
-                th.className = 'border-b border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400';
-                th.textContent = item.label;
-                headerRow.appendChild(th);
-            });
-            thead.appendChild(headerRow);
-            tbl.appendChild(thead);
-            const tbody = document.createElement('tbody');
-            rows.forEach((row) => {
-                const tr = document.createElement('tr');
-                tr.className = 'border-b border-slate-100 last:border-0';
-                headers.forEach((item) => {
-                    const td = document.createElement('td');
-                    td.className = 'px-3 py-2 align-top text-slate-700';
-                    td.textContent = item.format ? item.format(row[item.key], row) : (row[item.key] ?? '');
-                    tr.appendChild(td);
-                });
-                tbody.appendChild(tr);
-            });
-            tbl.appendChild(tbody);
-            return tbl;
-        }
-
-        function renderTable(containerId, headers, rows) {
-            const el = document.getElementById(containerId);
-            el.replaceChildren(table(headers, rows));
-        }
-
-        function renderStats(stats) {
-            setText('total-requests', stats.total_requests || 0);
-            setText('success-error', `${stats.success_requests || 0} OK / ${stats.error_requests || 0} errors`);
-            setText('latency-p95', fmtMs(stats.latency?.p95_ms));
-            setText('latency-detail', `avg ${fmtMs(stats.latency?.avg_ms)} / max ${fmtMs(stats.latency?.max_ms)}`);
-            setText('fallback-count', stats.fallback_requests || 0);
-            setText('fallback-rate', `${(((stats.fallback_rate || 0) * 100).toFixed(2))}%`);
-            setText('queue-avg', fmtMs(stats.queue_wait?.avg_ms));
-            setText('queue-detail', `max ${fmtMs(stats.queue_wait?.max_ms)} / ${stats.queue_wait?.requests || 0} requests`);
-
-            renderTable('route-reasons', [
-                { key: 'route_reason', label: 'Reason' },
-                { key: 'requests', label: 'Requests' },
-                { key: 'avg_queue_wait_ms', label: 'Avg queue', format: fmtMs },
-                { key: 'fallback_requests', label: 'Fallbacks' },
-            ], stats.by_route_reason || []);
-            renderTable('routes', [
-                { key: 'route_alias', label: 'Route' },
-                { key: 'requests', label: 'Requests' },
-                { key: 'avg_latency_ms', label: 'Avg latency', format: fmtMs },
-                { key: 'fallback_requests', label: 'Fallbacks' },
-            ], stats.by_route || []);
-            renderTable('providers', [
-                { key: 'provider', label: 'Provider' },
-                { key: 'requests', label: 'Requests' },
-                { key: 'avg_latency_ms', label: 'Avg latency', format: fmtMs },
-            ], stats.by_provider || []);
-            renderTable('models', [
-                { key: 'model', label: 'Model' },
-                { key: 'requests', label: 'Requests' },
-                { key: 'avg_latency_ms', label: 'Avg latency', format: fmtMs },
-            ], stats.by_model || []);
-            renderTable('recent', [
-                { key: 'created_at', label: 'Time' },
-                { key: 'tenant_id', label: 'Tenant' },
-                { key: 'project_id', label: 'Project' },
-                { key: 'route_alias', label: 'Route' },
-                { key: 'route_reason', label: 'Reason' },
-                { key: 'provider', label: 'Provider' },
-                { key: 'model', label: 'Model' },
-                { key: 'latency_ms', label: 'Latency', format: fmtMs },
-                { key: 'queue_wait_ms', label: 'Queue', format: fmtMs },
-                { key: 'fallback_used', label: 'Fallback', format: (value) => Number(value) ? 'yes' : 'no' },
-                { key: 'status_code', label: 'Status' },
-                { key: 'error_type', label: 'Error' },
-            ], stats.recent || []);
-        }
-
-        function renderHealth(payload) {
-            const box = document.getElementById('provider-health');
-            box.replaceChildren();
-            (payload.providers || []).forEach((provider) => {
-                const div = document.createElement('div');
-                div.className = provider.configured ? 'text-green-600' : 'text-slate-400';
-                div.textContent = `${provider.name}: ${provider.status}`;
-                box.appendChild(div);
-            });
-        }
-
-        async function fetchJson(path) {
-            const response = await fetch(path, { headers: headers() });
-            if (!response.ok) {
-                let detail = `API error ${response.status}`;
-                try { detail = (await response.json()).detail || detail; } catch (_) {}
-                throw new Error(detail);
-            }
-            return response.json();
-        }
-
-        async function refresh() {
-            if (!currentApiKey && !promptForApiKey()) return;
-            statusEl.textContent = 'Refreshing...';
-            try {
-                const [stats, health] = await Promise.all([
-                    fetchJson('/v1/admin/stats'),
-                    fetchJson('/v1/admin/health/providers'),
-                ]);
-                renderStats(stats);
-                renderHealth(health);
-                statusEl.textContent = `Updated at ${new Date().toLocaleTimeString()}`;
-            } catch (error) {
-                statusEl.textContent = `Error: ${error.message}`;
-            }
-        }
-
-        apiKeyBtn.addEventListener('click', () => { if (promptForApiKey()) refresh(); });
-        refreshBtn.addEventListener('click', refresh);
-        autoRefreshBtn.addEventListener('click', () => {
-            if (autoRefreshTimer) {
-                clearInterval(autoRefreshTimer);
-                autoRefreshTimer = null;
-                autoRefreshBtn.textContent = 'Auto: OFF';
-                return;
-            }
-            autoRefreshTimer = setInterval(refresh, 10000);
-            autoRefreshBtn.textContent = 'Auto: 10s';
-            refresh();
-        });
-
-        updateApiKeyBadge();
-        refresh();
-    </script>
+    <style>@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } }</style>
 </body>
 </html>

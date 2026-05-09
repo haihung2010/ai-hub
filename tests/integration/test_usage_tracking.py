@@ -46,7 +46,7 @@ def test_chat_response_includes_usage_metadata_and_persists_event(
         row = conn.execute(
             "SELECT tenant_id, project_id, session_id, provider, model, route_alias, "
             "latency_ms, status_code, fallback_used, queue_wait_ms, route_reason FROM usage_events "
-            "WHERE tenant_id = ? ORDER BY created_at DESC LIMIT 1",
+            "WHERE tenant_id = %s ORDER BY created_at DESC LIMIT 1",
             (tenant_id,),
         ).fetchone()
 

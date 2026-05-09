@@ -161,7 +161,9 @@ def test_repeated_invalid_api_keys_block_client_ip(security_settings: Settings) 
     protected = security_settings.model_copy(
         update={"auth_failure_limit": 2, "auth_failure_block_seconds": 300}
     )
-    app = create_app(settings=protected)
+    limiter = InMemoryRateLimiter(limit=protected.rate_limit_per_minute)
+    tracker = AuthFailureTracker(limit=protected.auth_failure_limit, block_seconds=protected.auth_failure_block_seconds)
+    app = create_app(settings=protected, limiter=limiter, failure_tracker=tracker)
     with TestClient(app) as client:
         for _ in range(2):
             response = client.post(

@@ -9,11 +9,14 @@ from fastapi.testclient import TestClient
 
 from app.core.config import Settings
 from app.main import create_app
+from app.middleware.security import AuthFailureTracker, InMemoryRateLimiter
 
 
 @pytest.mark.unit
 def test_crew_research_503_when_not_enabled(settings: Settings) -> None:
-    app = create_app(settings=settings)
+    limiter = InMemoryRateLimiter(limit=settings.rate_limit_per_minute)
+    tracker = AuthFailureTracker(limit=settings.auth_failure_limit, block_seconds=settings.auth_failure_block_seconds)
+    app = create_app(settings=settings, limiter=limiter, failure_tracker=tracker)
     with TestClient(app) as tc:
         # crew_service not set on app.state => should 503
         resp = tc.post(
@@ -28,7 +31,9 @@ def test_crew_research_503_when_not_enabled(settings: Settings) -> None:
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_crew_research_returns_result(settings: Settings) -> None:
-    app = create_app(settings=settings)
+    limiter = InMemoryRateLimiter(limit=settings.rate_limit_per_minute)
+    tracker = AuthFailureTracker(limit=settings.auth_failure_limit, block_seconds=settings.auth_failure_block_seconds)
+    app = create_app(settings=settings, limiter=limiter, failure_tracker=tracker)
     mock_crew = AsyncMock()
     mock_crew.research.return_value = "Lots of AI news today."
 
@@ -48,7 +53,9 @@ async def test_crew_research_returns_result(settings: Settings) -> None:
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_crew_research_502_when_empty_result(settings: Settings) -> None:
-    app = create_app(settings=settings)
+    limiter = InMemoryRateLimiter(limit=settings.rate_limit_per_minute)
+    tracker = AuthFailureTracker(limit=settings.auth_failure_limit, block_seconds=settings.auth_failure_block_seconds)
+    app = create_app(settings=settings, limiter=limiter, failure_tracker=tracker)
     mock_crew = AsyncMock()
     mock_crew.research.return_value = ""
 
@@ -65,7 +72,9 @@ async def test_crew_research_502_when_empty_result(settings: Settings) -> None:
 
 @pytest.mark.unit
 def test_crew_research_422_on_empty_query(settings: Settings) -> None:
-    app = create_app(settings=settings)
+    limiter = InMemoryRateLimiter(limit=settings.rate_limit_per_minute)
+    tracker = AuthFailureTracker(limit=settings.auth_failure_limit, block_seconds=settings.auth_failure_block_seconds)
+    app = create_app(settings=settings, limiter=limiter, failure_tracker=tracker)
     with TestClient(app) as tc:
         resp = tc.post(
             "/v1/crew/research",

@@ -60,7 +60,11 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 - **Whisper Audio Input**: `faster-whisper` (`large-v3-turbo` float16 on CUDA) via `POST /v1/audio/transcriptions`
 - **Usage tracking**: token counting, cost calculation, latency, provider/route logging
 - **Prediction audit trail**: stock prediction records with outcome evaluation
-- **Admin metrics**: `GET /v1/admin/usage`, `GET /v1/admin/stats`, `GET /v1/admin/queue`
+- **Admin metrics**: `GET /v1/admin/usage`, `GET /v1/admin/stats`, `GET /v1/admin/queue`, `GET /v1/admin/gpu/stats`, `GET /v1/admin/health/providers`
+- **Admin tenants/users**: `GET /v1/admin/tenants`, `GET /v1/admin/tenants/{project_id}/users`, `GET /v1/admin/users/{user_id}/detail`, `GET /v1/admin/users/{user_id}/messages`
+- **Admin keys**: `POST /v1/admin/keys` (mint), `DELETE /v1/admin/keys/{id}` (disable), `PATCH /v1/admin/keys/{id}` (re-enable / change rpm / budget / admin / name), `GET /v1/admin/management/keys`, `GET /v1/admin/management/sessions`
+- **Admin knowledge ops**: `POST /v1/admin/knowledge/upload`, `GET /v1/admin/knowledge/cards`, `DELETE /v1/admin/knowledge/cards/{id}` (cascade chunks via FK), `POST /v1/admin/knowledge/reindex`
+- **Admin OS UI** (`static/admin.html` + `admin.css` + `admin.js`): full redesign — Cyber-Slate Refined theme, reusable `DataTable` component (search / filter chips / sortable columns / pagination / per-row icon actions), `Toast` + `Modal.confirm/preview` system, per-tab redesign (Dashboard / GPU / Access Keys / RAG Knowledge / Tenants), live stat cards, GPU progress rings, breadcrumb tenant drilldown, chat history search
 
 ## Technical Details
 
@@ -167,8 +171,10 @@ Nâng cấp GPU để tăng throughput thực sự:
 
 ### Phase 4 — Features
 - **Billing/quota per API key**: monthly_budget_usd đã có trong schema, cần tracking thực
-- **Admin dashboard**: nâng cấp `static/admin.html` với biểu đồ real-time (dùng `/v1/admin/stats`)
-- **Model hot-swap API**: `POST /v1/admin/model/switch` đã có, cần UI button
+- [x] **Admin dashboard**: `static/admin.html` đã redesign với theme Cyber-Slate Refined, real-time charts (Chart.js), DataTable search/filter/sort/actions, toast + modal, GPU progress rings, tenant drilldown, chat history search (DONE 2026-05-06)
+- [x] **Admin key management**: PATCH endpoint cho re-enable / RPM / budget; UI có nút edit + toggle enable + delete (DONE 2026-05-06)
+- [x] **Admin knowledge management**: DELETE endpoint với FK cascade; UI có nút preview + delete per card (DONE 2026-05-06)
+- **Model hot-swap API**: `POST /v1/admin/model/switch` đã có, UI có button (cần test thực tế trên prod)
 - **Streaming memory extraction**: hiện tại chạy sau khi reply xong, có thể chạy parallel
 - **Multi-tenant isolation**: tenant_id đã có trong mọi bảng, cần enforce ở route layer
 
@@ -176,7 +182,7 @@ Nâng cấp GPU để tăng throughput thực sự:
 - Single llama.cpp instance — no horizontal scaling (Phase 3)
 - Two large models (e4b + qwen3.5:27b) cannot stay resident simultaneously on 16GB GPU
 - No billing enforcement (schema có nhưng chưa implement logic)
-- `static/admin.html` dashboard còn basic, chưa có real-time charts
+- Bulk operations (batch disable keys, batch delete cards) chưa có — chỉ per-row actions trong UI
 
 ## File Structure (key files)
 ```
@@ -188,7 +194,7 @@ app/
 ├── routes/users.py             # GET/DELETE /v1/users/{user_name}/...
 ├── routes/knowledge.py         # /v1/knowledge/*
 ├── routes/memory.py            # GET /v1/memory
-├── routes/admin.py             # GET /v1/admin/usage, /queue, /health/providers
+├── routes/admin.py             # /v1/admin/* — usage, stats, queue, gpu/stats, tenants, users/{id}/detail, keys (POST/DELETE/PATCH), knowledge/cards (GET/DELETE), reindex, model/switch
 ├── middleware/security.py      # Auth + Redis rate limiting
 ├── services/ai_service.py      # Core orchestrator (per-project ctx, num_ctx injection)
 ├── services/providers/
@@ -204,8 +210,12 @@ scripts/
 ├── migrate_sqlite_to_pg.py     # One-shot data migration SQLite → PostgreSQL
 ├── perf_hybrid_test.py         # Hybrid local+cloud benchmark
 ├── autotune_q8_multiuser.py    # Multi-config autotune sweep
+├── seed_multi_user.py          # Seed multi-tenant/project/user demo data for admin UI
+├── loadtest.py                 # Continuous load test (multi-tenant)
 static/
 ├── index.html                  # Main chat UI (queue badge, streaming, search)
-└── admin.html                  # Admin dashboard
+├── admin.html                  # Admin OS — markup only (~280 lines)
+├── admin.css                   # Cyber-Slate Refined theme tokens, glass surfaces, DataTable, toast, modal
+└── admin.js                    # Admin OS logic — DataTable component, API client, toast/modal, charts, per-tab handlers
 reports/                        # Benchmark results and notes
 ```

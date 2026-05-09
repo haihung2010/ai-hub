@@ -105,19 +105,27 @@ def create_app(
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         timeout = httpx.Timeout(max(settings.request_timeout_seconds, settings.openrouter_timeout_seconds))
         async with httpx.AsyncClient(timeout=timeout) as client:
-            primary_provider = LlamaCppProvider(client=client, openai_url=settings.llama_cpp_openai_url)
-            if settings.background_llama_cpp_enabled:
+            if settings.llama_cpp_nodes:
+                _providers = [
+                    LlamaCppProvider(client=client, openai_url=f"{node}/v1")
+                    for node in settings.llama_cpp_nodes
+                ]
+                _slots_urls = [f"{node}/slots" for node in settings.llama_cpp_nodes]
+                local_provider = LlamaCppLoadBalancer(client=client, providers=_providers, slots_urls=_slots_urls)
+                background_provider = None
+                logger.info("load balancer active: %d nodes %s", len(_providers), settings.llama_cpp_nodes)
+            elif settings.background_llama_cpp_enabled:
+                local_provider = LlamaCppProvider(client=client, openai_url=settings.llama_cpp_openai_url)
                 background_provider = LlamaCppProvider(
                     client=client, openai_url=settings.background_llama_cpp_openai_url
                 )
-                local_provider = primary_provider
                 logger.info(
                     "background provider active: primary=%s background=%s",
                     settings.llama_cpp_openai_url,
                     settings.background_llama_cpp_openai_url,
                 )
             else:
-                local_provider = primary_provider
+                local_provider = LlamaCppProvider(client=client, openai_url=settings.llama_cpp_openai_url)
                 background_provider = None
             openrouter = (
                 OpenRouterProvider(

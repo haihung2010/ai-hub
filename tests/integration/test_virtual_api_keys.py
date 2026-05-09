@@ -20,7 +20,7 @@ def _insert_virtual_key(raw_key: str, *, allow_external: bool = False, rpm_limit
     with get_db_connection() as conn:
         conn.execute(
             "INSERT INTO api_keys (id, key_hash, name, tenant_id, allow_external, rpm_limit, max_parallel_requests) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "VALUES (%s, %s, %s, %s, %s, %s, %s)",
             (key_id, key_hash, "test key", "default", int(allow_external), rpm_limit, 2),
         )
         conn.commit()
@@ -46,7 +46,7 @@ def test_virtual_api_key_can_call_local_chat(client: TestClient, mock_api: respx
     assert response.json()["provider"] == "llama_cpp"
     with get_db_connection() as conn:
         row = conn.execute(
-            "SELECT api_key_id FROM usage_events WHERE api_key_id = ? ORDER BY created_at DESC LIMIT 1",
+            "SELECT api_key_id FROM usage_events WHERE api_key_id = %s ORDER BY created_at DESC LIMIT 1",
             (key_id,),
         ).fetchone()
     assert row is not None

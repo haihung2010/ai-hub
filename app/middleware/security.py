@@ -26,6 +26,8 @@ API_KEY_HEADER = "X-API-KEY"
 ALWAYS_PUBLIC_PATHS = {"/"}
 DOCS_PATHS = {"/docs", "/openapi.json", "/redoc"}
 HEALTH_PATHS = {"/health"}
+PWA_ROOT_FILES = {"/manifest.json", "/favicon.ico"}
+PWA_ROOT_SUFFIXES = (".png", ".webmanifest", ".svg", ".woff", ".woff2")
 RATE_LIMIT_WINDOW_SECONDS = 60
 
 
@@ -330,6 +332,17 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self._api_keys = ApiKeyService()
 
     async def dispatch(self, request: Request, call_next: Callable[[Request], Response]) -> Response:
+        path = request.url.path
+        if (
+            path == "/"
+            or path.startswith("/admin")
+            or path.endswith(".html")
+            or path.startswith("/static")
+            or path in PWA_ROOT_FILES
+            or path.endswith(PWA_ROOT_SUFFIXES)
+        ):
+            return await call_next(request)
+
         client_ip = self._client_ip(request)
         if not self._host_allowed(request):
             self._log_denial(client_ip, request.url.path, "host_not_allowed")
@@ -341,7 +354,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if request.method == "OPTIONS" or self._is_public_path(request.url.path):
             return await call_next(request)
 
-        if self._failure_tracker.is_blocked(client_ip):
+        if self._failure_tracker.is_blocked(client_ip) and request.url.path != "/admin.html":
             self._log_denial(client_ip, request.url.path, "client_temporarily_blocked")
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -352,6 +365,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         api_key_record: ApiKeyRecord | None = None
         if provided_key == self._settings.api_key:
             request.state.api_key_id = None
+            request.state.api_key_tenant_id = None
             request.state.api_key_allow_external = True
             request.state.api_key_rpm_limit = self._settings.rate_limit_per_minute
         elif provided_key:
@@ -364,6 +378,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     content={"detail": "invalid api key"},
                 )
             request.state.api_key_id = api_key_record.id
+            request.state.api_key_tenant_id = api_key_record.tenant_id
             request.state.api_key_allow_external = api_key_record.allow_external
             request.state.api_key_rpm_limit = api_key_record.rpm_limit
         else:
@@ -389,6 +404,15 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 headers={"Retry-After": str(RATE_LIMIT_WINDOW_SECONDS)},
             )
 
+        if api_key_record is not None and api_key_record.monthly_budget_usd is not None:
+            spent = ApiKeyService.get_monthly_spend(api_key_record.id)
+            if spent >= api_key_record.monthly_budget_usd:
+                self._log_denial(client_ip, request.url.path, "monthly_budget_exceeded")
+                return JSONResponse(
+                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                    content={"detail": "monthly budget exceeded"},
+                )
+
         return await call_next(request)
 
     def _host_allowed(self, request: Request) -> bool:
@@ -411,6 +435,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         return f"{client_ip}:{key_hash}"
 
     def _is_public_path(self, path: str) -> bool:
+        if path == "/admin.html":
+            return True
         if path in ALWAYS_PUBLIC_PATHS:
             return True
         if self._settings.public_health_enabled and path in HEALTH_PATHS:

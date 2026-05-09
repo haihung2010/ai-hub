@@ -76,7 +76,60 @@ class UsageService:
             conn.commit()
         return event_id
 
+    def get_time_series(self, days: int = 1, bucket: str = "hour") -> list[dict[str, object]]:
+        with get_db_connection() as conn:
+            # interval conversion for safety
+            interval = f"{days} days"
+            rows = conn.execute(
+                f"""
+                SELECT
+                    DATE_TRUNC(%s, created_at) AS bucket,
+                    COUNT(*) AS total_requests,
+                    SUM(CASE WHEN status_code >= 200 AND status_code < 400 THEN 1 ELSE 0 END) AS success_requests,
+                    SUM(CASE WHEN status_code >= 400 OR error_type IS NOT NULL THEN 1 ELSE 0 END) AS error_requests,
+                    AVG(latency_ms) AS avg_latency_ms
+                FROM usage_events
+                WHERE created_at > NOW() - %s::interval
+                GROUP BY 1
+                ORDER BY 1 ASC
+                """,
+                (bucket, interval),
+            ).fetchall()
+        return [
+            {
+                "bucket": row["bucket"].isoformat() if row["bucket"] else None,
+                "total_requests": row["total_requests"],
+                "success_requests": row["success_requests"] or 0,
+                "error_requests": row["error_requests"] or 0,
+                "avg_latency_ms": round(row["avg_latency_ms"] or 0, 3),
+            }
+            for row in rows
+        ]
+
+    def get_cost_series_7d(self) -> list[dict[str, object]]:
+        with get_db_connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT
+                    DATE_TRUNC('day', created_at) AS day,
+                    COALESCE(SUM(cost_usd), 0) AS cost_usd
+                FROM usage_events
+                WHERE created_at > NOW() - INTERVAL '7 days'
+                GROUP BY 1
+                ORDER BY 1 ASC
+                """
+            ).fetchall()
+        return [
+            {
+                "day": row["day"].strftime("%m/%d") if row["day"] else None,
+                "cost_usd": round(float(row["cost_usd"] or 0), 6),
+            }
+            for row in rows
+        ]
+
     def summary(self) -> dict[str, object]:
+        time_series = self.get_time_series()
+        cost_series_7d = self.get_cost_series_7d()
         with get_db_connection() as conn:
             totals = conn.execute(
                 """
@@ -89,7 +142,9 @@ class UsageService:
                     MAX(latency_ms) AS max_latency_ms,
                     AVG(queue_wait_ms) AS avg_queue_wait_ms,
                     MAX(queue_wait_ms) AS max_queue_wait_ms,
-                    COUNT(queue_wait_ms) AS queue_wait_requests
+                    COUNT(queue_wait_ms) AS queue_wait_requests,
+                    COALESCE(SUM(cost_usd), 0) AS total_cost_usd,
+                    COALESCE(SUM(CASE WHEN DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE) THEN cost_usd ELSE 0 END), 0) AS month_cost_usd
                 FROM usage_events
                 """
             ).fetchone()
@@ -134,6 +189,8 @@ class UsageService:
         latencies = [row["latency_ms"] for row in latency_rows if row["latency_ms"] is not None]
         return {
             "total_requests": total_requests,
+            "total_cost_usd": round(float(totals["total_cost_usd"] or 0), 6),
+            "month_cost_usd": round(float(totals["month_cost_usd"] or 0), 6),
             "success_requests": totals["success_requests"] or 0,
             "error_requests": totals["error_requests"] or 0,
             "fallback_requests": fallback_requests,
@@ -203,4 +260,6 @@ class UsageService:
                 for row in by_status_rows
             ],
             "recent": [dict(row) for row in recent_rows],
+            "time_series": time_series,
+            "cost_series_7d": cost_series_7d,
         }
