@@ -878,31 +878,51 @@ async function loadUserDetail(userId, userName) {
 async function loadUserChat(userId, userName) {
     switchTenantView('chat');
     const el = document.getElementById('user-chat-content');
-    el.innerHTML = `<div style="text-align:center;padding:5rem 0"><div class="dt-skel" style="height:60px;width:50%;margin:0 auto"></div></div>`;
+    el.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;gap:0.75rem;color:var(--text-secondary)"><div class="dt-skel" style="width:20px;height:20px;border-radius:50%;animation:spin 1s linear infinite"></div><span>Loading messages...</span></div>`;
+
     try {
         const data = await api(`/v1/admin/users/${encodeURIComponent(userId)}/messages?project_id=${encodeURIComponent(ADMIN.tenant.selectedTenant || '')}`);
+
+        // Update header
+        document.getElementById('chat-header-info').innerHTML = `${escapeHtml(userName)} • ${data.length} messages`;
+
+        // Setup open full view button
+        const openBtn = document.getElementById('open-chat-viewer-btn');
+        openBtn.onclick = () => {
+            const chatUrl = `/chat.html?user_id=${encodeURIComponent(userId)}&project_id=${encodeURIComponent(ADMIN.tenant.selectedTenant || '')}&user_name=${encapeHtml(userName)}`;
+            window.open(chatUrl, '_blank');
+        };
+
         if (!data.length) {
-            el.innerHTML = `<div class="dt-empty">${ICON.activity}<div class="title">No messages</div><div class="hint">User hasn't chatted yet in this project</div></div>`;
+            el.innerHTML = `<div class="dt-empty" style="margin:auto">${ICON.activity}<div class="title">No messages</div><div class="hint">User hasn't chatted yet in this project</div></div>`;
             return;
         }
 
-        // Open chat in new window instead of showing inline
-        const chatUrl = `/chat.html?user_id=${encodeURIComponent(userId)}&project_id=${encodeURIComponent(ADMIN.tenant.selectedTenant || '')}&user_name=${encodeURIComponent(userName)}`;
-        el.innerHTML = `
-            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:1.5rem;padding:2rem">
-                <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="opacity:0.6">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                </svg>
-                <div style="text-align:center">
-                    <div style="font-weight:700;font-size:1.125rem;margin-bottom:0.5rem">${escapeHtml(userName)} — ${data.length} messages</div>
-                    <div style="color:var(--text-secondary);font-size:0.9375rem;margin-bottom:1.5rem">Click below to view full chat conversation</div>
-                    <button class="btn btn-primary" onclick="window.open('${chatUrl}', '_blank')" style="cursor:pointer">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                        Open Chat Viewer
-                    </button>
+        // Sort messages by date (oldest first)
+        const sorted = [...data].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+        el.innerHTML = sorted.map(m => {
+            const time = new Date(m.created_at);
+            const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const isAssistant = m.role === 'assistant';
+
+            return `
+                <div style="display:flex;gap:0.75rem;${isAssistant ? 'flex-direction:row-reverse' : ''}">
+                    <div style="width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:800;flex-shrink:0;${isAssistant ? 'background:rgba(99,102,241,0.18);color:#a5b4fc' : 'background:rgba(255,255,255,0.05);color:var(--text-secondary)'}">${isAssistant ? 'AI' : 'U'}</div>
+                    <div style="flex:1;max-width:85%">
+                        <div style="display:flex;gap:0.5rem;margin-bottom:0.35rem;${isAssistant ? 'justify-content:flex-end' : ''};font-size:0.65rem;color:var(--text-faint)">
+                            <span>${timeStr}</span>
+                            ${m.is_summarized ? '<span style="background:rgba(245,158,11,0.2);color:#fbbf24;padding:0.1rem 0.4rem;border-radius:3px">Summarized</span>' : ''}
+                        </div>
+                        <div style="background:${isAssistant ? 'var(--bg-panel)' : 'rgba(99,102,241,0.15)'};border:1px solid ${isAssistant ? 'var(--border-subtle)' : 'rgba(99,102,241,0.3)'};color:var(--text-primary);padding:0.75rem 1rem;border-radius:0.75rem;word-wrap:break-word;line-height:1.5;font-size:0.9375rem">${escapeHtml(m.content || '')}</div>
+                    </div>
                 </div>
-            </div>`;
-    } catch (e) { toast(e.message, 'err'); }
+            `;
+        }).join('');
+
+    } catch (e) {
+        el.innerHTML = `<div class="dt-empty" style="margin:auto"><div class="title">Error loading messages</div><div class="hint">${escapeHtml(e.message)}</div></div>`;
+    }
 }
 
 /* ====== Command Palette ====== */

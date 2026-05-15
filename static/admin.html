@@ -292,8 +292,23 @@
             </div>
 
             <div id="tenants-view-chat" style="display:none">
-                <div class="glass-panel panel-padded">
-                    <div id="user-chat-content"></div>
+                <div style="display:flex;flex-direction:column;height:100%;gap:1rem">
+                    <!-- Header -->
+                    <div class="glass-panel panel-padded">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <div>
+                                <div class="section-title indigo" style="margin-bottom:0.5rem">CHAT MESSAGES</div>
+                                <div id="chat-header-info" style="font-size:0.875rem;color:var(--text-secondary)"></div>
+                            </div>
+                            <button class="btn btn-primary" id="open-chat-viewer-btn" style="cursor:pointer">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                Open Full View
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Messages Container -->
+                    <div id="user-chat-content" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0.75rem;padding:0.5rem"></div>
                 </div>
             </div>
         </section>
