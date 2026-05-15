@@ -15,6 +15,7 @@ _SEMANTIC_WEIGHT = 0.7
 _TOKEN_WEIGHT = 0.3
 _RERANK_CANDIDATE_K = 20
 _HIGH_CONFIDENCE_THRESHOLD = 0.85
+_DEDUP_SIMILARITY_THRESHOLD = 0.85
 
 
 @dataclass(frozen=True)
@@ -34,6 +35,33 @@ class KnowledgeRetrievalService:
 
     def _tokenize(self, text: str) -> set[str]:
         return {token.lower() for token in _WORD_RE.findall(text)}
+
+    def _deduplicate_results(self, results: list[_ScoredChunk]) -> list[_ScoredChunk]:
+        """Remove semantically similar results to reduce redundancy."""
+        if not results or not self._embedding:
+            return results
+
+        deduplicated: list[_ScoredChunk] = []
+        for candidate in results:
+            is_duplicate = False
+            candidate_embedding = candidate.result.embedding
+            if not candidate_embedding:
+                deduplicated.append(candidate)
+                continue
+
+            for kept in deduplicated:
+                kept_embedding = kept.result.embedding
+                if not kept_embedding:
+                    continue
+                similarity = KnowledgeEmbeddingService.similarity(candidate_embedding, kept_embedding)
+                if similarity >= _DEDUP_SIMILARITY_THRESHOLD:
+                    is_duplicate = True
+                    break
+
+            if not is_duplicate:
+                deduplicated.append(candidate)
+
+        return deduplicated
 
     def search(
         self,
@@ -84,16 +112,18 @@ class KnowledgeRetrievalService:
         relevant = [item for item in scored if item.score > 0]
         relevant.sort(key=lambda item: item.score, reverse=True)
 
-        if self._rerank and relevant:
-            top_score = relevant[0].score if relevant else 0
+        deduplicated = self._deduplicate_results(relevant)
+
+        if self._rerank and deduplicated:
+            top_score = deduplicated[0].score if deduplicated else 0
             if top_score >= _HIGH_CONFIDENCE_THRESHOLD:
-                return [item.result for item in relevant[:limit]]
-            candidates = relevant[:_RERANK_CANDIDATE_K]
+                return [item.result for item in deduplicated[:limit]]
+            candidates = deduplicated[:_RERANK_CANDIDATE_K]
             docs = [c.result.content for c in candidates]
             reranked = self._rerank.rerank(query, docs)
             return [candidates[r.index].result for r in reranked[:limit]]
 
-        return [item.result for item in relevant[:limit]]
+        return [item.result for item in deduplicated[:limit]]
 
     def format_for_prompt(self, results: list[KnowledgeSearchResult]) -> str:
         if not results:
