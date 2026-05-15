@@ -76,8 +76,8 @@ body {
 }
 .tab-link svg { width: 1.125rem; height: 1.125rem; flex-shrink: 0; }
 
-.tab-content { display: none; height: calc(100vh - 40px); overflow-y: auto; padding-right: 0.5rem; }
-.tab-content.active { display: block; }
+.tab-content { display: none; flex: 1; overflow-y: auto; overflow-x: hidden; padding-right: 0.5rem; }
+.tab-content.active { display: flex; flex-direction: column; }
 
 /* ====== Buttons ====== */
 .btn {
@@ -703,6 +703,8 @@ body {
     padding: 2rem;
     max-width: calc(100vw - 240px);
     overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
 }
 .app-header {
     display: flex;
