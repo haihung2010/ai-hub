@@ -4,7 +4,7 @@
 # Tests all 3 phases of optimization
 
 API_KEY="1XteCCQ_s_UbrqOGEIYybmDBnokWhxYap90D6_Jojx8"
-BASE_URL="http://localhost:8001"
+BASE_URL="http://localhost:8000"
 PROJECT_ID="fanpage"
 USER_NAME="test_user_$(date +%s)"
 
@@ -183,7 +183,7 @@ echo ""
 echo "================================================================================"
 echo "ADMIN UI ACCESS"
 echo "================================================================================"
-echo "📖 Admin UI: http://localhost:8001/admin.html"
+echo "📖 Admin UI: http://localhost:8000/admin.html"
 echo "🔑 API Key: $API_KEY"
 echo ""
 echo "Available Admin Endpoints:"
