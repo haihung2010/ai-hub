@@ -12,7 +12,7 @@ const ADMIN = {
     charts: { requests: null, latency: null, gpu: null, cost: null, modelUsage: null },
     gpuHistory: { labels: [], util: [], temp: [], vram: [] },
     GPU_MAX_POINTS: 60,
-    tabs: ['dashboard','gpu','management','knowledge','tenants','system'],
+    tabs: ['dashboard','gpu','management','knowledge','tenants','audit','system'],
     tenant: { view: 'list', selectedTenant: null, selectedUser: null },
     theme: localStorage.getItem('admin-theme') || 'dark',
     cmdPaletteOpen: false,
@@ -1323,14 +1323,88 @@ function showTab(tabId) {
     if (tab) tab.classList.add('active');
     const link = document.querySelector(`.tab-link[data-tab="${tabId}"]`);
     if (link) link.classList.add('active');
-    const titleMap = { dashboard: 'System Overview', gpu: 'GPU Command Center', management: 'Access Keys', knowledge: 'RAG Knowledge', tenants: 'Tenants & Users', system: 'System Health' };
+    const titleMap = { dashboard: 'System Overview', gpu: 'GPU Command Center', management: 'Access Keys', knowledge: 'RAG Knowledge', tenants: 'Tenants & Users', audit: 'Chat Audit', system: 'System Health' };
     setText('current-tab-title', titleMap[tabId] || tabId);
     if (tabId === 'dashboard') { showStatSkeletons(); restoreStatCards(); refreshDashboard(); }
     if (tabId === 'gpu') refreshDashboard();
     if (tabId === 'management') { refreshKeys(); refreshSessions(); }
     if (tabId === 'knowledge') refreshKnowledge();
     if (tabId === 'tenants') loadTenants();
+    if (tabId === 'audit') initAuditTab();
     if (tabId === 'system') { refreshSystemHealth(); refreshSecurityLogs(); refreshSystemCharts(); }
+}
+
+/* ====== Chat Audit Tab ====== */
+function initAuditTab() {
+    const loadBtn = document.getElementById('audit-load-btn');
+    if (loadBtn) {
+        loadBtn.addEventListener('click', loadAuditMessages);
+    }
+}
+
+async function loadAuditMessages() {
+    const userId = document.getElementById('audit-user-id').value.trim();
+    const projectId = document.getElementById('audit-project-id').value.trim();
+    const container = document.getElementById('audit-messages-container');
+
+    if (!userId) {
+        toast('User ID required', 'warn');
+        return;
+    }
+
+    container.innerHTML = '<div style="text-align:center;color:var(--text-muted)">Loading messages...</div>';
+
+    try {
+        const params = new URLSearchParams();
+        if (projectId) params.append('project_id', projectId);
+        params.append('limit', '100');
+
+        const messages = await api(`/v1/admin/users/${encodeURIComponent(userId)}/messages?${params.toString()}`);
+
+        if (!messages || messages.length === 0) {
+            container.innerHTML = '<div style="text-align:center;color:var(--text-muted)">No messages found</div>';
+            return;
+        }
+
+        // Group messages into request/response pairs
+        const pairs = [];
+        for (let i = 0; i < messages.length; i += 2) {
+            const userMsg = messages[i];
+            const assistantMsg = messages[i + 1];
+            if (userMsg && userMsg.role === 'user') {
+                pairs.push({
+                    request: userMsg,
+                    response: assistantMsg || null
+                });
+            }
+        }
+
+        container.innerHTML = pairs.map((pair, idx) => `
+            <div class="glass-panel panel-padded" style="border-left:3px solid var(--accent-1)">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
+                    <div style="font-weight:700;color:var(--accent-1)">Request #${idx + 1}</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted)">${fmtDateTime(pair.request.created_at)}</div>
+                </div>
+                <div style="background:rgba(0,0,0,0.2);padding:0.75rem;border-radius:0.375rem;margin-bottom:0.75rem;font-size:0.875rem;color:var(--text-secondary);max-height:200px;overflow-y:auto;font-family:'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-word">
+                    ${escapeHtml(pair.request.content)}
+                </div>
+                ${pair.response ? `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;margin-top:1rem">
+                        <div style="font-weight:700;color:#6ee7b7">Response</div>
+                        <div style="font-size:0.7rem;color:var(--text-muted)">${fmtDateTime(pair.response.created_at)}</div>
+                    </div>
+                    <div style="background:rgba(110,231,183,0.1);padding:0.75rem;border-radius:0.375rem;font-size:0.875rem;color:var(--text-secondary);max-height:200px;overflow-y:auto;font-family:'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-word">
+                        ${escapeHtml(pair.response.content)}
+                    </div>
+                ` : '<div style="color:var(--text-muted);font-style:italic">No response yet</div>'}
+            </div>
+        `).join('');
+
+        toast(`Loaded ${pairs.length} request/response pairs`, 'ok');
+    } catch (e) {
+        container.innerHTML = `<div style="color:var(--status-err)">${escapeHtml(e.message)}</div>`;
+        toast(e.message, 'err');
+    }
 }
 
 /* ====== Bootstrap ====== */
