@@ -19,6 +19,7 @@ from app.models.failure_risk import FailureRiskResult, RiskPolicyDecision
 from app.models.memory import MemoryConsolidationRecord, MemoryItemRecord, RetrievedMemoryBundle
 from app.prompts.loader import load_prompt
 from app.services.failure_risk_service import FailureRiskService
+from app.services.fact_extraction_service import FactExtractionService
 from app.services.history_service import HistoryService
 from app.services.knowledge_retrieval_service import KnowledgeRetrievalService
 from app.services.memory_retrieval_service import MemoryRetrievalService
@@ -69,6 +70,7 @@ class AIService:
         failure_risk: FailureRiskService | None = None,
         knowledge_retrieval: KnowledgeRetrievalService | None = None,
         background_local: ChatProvider | None = None,
+        fact_extraction: FactExtractionService | None = None,
     ) -> None:
         self._local = local
         self._background_local = background_local
@@ -85,6 +87,7 @@ class AIService:
         self._usage = usage or UsageService()
         self._failure_risk = failure_risk
         self._knowledge_retrieval = knowledge_retrieval
+        self._fact_extraction = fact_extraction
         self._gpu_lock = asyncio.Semaphore(settings.gpu_concurrency)
         self._latency_tracker = _LatencyTracker(
             window=settings.hybrid_latency_window,
@@ -236,6 +239,42 @@ class AIService:
                     self._settings.summary_context_token_threshold,
                 )
             )
+
+        if user_id and project_id.lower() == "fanpage" and self._fact_extraction:
+            asyncio.create_task(
+                self._schedule_fact_extraction(
+                    user_id=user_id,
+                    tenant_id=tenant_id,
+                    project_id=project_id,
+                    session_id=session_id,
+                    provider=bg_provider,
+                )
+            )
+
+    async def _schedule_fact_extraction(
+        self,
+        user_id: str,
+        tenant_id: str,
+        project_id: str,
+        session_id: str,
+        provider: ChatProvider,
+    ) -> None:
+        try:
+            messages = self._history.get_session_messages(session_id, tenant_id=tenant_id, limit=10)
+            if len(messages) < 2:
+                return
+            indexed_messages = [(i, msg) for i, msg in enumerate(messages)]
+            await self._fact_extraction.extract_and_store(
+                user_id=user_id,
+                tenant_id=tenant_id,
+                project_id=project_id,
+                session_id=session_id,
+                messages=indexed_messages,
+                provider=provider,
+                model=self._settings.summary_model,
+            )
+        except Exception as e:
+            logger.exception("Fact extraction failed user=%s project=%s", user_id, project_id)
 
     @staticmethod
     def _effective_history_cap(settings: Settings, model_mode: str, project_id: str | None = None) -> int:

@@ -307,20 +307,19 @@ def init_db() -> None:
             )
         """)
 
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS rate_limit_buckets (
-                key TEXT PRIMARY KEY,
-                timestamps_json TEXT NOT NULL DEFAULT '[]',
-                updated_at DOUBLE PRECISION NOT NULL DEFAULT 0
-            )
-        """)
-
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS auth_failures (
-                key TEXT PRIMARY KEY,
-                failures_json TEXT NOT NULL DEFAULT '[]',
-                blocked_until DOUBLE PRECISION NOT NULL DEFAULT 0,
-                updated_at DOUBLE PRECISION NOT NULL DEFAULT 0
+        conn.execute(f"""
+            CREATE TABLE IF NOT EXISTS fanpage_facts (
+                id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL DEFAULT '{DEFAULT_TENANT_ID}',
+                user_id TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                session_id TEXT NOT NULL,
+                fact TEXT NOT NULL,
+                category TEXT NOT NULL DEFAULT 'other',
+                confidence FLOAT NOT NULL DEFAULT 0.5,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id),
+                FOREIGN KEY (session_id) REFERENCES sessions (id)
             )
         """)
 
@@ -345,6 +344,8 @@ def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_knowledge_cards_scope ON knowledge_cards (tenant_id, project_id, status, knowledge_domain, updated_at)",
             "CREATE INDEX IF NOT EXISTS idx_knowledge_cards_project_status ON knowledge_cards (project_id, status, trust_level)",
             "CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_scope ON knowledge_card_chunks (tenant_id, project_id, card_id, chunk_index)",
+            "CREATE INDEX IF NOT EXISTS idx_fanpage_facts_user_project ON fanpage_facts (user_id, project_id, created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_fanpage_facts_confidence ON fanpage_facts (project_id, confidence DESC)",
         ]:
             conn.execute(stmt)
 
