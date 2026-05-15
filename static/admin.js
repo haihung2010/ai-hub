@@ -885,35 +885,23 @@ async function loadUserChat(userId, userName) {
             el.innerHTML = `<div class="dt-empty">${ICON.activity}<div class="title">No messages</div><div class="hint">User hasn't chatted yet in this project</div></div>`;
             return;
         }
-        const msgs = [...data].reverse();
-        el.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-                <div style="font-weight:700;font-size:1rem">${escapeHtml(userName)} <span style="color:var(--text-faint);font-weight:500;font-size:0.8125rem">— ${msgs.length} messages</span></div>
-                <div class="input-with-icon" style="max-width:240px">${ICON.search}<input class="input" id="chat-search" placeholder="Search messages..."/></div>
-            </div>
-            <div id="chat-list" style="display:flex;flex-direction:column;gap:1rem"></div>`;
 
-        const list = document.getElementById('chat-list');
-        const renderList = (q = '') => {
-            const ql = q.toLowerCase();
-            const filtered = ql ? msgs.filter(m => (m.content || '').toLowerCase().includes(ql)) : msgs;
-            list.innerHTML = filtered.map(m => `
-                <div style="display:flex;gap:0.75rem;${m.role === 'assistant' ? 'flex-direction:row-reverse' : ''}">
-                    <div style="width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:800;flex-shrink:0;${m.role === 'assistant' ? 'background:rgba(99,102,241,0.18);color:#a5b4fc' : 'background:rgba(255,255,255,0.05);color:var(--text-secondary)'}">${m.role === 'assistant' ? 'AI' : 'U'}</div>
-                    <div style="max-width:78%">
-                        <div style="display:flex;gap:0.5rem;margin-bottom:0.35rem;${m.role === 'assistant' ? 'justify-content:flex-end' : ''}">
-                            <span class="mono" style="font-size:0.65rem;color:var(--text-faint)">${escapeHtml(m.project_id)}</span>
-                            <span class="mono" style="font-size:0.65rem;color:var(--text-faint)">${fmtDateTime(m.created_at)}</span>
-                            ${m.is_summarized ? badge('warn', 'Summ') : ''}
-                        </div>
-                        <div class="chat-bubble ${m.role}">${escapeHtml(truncate(m.content || '', 2000))}${(m.content || '').length > 2000 ? `<span style="color:var(--text-faint)"> [${m.content.length} chars]</span>` : ''}</div>
-                    </div>
+        // Open chat in new window instead of showing inline
+        const chatUrl = `/chat.html?user_id=${encodeURIComponent(userId)}&project_id=${encodeURIComponent(ADMIN.tenant.selectedTenant || '')}&user_name=${encodeURIComponent(userName)}`;
+        el.innerHTML = `
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:1.5rem;padding:2rem">
+                <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="opacity:0.6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+                <div style="text-align:center">
+                    <div style="font-weight:700;font-size:1.125rem;margin-bottom:0.5rem">${escapeHtml(userName)} — ${data.length} messages</div>
+                    <div style="color:var(--text-secondary);font-size:0.9375rem;margin-bottom:1.5rem">Click below to view full chat conversation</div>
+                    <button class="btn btn-primary" onclick="window.open('${chatUrl}', '_blank')" style="cursor:pointer">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        Open Chat Viewer
+                    </button>
                 </div>
-            `).join('');
-            if (!filtered.length) list.innerHTML = `<div class="dt-empty">${ICON.search}<div class="title">No matches</div></div>`;
-        };
-        renderList();
-        document.getElementById('chat-search').addEventListener('input', e => renderList(e.target.value));
+            </div>`;
     } catch (e) { toast(e.message, 'err'); }
 }
 
