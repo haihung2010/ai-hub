@@ -150,6 +150,22 @@ class AIService:
             max_consolidated=self._settings.structmem_max_consolidated,
         )
 
+    async def _load_context_parallel(
+        self,
+        req: ChatRequest,
+        session_id: str,
+        user_id: str | None,
+    ) -> tuple[list[Message], str | None, RetrievedMemoryBundle | None, str | None]:
+        """Load history, summary, structmem, and knowledge in parallel."""
+        tasks = [
+            asyncio.to_thread(self._load_history, req, session_id),
+            asyncio.to_thread(self._load_summary, user_id, req.tenant_id, req.project_id),
+            asyncio.to_thread(self._load_structmem, user_id, req.tenant_id, req.project_id, req.user_message),
+            asyncio.to_thread(self._build_knowledge_block, req.tenant_id, req.project_id, req.user_message),
+        ]
+        history, summary, memory_bundle, knowledge_block = await asyncio.gather(*tasks)
+        return history, summary, memory_bundle, knowledge_block
+
     def _build_structmem_blocks(self, bundle: RetrievedMemoryBundle | None) -> list[str]:
         if not bundle:
             return []
@@ -222,7 +238,9 @@ class AIService:
             )
 
     @staticmethod
-    def _effective_history_cap(settings: Settings, model_mode: str) -> int:
+    def _effective_history_cap(settings: Settings, model_mode: str, project_id: str | None = None) -> int:
+        if project_id and project_id.lower() == "fanpage":
+            return settings.fanpage_max_history_messages
         if model_mode == "lite":
             return settings.lite_max_history_messages
         return settings.max_history_messages
@@ -421,11 +439,12 @@ class AIService:
             summary,
             [pinned_memory_block] if pinned_memory_block else [],
             memory_blocks,
-            self._effective_history_cap(self._settings, req.model_mode),
+            self._effective_history_cap(self._settings, req.model_mode, req.project_id),
         )
 
         source_urls: list[str] = []
-        if search_query and prompt_enable_search and self._settings.enable_web_search_tool:
+        should_search = search_query and prompt_enable_search and self._settings.enable_web_search_tool
+        if should_search:
             logger.info(
                 "Triggering explicit web search tenant=%s project=%s session_mode=%s",
                 req.tenant_id,
@@ -465,7 +484,7 @@ class AIService:
             provider_name="local" if provider.name == self._local.name else provider.name,
             model=model,
             history_count=history_count,
-            history_cap=self._effective_history_cap(self._settings, req.model_mode),
+            history_cap=self._effective_history_cap(self._settings, req.model_mode, req.project_id),
             search_injected=bool(source_urls),
             local_queue_locked=self._gpu_lock.locked(),
             external_allowed=self._overload_fallback_allowed(req),
@@ -546,7 +565,7 @@ class AIService:
         return user.id
 
     def _load_history(self, req: ChatRequest, session_id: str) -> list[Message]:
-        limit = self._effective_history_cap(self._settings, req.model_mode)
+        limit = self._effective_history_cap(self._settings, req.model_mode, req.project_id)
         messages = (
             self._history.get_session_messages(session_id, tenant_id=req.tenant_id, limit=limit)
             if not req.history
@@ -790,9 +809,9 @@ class AIService:
         started = time.perf_counter()
         user_id = self._resolve_user(req)
         session_id = self._resolve_session(req, user_id)
-        combined_history = self._load_history(req, session_id)
-        summary = self._load_summary(user_id, req.tenant_id, req.project_id)
-        memory_bundle = self._load_structmem(user_id, req.tenant_id, req.project_id, req.user_message)
+        combined_history, summary, memory_bundle, _ = await self._load_context_parallel(
+            req, session_id, user_id
+        )
         pinned_memory_block = (
             self._pinned_memory.format_for_prompt(req.tenant_id, req.project_id, user_id)
             if user_id and self._pinned_memory
@@ -866,9 +885,9 @@ class AIService:
         started = time.perf_counter()
         user_id = self._resolve_user(req)
         session_id = self._resolve_session(req, user_id)
-        combined_history = self._load_history(req, session_id)
-        summary = self._load_summary(user_id, req.tenant_id, req.project_id)
-        memory_bundle = self._load_structmem(user_id, req.tenant_id, req.project_id, req.user_message)
+        combined_history, summary, memory_bundle, knowledge_block = await self._load_context_parallel(
+            req, session_id, user_id
+        )
         pinned_memory_block = (
             self._pinned_memory.format_for_prompt(req.tenant_id, req.project_id, user_id)
             if user_id and self._pinned_memory

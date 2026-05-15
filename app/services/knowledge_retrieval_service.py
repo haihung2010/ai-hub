@@ -14,6 +14,7 @@ _WORD_RE = re.compile(r"[\wÀ-ỹ]+")
 _SEMANTIC_WEIGHT = 0.7
 _TOKEN_WEIGHT = 0.3
 _RERANK_CANDIDATE_K = 20
+_HIGH_CONFIDENCE_THRESHOLD = 0.85
 
 
 @dataclass(frozen=True)
@@ -84,6 +85,9 @@ class KnowledgeRetrievalService:
         relevant.sort(key=lambda item: item.score, reverse=True)
 
         if self._rerank and relevant:
+            top_score = relevant[0].score if relevant else 0
+            if top_score >= _HIGH_CONFIDENCE_THRESHOLD:
+                return [item.result for item in relevant[:limit]]
             candidates = relevant[:_RERANK_CANDIDATE_K]
             docs = [c.result.content for c in candidates]
             reranked = self._rerank.rerank(query, docs)

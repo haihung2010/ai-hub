@@ -112,9 +112,6 @@ class Settings(BaseSettings):
     reranker_enabled: bool = Field(default=True, alias="RERANKER_ENABLED")
     reranker_url: str = Field(default="http://127.0.0.1:8082", alias="RERANKER_URL")
     reranker_timeout_seconds: float = Field(default=10.0, gt=0, alias="RERANKER_TIMEOUT_SECONDS")
-    whisper_enabled: bool = Field(default=True, alias="WHISPER_ENABLED")
-    whisper_model: str = Field(default="large-v3-turbo", alias="WHISPER_MODEL")
-    whisper_device: str = Field(default="cuda", alias="WHISPER_DEVICE")
     background_llama_cpp_openai_url: str = Field(default="http://localhost:8081/v1", alias="BACKGROUND_LLAMA_CPP_OPENAI_URL")
     background_llama_cpp_enabled: bool = Field(default=False, alias="BACKGROUND_LLAMA_CPP_ENABLED")
     llama_cpp_nodes: list[str] = Field(default_factory=list, alias="LLAMA_CPP_NODES")
@@ -134,7 +131,11 @@ class Settings(BaseSettings):
     )
     database_url: str = Field(default="", alias="DATABASE_URL")
     redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
-    project_context_sizes: dict = Field(default_factory=dict, alias="PROJECT_CONTEXT_SIZES")
+    project_context_sizes: dict[str, int] = Field(default_factory=dict, alias="PROJECT_CONTEXT_SIZES")
+    fanpage_lazy_web_search: bool = Field(default=True, alias="FANPAGE_LAZY_WEB_SEARCH")
+    fanpage_max_history_messages: int = Field(default=10, ge=1, alias="FANPAGE_MAX_HISTORY_MESSAGES")
+    fanpage_knowledge_max_chunks: int = Field(default=3, ge=0, le=10, alias="FANPAGE_KNOWLEDGE_MAX_CHUNKS")
+    fanpage_enable_failure_risk_scoring: bool = Field(default=True, alias="FANPAGE_ENABLE_FAILURE_RISK_SCORING")
 
     @field_validator("allowed_origins", "allowed_hosts", "openrouter_allowed_projects", "openrouter_denied_projects", "llama_cpp_nodes", mode="before")
     @classmethod
