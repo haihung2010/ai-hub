@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import re
 import uuid
 
-from app.core.database import DEFAULT_TENANT_ID, get_db_connection
+from app.core.database import get_db_connection
 
 REMEMBER_PATTERNS = (
     "hãy nhớ",

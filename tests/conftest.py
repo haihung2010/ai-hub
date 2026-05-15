@@ -33,7 +33,7 @@ _TEST_TABLES = [
     "memory_items", "memory_episodes", "memory_consolidations",
     "pinned_memories", "prediction_records",
     "messages", "sessions", "summaries", "users",
-    "rate_limit_buckets", "auth_failures", "api_keys",
+    "api_keys",
 ]
 
 

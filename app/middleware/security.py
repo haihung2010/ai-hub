@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import logging
 import time
 from collections import deque
@@ -18,7 +17,6 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from app.core.config import Settings
-from app.core.database import get_db_connection
 from app.services.api_key_service import ApiKeyRecord, ApiKeyService
 
 logger = logging.getLogger("app.security")
@@ -168,135 +166,6 @@ class RedisFailureTracker:
 
     def reset(self, key: str) -> None:
         self._r.delete(f"af:{key}", f"aff:{key}")
-
-
-class SqliteRateLimiter:
-    """Rate limiter backed by SQLite — survives server restarts.
-
-    In-memory cache is the hot path; SQLite is written on every mutation and
-    loaded lazily on first access so cold-start state is restored.
-    """
-
-    def __init__(self, limit: int, window_seconds: int = RATE_LIMIT_WINDOW_SECONDS) -> None:
-        self._limit = limit
-        self._window_seconds = window_seconds
-        self._cache: dict[str, deque[float]] = {}
-        self._lock = Lock()
-        self._loaded = False
-
-    def _load(self) -> None:
-        if self._loaded:
-            return
-        self._loaded = True
-        try:
-            with get_db_connection() as conn:
-                rows = conn.execute("SELECT key, timestamps_json FROM rate_limit_buckets").fetchall()
-                for row in rows:
-                    ts: list[float] = json.loads(row["timestamps_json"])
-                    self._cache[row["key"]] = deque(ts)
-        except Exception:
-            pass
-
-    def _persist(self, key: str, timestamps: list[float]) -> None:
-        try:
-            with get_db_connection() as conn:
-                conn.execute(
-                    """INSERT INTO rate_limit_buckets (key, timestamps_json, updated_at) VALUES (%s, %s, %s)
-                    ON CONFLICT (key) DO UPDATE SET timestamps_json = EXCLUDED.timestamps_json, updated_at = EXCLUDED.updated_at""",
-                    (key, json.dumps(timestamps), time.time()),
-                )
-                conn.commit()
-        except Exception:
-            pass
-
-    def allow(self, key: str, now: float | None = None) -> bool:
-        current_time = time.time() if now is None else now
-        with self._lock:
-            self._load()
-            timestamps = self._cache.get(key) or deque()
-            while timestamps and current_time - timestamps[0] >= self._window_seconds:
-                timestamps.popleft()
-            if len(timestamps) >= self._limit:
-                return False
-            timestamps.append(current_time)
-            self._cache[key] = timestamps
-            self._persist(key, list(timestamps))
-            return True
-
-
-class SqliteFailureTracker:
-    """Fail2ban-style block list backed by SQLite — survives server restarts."""
-
-    def __init__(self, limit: int, block_seconds: int, window_seconds: int = 300) -> None:
-        self._limit = limit
-        self._block_seconds = block_seconds
-        self._window_seconds = window_seconds
-        self._cache: dict[str, dict] = {}
-        self._lock = Lock()
-        self._loaded = False
-
-    def _load(self) -> None:
-        if self._loaded:
-            return
-        self._loaded = True
-        try:
-            with get_db_connection() as conn:
-                rows = conn.execute("SELECT key, failures_json, blocked_until FROM auth_failures").fetchall()
-                for row in rows:
-                    self._cache[row["key"]] = {
-                        "failures": deque(json.loads(row["failures_json"])),
-                        "blocked_until": row["blocked_until"],
-                    }
-        except Exception:
-            pass
-
-    def _persist(self, key: str, failures: list[float], blocked_until: float) -> None:
-        try:
-            with get_db_connection() as conn:
-                conn.execute(
-                    """INSERT INTO auth_failures (key, failures_json, blocked_until, updated_at) VALUES (%s, %s, %s, %s)
-                    ON CONFLICT (key) DO UPDATE SET failures_json = EXCLUDED.failures_json, blocked_until = EXCLUDED.blocked_until, updated_at = EXCLUDED.updated_at""",
-                    (key, json.dumps(failures), blocked_until, time.time()),
-                )
-                conn.commit()
-        except Exception:
-            pass
-
-    def _get(self, key: str) -> dict:
-        entry = self._cache.get(key)
-        if entry is None:
-            entry = {"failures": deque(), "blocked_until": 0.0}
-            self._cache[key] = entry
-        return entry
-
-    def is_blocked(self, key: str, now: float | None = None) -> bool:
-        current_time = time.time() if now is None else now
-        with self._lock:
-            self._load()
-            return current_time < self._get(key)["blocked_until"]
-
-    def record_failure(self, key: str, now: float | None = None) -> None:
-        current_time = time.time() if now is None else now
-        with self._lock:
-            self._load()
-            entry = self._get(key)
-            failures: deque[float] = entry["failures"]
-            while failures and current_time - failures[0] >= self._window_seconds:
-                failures.popleft()
-            failures.append(current_time)
-            blocked_until = entry["blocked_until"]
-            if len(failures) >= self._limit:
-                blocked_until = current_time + self._block_seconds
-                entry["blocked_until"] = blocked_until
-            self._persist(key, list(failures), blocked_until)
-
-    def reset(self, key: str) -> None:
-        with self._lock:
-            self._load()
-            entry = self._get(key)
-            entry["failures"].clear()
-            entry["blocked_until"] = 0.0
-            self._persist(key, [], 0.0)
 
 
 class SecurityMiddleware(BaseHTTPMiddleware):

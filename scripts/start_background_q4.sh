@@ -2,12 +2,12 @@
 set -euo pipefail
 
 LLAMA_SERVER=${LLAMA_SERVER:-/home/hung/llama.cpp/build-cuda13/bin/llama-server}
-MODEL=${MODEL:-/home/hung/models/gemma-4-E4B-it-obliterated-Q4_K_M.gguf}
+MODEL=${MODEL:-/home/hung/models/gemma-4-E2B-it-Q4_K_M.gguf}
 HOST=${HOST:-127.0.0.1}
 PORT=${PORT:-8081}
 CTX_SIZE=${CTX_SIZE:-16384}
 PARALLEL=${PARALLEL:-2}
-ALIAS=${ALIAS:-local-gemma4-e4b-q4}
+ALIAS=${ALIAS:-local-gemma4-e2b-q4}
 LOG_FILE=${LOG_FILE:-/tmp/aihub-llama-background.log}
 PID_FILE=${PID_FILE:-/tmp/aihub-llama-background.pid}
 

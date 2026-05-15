@@ -84,11 +84,6 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                 </button>
-                <button id="mic-btn" class="shrink-0 p-2 text-slate-400 transition-all hover:text-red-400 active:scale-90 sm:p-3" title="Hold to record voice">
-                    <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                    </svg>
-                </button>
                 <input type="file" id="file-input" class="hidden" accept="image/*">
                 <input type="text" id="user-input" class="min-w-0 flex-1 bg-transparent px-2 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none sm:p-4 sm:text-base" placeholder="Ask AI Hub something...">
                 <button id="send-btn" class="flex shrink-0 items-center rounded-xl bg-blue-600 px-4 py-2 font-bold text-white shadow-lg transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-50 sm:px-6">Send</button>
@@ -761,69 +756,6 @@
             queueBadge.classList.add('hidden');
         }
 
-        // ── Mic / Voice input ──────────────────────────────────────────
-        const micBtn = document.getElementById('mic-btn');
-        const micIcon = document.getElementById('mic-icon');
-        let mediaRecorder = null;
-        let audioChunks = [];
-        let micStream = null;
-
-        function setMicRecording(active) {
-            if (active) {
-                micBtn.classList.remove('text-slate-400', 'hover:text-red-400');
-                micBtn.classList.add('text-red-500', 'animate-pulse');
-                micIcon.setAttribute('stroke', 'currentColor');
-            } else {
-                micBtn.classList.add('text-slate-400', 'hover:text-red-400');
-                micBtn.classList.remove('text-red-500', 'animate-pulse');
-            }
-        }
-
-        micBtn.addEventListener('click', async () => {
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                mediaRecorder.stop();
-                return;
-            }
-            try {
-                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            } catch (_) {
-                statusDiv.textContent = 'Microphone access denied';
-                return;
-            }
-            audioChunks = [];
-            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-                ? 'audio/webm;codecs=opus'
-                : 'audio/mp4';
-            mediaRecorder = new MediaRecorder(micStream, { mimeType });
-            mediaRecorder.addEventListener('dataavailable', (e) => { if (e.data.size > 0) audioChunks.push(e.data); });
-            mediaRecorder.addEventListener('stop', async () => {
-                setMicRecording(false);
-                micStream.getTracks().forEach((t) => t.stop());
-                if (!audioChunks.length) return;
-                statusDiv.innerHTML = '<span class="loader mr-2"></span> Transcribing...';
-                const blob = new Blob(audioChunks, { type: mimeType });
-                const formData = new FormData();
-                formData.append('file', blob, 'recording.audio');
-                try {
-                    if (!currentApiKey) { statusDiv.textContent = 'Set API key first'; return; }
-                    const resp = await fetch('/v1/audio/transcriptions', {
-                        method: 'POST',
-                        headers: { 'X-API-KEY': currentApiKey },
-                        body: formData,
-                    });
-                    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                    const { text } = await resp.json();
-                    userInput.value = text;
-                    statusDiv.textContent = 'Transcribed. Edit if needed, then Send.';
-                    userInput.focus();
-                } catch (err) {
-                    statusDiv.textContent = 'Transcription failed: ' + err.message;
-                }
-            });
-            mediaRecorder.start();
-            setMicRecording(true);
-            statusDiv.textContent = 'Recording... click mic again to stop';
-        });
 
         // ── Init ───────────────────────────────────────────────────────
         updateCurrentApiKeyBadge();

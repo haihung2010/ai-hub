@@ -27,7 +27,6 @@ from app.core.errors import (
 from app.core.logging import configure_logging
 from app.middleware.security import SecurityMiddleware
 from app.routes import admin as admin_routes
-from app.routes import audio as audio_routes
 from app.routes import chat as chat_routes
 from app.routes import crew as crew_routes
 from app.routes import health as health_routes
@@ -44,7 +43,6 @@ from app.services.knowledge_embedding_service import KnowledgeEmbeddingService
 from app.services.knowledge_ingestion_service import KnowledgeIngestionService
 from app.services.knowledge_retrieval_service import KnowledgeRetrievalService
 from app.services.rerank_service import RerankService
-from app.services.whisper_service import WhisperService
 from app.services.memory_consolidation_service import MemoryConsolidationService
 from app.services.memory_extraction_service import MemoryExtractionService
 from app.services.memory_retrieval_service import MemoryRetrievalService
@@ -165,14 +163,6 @@ def create_app(
                 embedding_service=knowledge_embedding,
                 rerank_service=reranker,
             )
-            whisper = (
-                WhisperService(
-                    model_size=settings.whisper_model,
-                    device=settings.whisper_device,
-                )
-                if settings.whisper_enabled
-                else None
-            )
             usage = UsageService()
             failure_risk = FailureRiskService(
                 high_threshold=settings.failure_risk_high_threshold,
@@ -203,7 +193,6 @@ def create_app(
             app.state.knowledge_ingestion_service = knowledge_ingestion
             app.state.knowledge_retrieval_service = knowledge_retrieval
             app.state.rerank_service = reranker
-            app.state.whisper_service = whisper
             app.state.usage_service = usage
             app.state.failure_risk_service = failure_risk
             app.state.structmem_service = structmem
@@ -255,7 +244,6 @@ def create_app(
 
     app.include_router(health_routes.router)
     app.include_router(chat_routes.router)
-    app.include_router(audio_routes.router)
     app.include_router(users_routes.router)
     app.include_router(memory_routes.router)
     app.include_router(knowledge_routes.router)

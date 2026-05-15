@@ -24,6 +24,7 @@ def test_defaults_available(monkeypatch: pytest.MonkeyPatch, tmp_path: pytest.Te
         "LLAMA_CPP_BASE_URL",
         "LLAMA_CPP_OPENAI_URL",
         "SUMMARY_CONCURRENCY",
+        "SUMMARY_CONTEXT_TOKEN_THRESHOLD",
     ]:
         monkeypatch.delenv(key, raising=False)
     with pytest.raises(ValidationError):
