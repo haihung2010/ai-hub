@@ -1,0 +1,195 @@
+{
+  "tenant_id": "vehix",
+  "project_id": "vehix",
+  "knowledge_domain_default": "legal_nd168",
+  "trust_level": 3,
+  "source": "Nghị định 168/2024/NĐ-CP, hiệu lực 01/01/2025 (thay Nghị định 100/2019)",
+  "cards": [
+    {
+      "title": "Nghị định 168/2024 — Tổng quan và phạm vi áp dụng",
+      "domain": "legal_nd168",
+      "tags": ["nghi-dinh-168", "tong-quan"],
+      "content": "Nghị định 168/2024/NĐ-CP có hiệu lực từ 01/01/2025, thay thế Nghị định 100/2019. Quy định xử phạt vi phạm hành chính trong lĩnh vực giao thông đường bộ và trừ điểm Giấy phép lái xe. Áp dụng cho mọi cá nhân, tổ chức điều khiển phương tiện giao thông đường bộ trên lãnh thổ Việt Nam. Mức phạt nhiều hành vi tăng 3-5 lần so với Nghị định 100/2019. Đồng thời triển khai cơ chế trừ điểm GPLX: mỗi GPLX có 12 điểm/năm, hành vi vi phạm sẽ bị trừ điểm tương ứng."
+    },
+    {
+      "title": "Ô tô — Vượt tốc độ 5-10 km/h",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "toc-do", "muc-phat"],
+      "content": "Người điều khiển ô tô vượt tốc độ quy định 5 km/h đến dưới 10 km/h: phạt tiền từ 800.000 đến 1.000.000 đồng. Không bị trừ điểm GPLX. Không bị tước GPLX. (Điều 6 Khoản 3 Nghị định 168/2024)"
+    },
+    {
+      "title": "Ô tô — Vượt tốc độ 10-20 km/h",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "toc-do", "muc-phat"],
+      "content": "Người điều khiển ô tô vượt tốc độ quy định từ 10 km/h đến 20 km/h: phạt tiền từ 4.000.000 đến 6.000.000 đồng. Trừ 2 điểm GPLX. (Điều 6 Khoản 5 Nghị định 168/2024). Mức phạt này tăng từ 3-5 triệu của Nghị định 100/2019."
+    },
+    {
+      "title": "Ô tô — Vượt tốc độ 20-35 km/h",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "toc-do", "muc-phat"],
+      "content": "Người điều khiển ô tô vượt tốc độ từ trên 20 km/h đến 35 km/h: phạt tiền từ 6.000.000 đến 8.000.000 đồng. Trừ 4 điểm GPLX. (Điều 6 Khoản 6)"
+    },
+    {
+      "title": "Ô tô — Vượt tốc độ trên 35 km/h",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "toc-do", "muc-phat"],
+      "content": "Người điều khiển ô tô vượt tốc độ trên 35 km/h: phạt tiền từ 12.000.000 đến 14.000.000 đồng. Trừ 6 điểm GPLX. (Điều 6 Khoản 7). Tăng mạnh so với 10-12 triệu của Nghị định 100/2019."
+    },
+    {
+      "title": "Ô tô — Nồng độ cồn dưới 0.25 mg/L khí thở",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "nong-do-con", "muc-phat"],
+      "content": "Lái ô tô có nồng độ cồn trong máu hoặc khí thở chưa vượt 50 mg/100 ml máu hoặc 0.25 mg/L khí thở: phạt tiền từ 6.000.000 đến 8.000.000 đồng. Trừ 4 điểm GPLX. (Điều 6 Khoản 6 điểm a)"
+    },
+    {
+      "title": "Ô tô — Nồng độ cồn 0.25-0.4 mg/L khí thở",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "nong-do-con", "muc-phat"],
+      "content": "Lái ô tô có nồng độ cồn vượt 50 đến 80 mg/100 ml máu hoặc vượt 0.25 đến 0.4 mg/L khí thở: phạt tiền từ 18.000.000 đến 20.000.000 đồng. Trừ 10 điểm GPLX. (Điều 6 Khoản 9). Trước đây Nghị định 100/2019 chỉ phạt 16-18 triệu."
+    },
+    {
+      "title": "Ô tô — Nồng độ cồn trên 0.4 mg/L khí thở",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "nong-do-con", "muc-phat"],
+      "content": "Lái ô tô có nồng độ cồn vượt 80 mg/100 ml máu hoặc vượt 0.4 mg/L khí thở: phạt tiền từ 30.000.000 đến 40.000.000 đồng. Tước GPLX 22-24 tháng. (Điều 6 Khoản 11). Cao nhất trong khung phạt nồng độ cồn."
+    },
+    {
+      "title": "Ô tô — Không chấp hành kiểm tra nồng độ cồn/ma túy",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "khong-chap-hanh", "muc-phat"],
+      "content": "Người điều khiển ô tô không chấp hành yêu cầu kiểm tra về nồng độ cồn của người thi hành công vụ; không chấp hành kiểm tra ma túy: phạt tiền 30.000.000 đến 40.000.000 đồng. Tước GPLX 22-24 tháng. Coi như mức phạt cao nhất nồng độ cồn. (Điều 6 Khoản 11)"
+    },
+    {
+      "title": "Ô tô — Vượt đèn đỏ, đèn vàng",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "den-do", "muc-phat"],
+      "content": "Lái ô tô không chấp hành hiệu lệnh đèn tín hiệu giao thông (vượt đèn đỏ, vượt đèn vàng khi đèn vàng đã sáng): phạt tiền từ 18.000.000 đến 20.000.000 đồng. Trừ 4 điểm GPLX. (Điều 6 Khoản 9). Mức phạt tăng mạnh từ 4-6 triệu của Nghị định 100/2019 — gấp khoảng 4 lần."
+    },
+    {
+      "title": "Ô tô — Đi sai làn đường",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "lan-duong", "muc-phat"],
+      "content": "Lái ô tô đi không đúng làn đường, phần đường quy định, gây tai nạn giao thông hoặc đi vào đường có biển báo cấm phương tiện đó: phạt tiền từ 4.000.000 đến 6.000.000 đồng. Trừ 2 điểm GPLX. Nếu gây tai nạn nghiêm trọng có thể truy cứu hình sự theo Điều 260 BLHS. (Điều 6 Khoản 5)"
+    },
+    {
+      "title": "Ô tô — Đi ngược chiều đường",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "nguoc-chieu", "muc-phat"],
+      "content": "Lái ô tô đi ngược chiều của đường một chiều, đi ngược chiều trên đường có biển báo cấm đi ngược chiều: phạt tiền từ 18.000.000 đến 20.000.000 đồng. Trừ 4 điểm GPLX. Trường hợp gây tai nạn: phạt 20-22 triệu + tước GPLX 4-6 tháng + có thể truy cứu hình sự. (Điều 6 Khoản 9 và 10)"
+    },
+    {
+      "title": "Ô tô — Đi vào đường cao tốc trái phép",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "cao-toc", "muc-phat"],
+      "content": "Lái ô tô đi vào đường cao tốc khi không được phép: phạt tiền từ 30.000.000 đến 40.000.000 đồng. Trừ 6 điểm GPLX. (Điều 6 Khoản 11)"
+    },
+    {
+      "title": "Ô tô — Lùi xe, quay đầu trên cao tốc",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "cao-toc", "lui-xe", "muc-phat"],
+      "content": "Lái ô tô lùi xe, quay đầu xe, dừng đỗ xe trên đường cao tốc không đúng quy định: phạt tiền từ 30.000.000 đến 40.000.000 đồng. Tước GPLX 10-12 tháng. (Điều 6 Khoản 11). Hành vi cực kỳ nguy hiểm, mức phạt cao thứ nhì."
+    },
+    {
+      "title": "Ô tô — Đua xe, lạng lách, đánh võng",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "dua-xe", "lang-lach", "muc-phat"],
+      "content": "Điều khiển ô tô lạng lách, đánh võng, chạy quá tốc độ đuổi nhau trên đường bộ: phạt 40.000.000 đến 50.000.000 đồng. Tước GPLX 22-24 tháng. Tịch thu phương tiện nếu tái phạm. Ngoài ra có thể bị truy cứu hình sự về tội Gây rối trật tự công cộng (Điều 318 BLHS) hoặc tội Đua xe trái phép (Điều 266 BLHS). (Điều 6 Khoản 12)"
+    },
+    {
+      "title": "Ô tô — Sử dụng điện thoại khi lái xe",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "dien-thoai", "muc-phat"],
+      "content": "Lái ô tô dùng tay sử dụng điện thoại di động khi đang điều khiển: phạt tiền từ 4.000.000 đến 6.000.000 đồng. Trừ 4 điểm GPLX. (Điều 6 Khoản 5). Trước đây Nghị định 100/2019 chỉ phạt 1-2 triệu."
+    },
+    {
+      "title": "Ô tô — Không thắt dây an toàn",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "day-an-toan", "muc-phat"],
+      "content": "Người điều khiển ô tô không thắt dây an toàn khi xe đang chạy hoặc chở người không thắt dây an toàn ở ghế có trang bị dây an toàn: phạt tiền từ 800.000 đến 1.000.000 đồng (với người lái) và 400.000 đến 600.000 đồng (đối với người ngồi không thắt dây). (Điều 6 Khoản 3 điểm h)"
+    },
+    {
+      "title": "Ô tô — Chở quá số người quy định",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "qua-tai", "muc-phat"],
+      "content": "Lái xe chở vượt quá số người quy định: phạt 400.000-600.000 đồng/người vượt (xe đến 9 chỗ). Trên 10 chỗ vượt từng mức cao hơn. Xe khách chở quá tải vượt 50%: 12-14 triệu + tước GPLX 1-3 tháng. Xe tải chở quá tải vượt 50-100%: 13-15 triệu + tước 2-4 tháng. Vượt trên 150% phạt 30-40 triệu + tước 4-6 tháng. (Điều 24-25)"
+    },
+    {
+      "title": "Ô tô — Không có Giấy phép lái xe",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "khong-bang-lai", "muc-phat"],
+      "content": "Người điều khiển ô tô không có GPLX hoặc sử dụng GPLX không do cơ quan có thẩm quyền cấp; sử dụng GPLX bị tẩy xóa: phạt tiền từ 18.000.000 đến 20.000.000 đồng. Tạm giữ phương tiện 7 ngày. Sử dụng GPLX giả có thể bị truy cứu hình sự theo Điều 341 BLHS (tội Làm giả con dấu, tài liệu của cơ quan tổ chức). (Điều 21)"
+    },
+    {
+      "title": "Ô tô — Hết hạn Giấy phép lái xe",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "het-han-bang-lai", "muc-phat"],
+      "content": "Lái ô tô có GPLX nhưng đã hết hạn sử dụng dưới 3 tháng: phạt 5.000.000-7.000.000 đồng. Hết hạn từ 3 tháng trở lên: phạt 10.000.000-12.000.000 đồng (coi như không có GPLX). Đổi/cấp lại GPLX hết hạn cần khám sức khỏe và làm thủ tục tại Sở GTVT. (Điều 21)"
+    },
+    {
+      "title": "Ô tô — Không có giấy đăng ký xe",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "dang-ky-xe", "muc-phat"],
+      "content": "Lái ô tô không có giấy đăng ký xe (cà-vẹt) theo quy định hoặc sử dụng giấy đăng ký không do cơ quan có thẩm quyền cấp: phạt tiền từ 4.000.000 đến 6.000.000 đồng. Tịch thu giấy đăng ký giả nếu phát hiện. Tạm giữ phương tiện đến khi xuất trình được. (Điều 16)"
+    },
+    {
+      "title": "Ô tô — Không có/hết hạn đăng kiểm",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "dang-kiem", "muc-phat"],
+      "content": "Lái ô tô không có Giấy chứng nhận hoặc tem kiểm định an toàn kỹ thuật và bảo vệ môi trường (đăng kiểm) hoặc đã hết hạn dưới 1 tháng: phạt 4.000.000-6.000.000 đồng + tước GPLX 1-3 tháng. Hết hạn trên 1 tháng: 6.000.000-8.000.000 đồng + tước GPLX 2-4 tháng. (Điều 16 Khoản 5)"
+    },
+    {
+      "title": "Ô tô — Không có bảo hiểm trách nhiệm dân sự",
+      "domain": "legal_nd168",
+      "tags": ["o-to", "bao-hiem", "muc-phat"],
+      "content": "Lái ô tô không có hoặc không mang theo Giấy chứng nhận bảo hiểm trách nhiệm dân sự bắt buộc của chủ xe cơ giới còn hiệu lực: phạt tiền từ 400.000 đến 600.000 đồng. Mức phí bảo hiểm bắt buộc xe ô tô con dưới 6 chỗ kinh doanh: ~480.000đ/năm. Ô tô con dưới 6 chỗ không kinh doanh: ~437.000đ/năm. (Điều 16)"
+    },
+    {
+      "title": "Xe máy — Nồng độ cồn",
+      "domain": "legal_nd168",
+      "tags": ["xe-may", "nong-do-con", "muc-phat"],
+      "content": "Lái xe máy có nồng độ cồn dưới 0.25 mg/L khí thở: phạt 2.000.000-3.000.000 đồng + tước GPLX 10-12 tháng. Từ 0.25-0.4 mg/L: phạt 6.000.000-8.000.000 đồng + tước 16-18 tháng. Trên 0.4 mg/L: phạt 8.000.000-10.000.000 đồng + tước 22-24 tháng. Không chấp hành kiểm tra: phạt như mức cao nhất 8-10 triệu. (Điều 7)"
+    },
+    {
+      "title": "Xe máy — Vượt đèn đỏ và sai làn",
+      "domain": "legal_nd168",
+      "tags": ["xe-may", "den-do", "muc-phat"],
+      "content": "Xe máy vượt đèn đỏ, đèn vàng khi đèn vàng đã sáng: phạt 4.000.000-6.000.000 đồng. Trừ 4 điểm GPLX. Đi sai làn đường: phạt 600.000-800.000 đồng. Đi ngược chiều đường một chiều: 4.000.000-6.000.000 đồng + tước 2-4 tháng. (Điều 7 Khoản 7-9)"
+    },
+    {
+      "title": "Xe máy — Không đội mũ bảo hiểm",
+      "domain": "legal_nd168",
+      "tags": ["xe-may", "mu-bao-hiem", "muc-phat"],
+      "content": "Người điều khiển hoặc người ngồi trên xe máy không đội mũ bảo hiểm hoặc đội mũ không cài quai đúng cách: phạt tiền từ 400.000 đến 600.000 đồng/người. Áp dụng cho cả xe máy điện. Trẻ em từ 6 tuổi trở lên cũng bắt buộc đội mũ. (Điều 7 Khoản 4)"
+    },
+    {
+      "title": "Cơ chế trừ điểm GPLX 2025",
+      "domain": "legal_nd168",
+      "tags": ["tru-diem", "gplx", "co-che-moi"],
+      "content": "Từ 01/01/2025, mỗi GPLX có 12 điểm/năm. Mỗi hành vi vi phạm bị trừ điểm tương ứng (1, 2, 3, 4, 6, 10 hoặc 12 điểm). Khi trừ hết 12 điểm trong 12 tháng: GPLX bị thu hồi. Phải thi lại lý thuyết để được cấp lại sau 6 tháng. Điểm tự động được phục hồi lại 12 điểm sau mỗi 12 tháng nếu không vi phạm. Tra cứu điểm qua app VNeID hoặc website Cục CSGT."
+    },
+    {
+      "title": "Tạm giữ phương tiện và GPLX",
+      "domain": "legal_nd168",
+      "tags": ["tam-giu", "phuong-tien"],
+      "content": "Cảnh sát giao thông được quyền tạm giữ phương tiện đến 7 ngày khi: vi phạm không có GPLX/đăng ký/đăng kiểm, vi phạm nồng độ cồn từ mức 2 trở lên, vi phạm có dấu hiệu hình sự (Điều 82 Luật XLVPHC). Tạm giữ GPLX là biện pháp đảm bảo thi hành quyết định, áp dụng đối với hành vi có thể bị tước GPLX. Có thể nộp tiền bảo lãnh để nhận lại phương tiện trong thời gian xử lý. Phí trông giữ chủ phương tiện chịu."
+    },
+    {
+      "title": "Tình tiết tăng nặng và giảm nhẹ",
+      "domain": "legal_nd168",
+      "tags": ["tang-nang", "giam-nhe"],
+      "content": "Tăng nặng (Điều 10 Luật XLVPHC): tái phạm trong 6 tháng, vi phạm nhiều lần, gây hậu quả nghiêm trọng, vi phạm trong tình trạng có cồn/ma túy, lợi dụng hoàn cảnh thiên tai dịch bệnh. Giảm nhẹ: tự nguyện khắc phục hậu quả, ngăn chặn/giảm bớt tác hại, vi phạm do hoàn cảnh khó khăn đặc biệt, đầu thú, người chưa thành niên. Mức phạt có thể tăng/giảm trong khung quy định, không vượt khung."
+    },
+    {
+      "title": "Khiếu nại quyết định xử phạt",
+      "domain": "legal_nd168",
+      "tags": ["khieu-nai", "to-tung"],
+      "content": "Người bị xử phạt có quyền khiếu nại quyết định trong 10 ngày kể từ khi nhận quyết định (Điều 15 Luật XLVPHC). Gửi đơn khiếu nại trực tiếp lên cấp trên người ra quyết định (vd: Đội CSGT lên Phòng CSGT). Hết khiếu nại lần 1 mà không đồng ý có quyền khiếu nại lần 2 hoặc khởi kiện ra Tòa án nhân dân. Nộp tiền phạt vẫn phải thực hiện trong thời gian khiếu nại nếu không có quyết định tạm đình chỉ thi hành."
+    },
+    {
+      "title": "Phương thức nộp phạt và thời hạn",
+      "domain": "legal_nd168",
+      "tags": ["nop-phat", "thoi-han"],
+      "content": "Thời hạn nộp phạt: 10 ngày kể từ ngày nhận quyết định xử phạt (Điều 78 Luật XLVPHC). Quá hạn: tính lãi 0.05%/ngày. Phương thức: 1) Nộp trực tiếp tại Kho bạc nhà nước. 2) Chuyển khoản qua ngân hàng. 3) Nộp online qua Cổng dịch vụ công quốc gia (dichvucong.gov.vn) hoặc app VNeID. 4) Bưu điện thu hộ. Có thể nộp tại chỗ nếu mức phạt dưới 250.000đ (cá nhân) hoặc 500.000đ (tổ chức) — gọi là 'phạt tại chỗ'. Phải có biên lai theo mẫu."
+    }
+  ]
+}

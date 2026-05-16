@@ -1,0 +1,128 @@
+{
+  "tenant_id": "vehix",
+  "project_id": "vehix",
+  "trust_level": 3,
+  "source": "Tổng hợp luật xe ô tô VN 2025: thuế, hợp đồng, bảo hiểm, kinh doanh vận tải",
+  "cards": [
+    {
+      "title": "Lệ phí trước bạ ô tô — Mức và cách tính",
+      "domain": "legal_tax",
+      "tags": ["thue", "le-phi-truoc-ba"],
+      "content": "Lệ phí trước bạ ô tô con dưới 9 chỗ (Nghị định 10/2022 và sửa đổi 41/2023): Hà Nội + Hà Tĩnh + Quảng Ninh + một số tỉnh: 12% giá tính lệ phí. Các địa phương còn lại: 10%. Đăng ký lần thứ 2 trở đi: 2% (mua xe cũ). Xe ô tô vừa chở người vừa chở hàng (pickup, van): 7.2% (lần 1), 2% (lần 2). Xe điện chạy pin (BEV): 0% trong 3 năm đầu kể từ 01/03/2022, sau đó 50% mức xe xăng. Cách tính: giá tính lệ phí × thuế suất. Giá tính lệ phí = giá do Bộ Tài chính ban hành theo bảng giá hoặc giá ghi trên hóa đơn (lấy giá cao hơn)."
+    },
+    {
+      "title": "Thuế tiêu thụ đặc biệt ô tô — Theo dung tích xy-lanh",
+      "domain": "legal_tax",
+      "tags": ["thue", "ttdb", "tieu-thu-dac-biet"],
+      "content": "Thuế TTĐB ô tô con dưới 9 chỗ (Luật Thuế TTĐB sửa đổi 2016, áp dụng từ 2018): Dung tích đến 1.5L: 35%. Trên 1.5L đến 2L: 40%. Trên 2L đến 2.5L: 50%. Trên 2.5L đến 3L: 60%. Trên 3L đến 4L: 90%. Trên 4L đến 5L: 110%. Trên 5L đến 6L: 130%. Trên 6L: 150%. Xe pickup chở hàng cabin kép: 15%. Xe van chở hàng: 15%. Xe điện chạy pin (BEV) 9 chỗ trở xuống: 3% (đến 28/02/2027), sau đó tăng dần lên 11%. Xe hybrid (HEV/PHEV) đáp ứng tiêu chí: được giảm 50-70% mức TTĐB tương đương."
+    },
+    {
+      "title": "Thuế VAT ô tô và phí nhập khẩu",
+      "domain": "legal_tax",
+      "tags": ["thue", "vat", "nhap-khau"],
+      "content": "Thuế VAT ô tô áp dụng 10% trên giá CIF + thuế nhập khẩu + TTĐB (xe nhập khẩu). Xe sản xuất trong nước: VAT 10% trên giá xuất xưởng + TTĐB. Thuế nhập khẩu xe nguyên chiếc (CBU): từ ASEAN (Thái Lan, Indonesia) đáp ứng tỷ lệ nội địa 40% — 0% (theo ATIGA). Từ Nhật Bản (CPTPP): giảm dần, hiện 33-50% tùy năm. Từ EU (EVFTA): giảm dần, 2025 còn ~52%. Từ Trung Quốc (ACFTA): 50%. Khác: 70-78%. Xe trong nước (CKD): 0% nhập khẩu (nhập linh kiện)."
+    },
+    {
+      "title": "Phí sử dụng đường bộ (phí bảo trì)",
+      "domain": "legal_tax",
+      "tags": ["thue", "phi-duong-bo"],
+      "content": "Phí sử dụng đường bộ thu theo năm khi đăng kiểm xe (Thông tư 70/2021 và sửa đổi). Mức phí ô tô con dưới 10 chỗ không kinh doanh vận tải: 1.560.000 đồng/năm. Xe kinh doanh vận tải dưới 10 chỗ: 2.160.000 đồng/năm. Xe khách 10-24 chỗ: 2.640-3.240.000 đồng. Xe tải dưới 4 tấn: 2.160.000-3.000.000 đồng. Xe tải trên 27 tấn: 17.160.000 đồng/năm. Đóng theo chu kỳ đăng kiểm. Xe chỉ sử dụng nội bộ trong khu vực không ra đường công cộng có thể được miễn (cần xác nhận)."
+    },
+    {
+      "title": "Thuế trước bạ xe điện và ưu đãi 2025",
+      "domain": "legal_tax",
+      "tags": ["thue", "xe-dien", "uu-dai"],
+      "content": "Theo Nghị định 10/2022 (đã sửa đổi), xe ô tô điện chạy pin (BEV) được miễn 100% lệ phí trước bạ trong 3 năm đầu (từ 01/03/2022 đến 28/02/2025). Sau đó, từ 01/03/2025 đến 28/02/2027 lệ phí trước bạ bằng 50% mức xe xăng cùng phân khúc (tức 5-6%). Thuế TTĐB BEV 9 chỗ trở xuống: 3% đến 28/02/2027 (so với xe xăng 35-150%). VAT vẫn 10%. Có dự thảo gia hạn miễn lệ phí trước bạ thêm cho đến 2027 nhưng chưa thông qua chính thức. VinFast, BYD, Tesla nhập khẩu/lắp ráp đều được hưởng."
+    },
+    {
+      "title": "Hợp đồng cho thuê xe có lái — Quy định",
+      "domain": "legal_contract",
+      "tags": ["hop-dong", "thue-xe", "co-lai"],
+      "content": "Cho thuê xe có lái (taxi truyền thống, xe hợp đồng, xe đưa đón) thuộc kinh doanh vận tải hành khách theo hợp đồng (Nghị định 10/2020). Yêu cầu: doanh nghiệp/HTX có Giấy phép kinh doanh vận tải; xe có phù hiệu 'XE HỢP ĐỒNG' hoặc 'XE TAXI'; lái xe có GPLX phù hợp + chứng chỉ tập huấn nghiệp vụ; có hợp đồng vận chuyển bằng văn bản hoặc điện tử. Vi phạm: phạt 5-10 triệu (Nghị định 100/2019, vẫn áp dụng cho phần kinh doanh vận tải) + tước phù hiệu 1-3 tháng."
+    },
+    {
+      "title": "Hợp đồng cho thuê xe tự lái",
+      "domain": "legal_contract",
+      "tags": ["hop-dong", "thue-xe", "tu-lai"],
+      "content": "Cho thuê xe ô tô tự lái không thuộc danh mục kinh doanh vận tải, áp dụng Bộ luật Dân sự 2015 (hợp đồng thuê tài sản). Hợp đồng phải có: thông tin bên thuê + bên cho thuê + xe (biển số, số khung, số máy), thời hạn thuê, giá thuê, đặt cọc (thường 5-50 triệu hoặc giấy tờ), điều kiện hư hỏng/tai nạn, phạm vi sử dụng. Bên cho thuê chịu trách nhiệm: bảo dưỡng định kỳ, đăng kiểm, BHTNDS bắt buộc. Bên thuê chịu: nhiên liệu, phí cầu đường, vi phạm GT, hư hỏng do lỗi sử dụng. Hợp đồng bằng văn bản nên công chứng nếu giá trị xe lớn để tránh tranh chấp."
+    },
+    {
+      "title": "Hợp đồng vận tải hàng hóa",
+      "domain": "legal_contract",
+      "tags": ["hop-dong", "van-tai-hang"],
+      "content": "Hợp đồng vận tải hàng hóa bằng ô tô (Luật GTĐB + Bộ luật Hàng hải nếu có biển): nội dung bắt buộc gồm bên gửi, bên vận chuyển, bên nhận, mô tả hàng hóa (tên, số lượng, trọng lượng, kích thước, đặc tính), điểm đi/điểm đến, thời hạn giao, cước phí, trách nhiệm bồi thường. Trách nhiệm của bên vận chuyển: giao đúng hàng, đúng nơi, đúng thời hạn; bồi thường tổn thất do lỗi (Điều 537 BLDS 2015). Mức bồi thường: theo giá trị thực tế ghi trong hợp đồng hoặc theo giá thị trường. Giấy vận chuyển (vận đơn) thay cho hợp đồng nếu có đầy đủ nội dung."
+    },
+    {
+      "title": "Bảo hiểm trách nhiệm dân sự bắt buộc xe cơ giới",
+      "domain": "legal_insurance",
+      "tags": ["bao-hiem", "tnds-bat-buoc"],
+      "content": "Theo Nghị định 67/2023 thay 03/2021, mọi chủ xe cơ giới phải mua BHTNDS bắt buộc. Mức trách nhiệm bồi thường: 150 triệu/người/vụ về sức khỏe, tính mạng. 100 triệu/vụ về tài sản đối với xe ô tô; 50 triệu/vụ với xe máy. Mức phí bảo hiểm ô tô con không kinh doanh dưới 6 chỗ: 437.000đ/năm. 6-11 chỗ: 794.000đ. Kinh doanh vận tải dưới 6 chỗ: 756.000đ. Xe máy: 60.000-80.000đ. Bảo hiểm có hiệu lực sau 1 ngày từ khi mua. Không mua hoặc hết hạn: phạt 400.000-600.000đ ô tô, 100.000-200.000đ xe máy."
+    },
+    {
+      "title": "Bảo hiểm vật chất xe ô tô (tự nguyện)",
+      "domain": "legal_insurance",
+      "tags": ["bao-hiem", "vat-chat"],
+      "content": "Bảo hiểm vật chất xe ô tô là bảo hiểm tự nguyện, bồi thường thiệt hại của chính xe khách hàng. Phí bảo hiểm: 1.2-1.8% giá trị xe/năm (xe mới), 1.5-2.5% (xe trên 3 năm). Phạm vi cơ bản: tai nạn, va chạm, lật đổ, mất cắp, cháy nổ, thiên tai. Không bồi thường: lái xe khi có cồn/ma túy; lái xe không bằng; xe vận chuyển chất cấm; hao mòn tự nhiên; tự gây hư hỏng cố ý. Thường yêu cầu khấu trừ (deductible) 500.000-2.000.000đ/vụ. Sửa chữa tại garage chỉ định của hãng bảo hiểm hoặc tự chọn (cần thỏa thuận trước)."
+    },
+    {
+      "title": "Bảo hiểm tai nạn người ngồi trên xe",
+      "domain": "legal_insurance",
+      "tags": ["bao-hiem", "tai-nan-nguoi-ngoi"],
+      "content": "Bảo hiểm tai nạn người ngồi trên xe là bảo hiểm tự nguyện, bồi thường tổn thất sức khỏe/tính mạng của người ngồi trên xe (kể cả lái xe) khi xảy ra tai nạn. Mức trách nhiệm phổ biến: 10-100 triệu đồng/người/vụ. Phí: 10.000-30.000đ/người/năm tùy mức trách nhiệm. Số người được bảo hiểm bằng số ghế ghi trong đăng kiểm. Quyền lợi gồm: chi phí điều trị; trợ cấp mất thu nhập; tử vong/thương tật vĩnh viễn theo bảng tỷ lệ. Tách biệt với BHTNDS bắt buộc (BHTNDS chỉ bồi thường người bị thiệt hại bên ngoài, không bồi thường người ngồi trong xe)."
+    },
+    {
+      "title": "Quy trình bồi thường bảo hiểm khi tai nạn",
+      "domain": "legal_insurance",
+      "tags": ["bao-hiem", "boi-thuong", "quy-trinh"],
+      "content": "Khi xảy ra tai nạn: 1) Báo ngay cho bảo hiểm (hotline trong vòng 24-48h), giữ hiện trường. 2) Báo công an nếu tai nạn có thiệt hại người, tài sản trên 10 triệu. 3) Bảo hiểm cử giám định viên đến hiện trường (thường trong 4-24h). 4) Lập biên bản tai nạn (cảnh sát) + biên bản giám định (bảo hiểm). 5) Đưa xe về garage được chỉ định để báo giá sửa chữa. 6) Bảo hiểm phê duyệt báo giá. 7) Sửa chữa và thanh toán. Thời gian bồi thường thông thường 15-45 ngày kể từ khi đầy đủ hồ sơ. Hồ sơ gồm: đơn yêu cầu, biên bản công an, hợp đồng bảo hiểm, đăng ký xe, GPLX, hóa đơn sửa chữa."
+    },
+    {
+      "title": "Đăng ký kinh doanh vận tải bằng ô tô",
+      "domain": "legal_business",
+      "tags": ["kinh-doanh", "van-tai", "giay-phep"],
+      "content": "Theo Nghị định 10/2020 và sửa đổi 47/2022, các loại hình kinh doanh vận tải bằng ô tô gồm: 1) Vận tải hành khách theo tuyến cố định. 2) Vận tải hành khách bằng xe buýt. 3) Vận tải hành khách bằng taxi. 4) Vận tải hành khách theo hợp đồng (xe hợp đồng). 5) Vận tải khách du lịch. 6) Vận tải hàng hóa. Yêu cầu: thành lập doanh nghiệp/HTX; có Giấy phép kinh doanh vận tải do Sở GTVT cấp; xe có phù hiệu/biển hiệu; lắp thiết bị giám sát hành trình (GPS); lái xe có chứng chỉ tập huấn; mua bảo hiểm hàng hóa hoặc bảo hiểm hành khách."
+    },
+    {
+      "title": "Phù hiệu xe và quy định gắn",
+      "domain": "legal_business",
+      "tags": ["kinh-doanh", "phu-hieu"],
+      "content": "Phù hiệu xe gắn ở vị trí dễ nhận biết trong xe (kính chắn gió). Loại phù hiệu: 'XE TAXI' (taxi); 'XE HỢP ĐỒNG' (xe theo hợp đồng); 'XE KHÁCH TUYẾN CỐ ĐỊNH' (xe khách tuyến); 'XE BUÝT' (xe buýt); 'XE TẢI' (xe tải kinh doanh); 'XE ĐẦU KÉO'; 'XE TRUNG CHUYỂN'. Phù hiệu cấp theo từng xe, có thời hạn 7 năm với xe khách dưới 9 chỗ, 10 năm với loại khác. Hết hạn phải xin cấp lại. Không có phù hiệu hoặc phù hiệu hết hạn khi kinh doanh: phạt 5-7 triệu (Nghị định 100/2019 Điều 24) + tạm giữ phù hiệu."
+    },
+    {
+      "title": "Niên hạn sử dụng xe ô tô",
+      "domain": "legal_business",
+      "tags": ["nien-han", "su-dung"],
+      "content": "Theo Nghị định 10/2020 (thay 95/2009): Xe khách kinh doanh vận tải hành khách: niên hạn 20 năm tính từ năm sản xuất. Xe taxi: 12 năm. Xe tải kinh doanh vận tải: 25 năm với xe sản xuất từ 2005, không giới hạn với xe trước 2005 (đã được kéo dài). Xe ô tô con không kinh doanh: KHÔNG có niên hạn (chạy được khi đáp ứng đăng kiểm). Hết niên hạn phải dừng kinh doanh — có thể chuyển sang sử dụng cá nhân hoặc thanh lý. Hành vi sử dụng xe quá niên hạn: phạt 4-6 triệu + tịch thu phương tiện."
+    },
+    {
+      "title": "Quy định lắp thiết bị giám sát hành trình GPS",
+      "domain": "legal_business",
+      "tags": ["gps", "giam-sat-hanh-trinh", "bat-buoc"],
+      "content": "Bắt buộc lắp thiết bị giám sát hành trình (Nghị định 10/2020 Điều 14) đối với: xe khách kinh doanh vận tải; xe taxi; xe đầu kéo, rơ-moóc; xe tải có trọng tải từ 3.5 tấn trở lên; xe vận chuyển hàng nguy hiểm. Thiết bị phải đạt QCVN 31:2014/BGTVT, truyền dữ liệu liên tục về Tổng cục Đường bộ. Dữ liệu lưu giữ 1 năm. Doanh nghiệp phải báo cáo định kỳ. Vi phạm: không lắp/lắp không đạt chuẩn — phạt 3-5 triệu + tước phù hiệu 1-3 tháng. Tài xế làm gián đoạn dữ liệu cố ý: phạt 1-3 triệu."
+    },
+    {
+      "title": "Quy định thời gian lái xe liên tục",
+      "domain": "legal_business",
+      "tags": ["thoi-gian-lai-xe", "an-toan"],
+      "content": "Theo Luật GTĐB và Thông tư 12/2020: Thời gian lái xe liên tục không quá 4 giờ; tổng thời gian lái xe trong ngày không quá 10 giờ. Sau 4 giờ phải nghỉ ít nhất 15 phút. Lái xe khách phải nghỉ tối thiểu 30 phút sau 4 giờ liên tục. Thiết bị GPS ghi lại để hậu kiểm. Vi phạm: lái quá thời gian — phạt 3-5 triệu (Nghị định 100/2019). Doanh nghiệp để lái xe vượt thời gian: phạt 5-7 triệu + tước phù hiệu 1-3 tháng. Tai nạn xảy ra do lái xe mệt mỏi (vượt thời gian) sẽ là tình tiết tăng nặng hình sự."
+    },
+    {
+      "title": "Quy định kinh doanh xe công nghệ (Grab, Be, Xanh SM)",
+      "domain": "legal_business",
+      "tags": ["kinh-doanh", "xe-cong-nghe", "grab"],
+      "content": "Xe công nghệ thuộc loại 'xe hợp đồng điện tử' theo Nghị định 10/2020. Phải tuân thủ đầy đủ quy định kinh doanh vận tải hành khách theo hợp đồng: doanh nghiệp/HTX có giấy phép; xe có phù hiệu 'XE HỢP ĐỒNG'; lắp GPS; tài xế có chứng chỉ tập huấn; mua bảo hiểm hành khách. Tuyển không qua HTX/doanh nghiệp (chạy lậu) bị phạt 5-7 triệu + tịch thu phương tiện. Nền tảng (Grab, Be) phải kê khai thuế VAT 10% và TNCN cho tài xế (theo Thông tư 40/2021). Tài xế chạy thường xuyên >100 triệu/năm doanh thu phải đăng ký thuế cá nhân kinh doanh."
+    },
+    {
+      "title": "Hợp đồng thuê xe dài hạn (operating lease, financial lease)",
+      "domain": "legal_contract",
+      "tags": ["thue-xe", "dai-han", "leasing"],
+      "content": "Thuê xe dài hạn (1-5 năm) phổ biến với doanh nghiệp. Hai loại: 1) Operating lease (thuê hoạt động): bên cho thuê giữ quyền sở hữu, chịu bảo dưỡng + đăng kiểm + bảo hiểm; bên thuê trả phí cố định hàng tháng và trả xe khi hết hạn. Hạch toán chi phí thuê. 2) Financial lease (thuê tài chính - leasing): bên thuê có quyền mua lại xe với giá tượng trưng khi hết hạn; trả góp gốc + lãi như mua trả góp ngân hàng. Hạch toán tài sản. Cả hai phải lập hợp đồng văn bản, đăng ký giao dịch bảo đảm tại Cục Đăng ký quốc gia. Lãi suất leasing thường 9-13%/năm."
+    },
+    {
+      "title": "Sang tên xe — Hợp đồng và thuế",
+      "domain": "legal_contract",
+      "tags": ["sang-ten", "thue", "hop-dong"],
+      "content": "Sang tên ô tô (mua xe cũ) cần: 1) Hợp đồng mua bán có công chứng (do văn phòng công chứng tại địa phương xe đăng ký). 2) Khai và nộp lệ phí trước bạ tại Chi cục Thuế (mức 2% giá tính lệ phí với xe đã đăng ký lần 1). 3) Nộp hồ sơ tại Phòng CSGT để cấp đăng ký mới. Phí công chứng hợp đồng: 0.05-0.1% giá trị xe (tối thiểu 50.000đ, tối đa 70 triệu). Thuế TNCN người bán xe cũ: thường được miễn nếu xe sử dụng cá nhân không kinh doanh. Nếu là tài sản công ty bán: chịu thuế TNDN 20%. Thời gian xử lý 2-7 ngày."
+    }
+  ]
+}
