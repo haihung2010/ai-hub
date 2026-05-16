@@ -1,0 +1,65 @@
+{
+  "tenant_id": "vehix",
+  "project_id": "vehix",
+  "model_mode": "lite",
+  "pace": "burst",
+  "min_gap_seconds": 0,
+  "max_gap_seconds": 2,
+  "users": [
+    {
+      "name": "vehix_kh_xe_minh",
+      "role": "kh_can_tu_van_xe_moi",
+      "messages": [
+        "Cho em xin thông tin Toyota Vios 2025 phiên bản G.",
+        "Giá lăn bánh cụ thể ở Hà Nội là bao nhiêu?",
+        "So với bản E thì khác chỗ nào?",
+        "Xe có hỗ trợ phanh tự động không?",
+        "Tiêu thụ xăng đường trường khoảng bao nhiêu lít/100km?"
+      ]
+    },
+    {
+      "name": "vehix_kh_hopdong_lan",
+      "role": "kh_tra_hop_dong",
+      "messages": [
+        "Em ký hợp đồng trả góp HD-VX-2025-0042, cho em hỏi tổng số tiền phải trả.",
+        "Số kỳ trả là 24 tháng đúng không?",
+        "Lãi suất tháng đầu là bao nhiêu phần trăm?",
+        "Phí phạt nếu trả trễ một kỳ là gì?",
+        "Em muốn tất toán sớm có phí gì không?"
+      ]
+    },
+    {
+      "name": "vehix_sale_huong",
+      "role": "sale_so_sanh_xe",
+      "messages": [
+        "So sánh nhanh Toyota Vios G và Honda City RS giúp tôi.",
+        "Cái nào giữ giá tốt hơn sau 3 năm?",
+        "Bảo hành chính hãng mỗi xe bao nhiêu năm?",
+        "Phụ tùng xe nào dễ thay thế hơn ở thị trường VN?",
+        "Khách trẻ thích phong cách thể thao thì nên đề xuất xe nào?"
+      ]
+    },
+    {
+      "name": "vehix_admin_phong",
+      "role": "admin_kiem_thong_tin",
+      "messages": [
+        "Liệt kê các bản Toyota Vios 2025 còn trong kho.",
+        "Bản G màu trắng còn bao nhiêu chiếc?",
+        "Hợp đồng nào sắp đến hạn thanh toán trong 7 ngày tới?",
+        "Khách Lan của hợp đồng HD-VX-2025-0042 thuộc nhóm nào?",
+        "Tóm tắt thông tin bảo dưỡng định kỳ Toyota Vios."
+      ]
+    },
+    {
+      "name": "vehix_kh_baoduong_tuan",
+      "role": "kh_hoi_bao_duong",
+      "messages": [
+        "Xe Toyota Vios 2023 của em đến mốc 30.000km, em cần làm gì?",
+        "Giá gói bảo dưỡng 30k là bao nhiêu?",
+        "Có cần thay dầu hộp số không?",
+        "Đặt lịch ở chi nhánh Hà Đông được chưa?",
+        "Bảo dưỡng có tốn bao nhiêu thời gian?"
+      ]
+    }
+  ]
+}

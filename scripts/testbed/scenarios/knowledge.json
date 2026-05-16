@@ -1,0 +1,143 @@
+{
+  "fanpage": [
+    {
+      "title": "Giờ mở cửa và địa chỉ",
+      "content": "Cửa hàng mở cửa từ 9:00 đến 21:30 tất cả các ngày trong tuần kể cả cuối tuần và lễ. Địa chỉ: 25 Nguyễn Trãi, Thanh Xuân, Hà Nội. Hotline: 1900-9999. Mua online qua fanpage 24/7.",
+      "domain": "general",
+      "trust_level": 3,
+      "tags": ["gio-mo-cua", "dia-chi"]
+    },
+    {
+      "title": "Chương trình ưu đãi tháng 5",
+      "content": "Voucher SALE20 giảm 20% cho khách mới, đơn từ 300.000đ, áp dụng đến hết 31/05/2026, dùng được cho cả mua online và tại shop. Mỗi khách dùng 1 lần. Không kết hợp với chương trình giảm giá khác.",
+      "domain": "promotion",
+      "trust_level": 3,
+      "tags": ["uu-dai", "voucher"]
+    },
+    {
+      "title": "Chính sách đổi trả",
+      "content": "Đổi size hoặc đổi mẫu trong vòng 7 ngày kể từ khi nhận hàng, sản phẩm còn nguyên tem mác chưa qua sử dụng. Phí đổi do khách chịu nếu không phải lỗi từ shop. Sau 7 ngày không hỗ trợ đổi trả. Liên hệ shop qua tin nhắn fanpage để khởi tạo yêu cầu.",
+      "domain": "policy",
+      "trust_level": 3,
+      "tags": ["doi-tra", "chinh-sach"]
+    },
+    {
+      "title": "Quy trình xử lý đơn thiếu hàng",
+      "content": "Khi nhận đơn thiếu hàng, khách chụp ảnh hộp đơn còn nguyên seal, gửi vào tin nhắn fanpage kèm mã đơn. Shop xác nhận trong 24h và gửi bù món thiếu trong 2-3 ngày làm việc qua đơn vị vận chuyển ban đầu.",
+      "domain": "policy",
+      "trust_level": 3,
+      "tags": ["khieu-nai", "thieu-hang"]
+    },
+    {
+      "title": "Bộ sưu tập mùa hè 2026",
+      "content": "BST mùa hè gồm áo phông cotton, áo polo linen, váy maxi, short kaki. Vải linen và cotton thoáng mát phù hợp khí hậu nóng ẩm. Đầy đủ size từ S đến XXL. Giá từ 250k đến 550k.",
+      "domain": "product",
+      "trust_level": 2,
+      "tags": ["bst-he", "san-pham-moi"]
+    }
+  ],
+  "vehix": [
+    {
+      "title": "Toyota Vios 2025 — Bảng giá và phiên bản",
+      "content": "Toyota Vios 2025 có 3 bản: E (478 triệu), G (545 triệu), GR-S (615 triệu). Giá lăn bánh Hà Nội bản G khoảng 615 triệu (đã bao gồm phí trước bạ 12%, biển số, bảo hiểm vật chất 1 năm). Bản G khác bản E ở: phanh đĩa sau, 7 túi khí, cruise control, đèn LED projector, ghế da. Tiêu thụ nhiên liệu đường trường khoảng 5.2L/100km.",
+      "domain": "product",
+      "trust_level": 3,
+      "tags": ["toyota-vios", "bang-gia"]
+    },
+    {
+      "title": "Toyota Vios — Bảo hành và bảo dưỡng",
+      "content": "Bảo hành chính hãng 3 năm hoặc 100.000 km tùy điều kiện đến trước. Mốc bảo dưỡng định kỳ: 5k, 10k, 20k, 30k, 40k km. Gói 30k bao gồm thay dầu động cơ, lọc dầu, lọc gió, lọc nhiên liệu, kiểm tra hộp số, phanh — chi phí khoảng 3.2 triệu, thời gian khoảng 3-4 giờ. Có chi nhánh tại Hà Đông, Long Biên, Cầu Giấy.",
+      "domain": "service",
+      "trust_level": 3,
+      "tags": ["bao-hanh", "bao-duong"]
+    },
+    {
+      "title": "Hợp đồng trả góp HD-VX-2025-0042",
+      "content": "Khách hàng: Nguyễn Thị Lan. Xe: Toyota Vios 2025 bản G, màu trắng ngọc trai. Giá xe: 545 triệu. Trả trước: 50% (272.5 triệu). Trả góp: 24 tháng, lãi suất 7.5%/năm cố định 12 tháng đầu, sau đó thả nổi theo lãi suất ngân hàng. Tổng tiền lãi ước tính: 28.4 triệu. Tổng cộng phải trả: 573.4 triệu. Phí phạt trễ kỳ: 0.05%/ngày trên dư nợ. Tất toán sớm: phí 2% trên dư nợ còn lại.",
+      "domain": "contract",
+      "trust_level": 3,
+      "tags": ["hop-dong", "tra-gop"]
+    },
+    {
+      "title": "So sánh Toyota Vios G và Honda City RS",
+      "content": "Toyota Vios G (545tr): động cơ 1.5L 106HP, 7 túi khí, hộp số CVT, mức giữ giá sau 3 năm khoảng 75%. Honda City RS (599tr): động cơ 1.5L 119HP, 4 túi khí, CVT, giữ giá khoảng 72%. Vios bền hơn, phụ tùng phổ biến và rẻ tại VN. City RS phong cách thể thao, công suất nhỉnh hơn, phù hợp khách trẻ. Vios tiết kiệm xăng hơn 0.4L/100km đường trường.",
+      "domain": "comparison",
+      "trust_level": 2,
+      "tags": ["so-sanh", "vios", "city"]
+    },
+    {
+      "title": "Tồn kho Toyota Vios 2025 — kho Hà Nội",
+      "content": "Bản E: trắng 4 chiếc, đen 2 chiếc, bạc 3 chiếc. Bản G: trắng 6 chiếc, đen 3 chiếc, đỏ 1 chiếc. Bản GR-S: bạc 2 chiếc, đỏ 1 chiếc. Cập nhật ngày 2026-05-15.",
+      "domain": "inventory",
+      "trust_level": 3,
+      "tags": ["ton-kho", "vios"]
+    }
+  ],
+  "iot": [
+    {
+      "title": "Cảm biến COLD-A1 — Kho lạnh khu A",
+      "content": "Vị trí: Kho lạnh khu A, nhà máy Hải Phòng. Loại cảm biến: nhiệt độ Pt100. Ngưỡng cảnh báo: -18°C đến -22°C. Dữ liệu 24h gần nhất (2026-05-15 00:00 đến 2026-05-16 00:00): trung bình -19.4°C, min -21.8°C lúc 03:15, max -16.7°C lúc 14:42. Vượt ngưỡng -18°C trong khoảng 14:30-15:10 (40 phút), do cửa kho mở để xuất hàng. Pin cảm biến: 78%. Bảo trì gần nhất: 2026-04-28. Đề xuất: kiểm tra gioăng cửa kho.",
+      "domain": "sensor",
+      "trust_level": 3,
+      "tags": ["cold-a1", "nhiet-do", "kho-lanh"]
+    },
+    {
+      "title": "Cảm biến GH-02 — Nhà kính số 2",
+      "content": "Vị trí: Nhà kính số 2, trang trại Đà Lạt. Loại cảm biến: độ ẩm SHT31. Ngưỡng tối ưu: 65%-80% RH. Dữ liệu 24h gần nhất: trung bình 72%, min 58% lúc 12:30 (giảm do nắng to và quạt chạy mạnh), max 85% lúc 06:00 sáng. Hệ thống phun sương kích hoạt 4 lần trong ngày. Pin cảm biến: 92%. Bảo trì gần nhất: 2026-05-02. Đề xuất: tăng tần suất phun sương lúc giữa trưa nếu có ngày nắng tiếp theo.",
+      "domain": "sensor",
+      "trust_level": 3,
+      "tags": ["gh-02", "do-am", "nha-kinh"]
+    },
+    {
+      "title": "Cảm biến CNC-07 — Máy CNC số 7",
+      "content": "Vị trí: Xưởng cơ khí, máy CNC-07. Loại cảm biến: dòng điện CT clamp. Công suất định mức: 22kW. Dữ liệu 24h gần nhất: tổng tiêu thụ 198 kWh (hôm trước 184 kWh, tăng 7.6%). Đỉnh tải: 91% công suất lúc 10:15 và 14:30 (cả hai đợt vận hành chế tạo lô lớn). Tải trung bình ca đêm (22:00-06:00): 12% (chế độ idle). Cảnh báo trong tháng: 2 lần (vượt nhiệt thân máy ngày 2026-05-08 và 2026-05-12). Bảo trì gần nhất: 2026-05-05. Pin cảm biến: cảm biến cấp nguồn trực tiếp, không dùng pin. Đề xuất: kiểm tra trục chính sau ca vận hành liên tục.",
+      "domain": "sensor",
+      "trust_level": 3,
+      "tags": ["cnc-07", "dien-nang", "xuong-co-khi"]
+    }
+  ],
+  "sales_bot": [
+    {
+      "title": "iPhone 13 128GB — Giá và tồn kho",
+      "content": "iPhone 13 128GB chính hãng VN/A: giá niêm yết 16.990.000đ, giá khuyến mãi 14.490.000đ. Tồn kho: trắng 5 máy, đen 7 máy, xanh 2 máy, hồng 0 máy. Bảo hành chính hãng Apple 12 tháng. Hỗ trợ trả góp 0% qua Home Credit/Shinhan trong 6-12 tháng.",
+      "domain": "product",
+      "trust_level": 3,
+      "tags": ["iphone-13", "ton-kho"]
+    },
+    {
+      "title": "iPhone 15 Pro Max 256GB — Giá và tồn kho",
+      "content": "iPhone 15 Pro Max 256GB chính hãng: giá 33.990.000đ, ưu đãi đến 31/05 còn 31.990.000đ kèm tặng AirPods 4. Tồn kho: titan tự nhiên 3 máy, titan đen 4 máy, titan trắng 1 máy, titan xanh 0 máy. Bảo hành 12 tháng. Trả góp 0% kỳ hạn 12 tháng, trả trước 30% (~9.6 triệu).",
+      "domain": "product",
+      "trust_level": 3,
+      "tags": ["iphone-15-pro-max"]
+    },
+    {
+      "title": "Galaxy S23 256GB — Giá và đặc điểm",
+      "content": "Samsung Galaxy S23 256GB: giá ưu đãi 14.990.000đ. Màn hình Dynamic AMOLED 6.1 inch 120Hz, chip Snapdragon 8 Gen 2, pin 3900mAh. Tồn kho: đen 4, xanh 2, kem 6, tím 1. Bảo hành 12 tháng. So với iPhone 13: pin tốt hơn, camera góc rộng linh hoạt hơn, hệ điều hành Android One UI.",
+      "domain": "product",
+      "trust_level": 3,
+      "tags": ["galaxy-s23"]
+    },
+    {
+      "title": "Macbook Air M2 16GB 512GB",
+      "content": "Macbook Air M2 16GB/512GB: giá 28.990.000đ, ưu đãi sinh viên giảm thêm 1 triệu. Tồn kho: bạc 2, xám 3, vàng đồng 1, xanh đêm 0. Chip M2 8 nhân CPU, GPU 10 nhân, hợp xử lý đồ họa Photoshop, Figma, Lightroom mượt mà. Trả góp 0% qua Home Credit, kỳ 12 tháng.",
+      "domain": "product",
+      "trust_level": 3,
+      "tags": ["macbook-air-m2"]
+    },
+    {
+      "title": "Chương trình thu cũ đổi mới iPhone",
+      "content": "iPhone 11 64GB tình trạng đẹp: trợ giá 4.500.000đ. Trầy xước nhẹ vỏ và viền: trừ 500.000-1.000.000đ tùy mức độ. Pin chai dưới 80%: trừ 800.000đ. Áp dụng khi mua iPhone 14/15/15 Pro/15 Pro Max. Khách giao máy cũ tại cửa hàng để định giá chính xác.",
+      "domain": "promotion",
+      "trust_level": 3,
+      "tags": ["thu-cu-doi-moi"]
+    },
+    {
+      "title": "Phụ kiện iPhone 15 — Ốp và sạc dự phòng",
+      "content": "Ốp lưng Apple Silicone Case chính hãng iPhone 15: 1.290.000đ, đủ màu. Ốp Spigen Ultra Hybrid: 450.000đ. Sạc dự phòng Anker 20.000mAh PowerCore Power Delivery: 1.690.000đ, hỗ trợ sạc nhanh 20W. Mua combo ốp + sạc dự phòng giảm thêm 200.000đ. Phụ kiện chính hãng bảo hành 12 tháng.",
+      "domain": "accessory",
+      "trust_level": 3,
+      "tags": ["phu-kien", "iphone-15"]
+    }
+  ]
+}

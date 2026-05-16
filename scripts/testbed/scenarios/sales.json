@@ -1,0 +1,65 @@
+{
+  "tenant_id": "sales",
+  "project_id": "sales_bot",
+  "model_mode": "lite",
+  "pace": "burst",
+  "min_gap_seconds": 0,
+  "max_gap_seconds": 2,
+  "users": [
+    {
+      "name": "sales_kh_lan",
+      "role": "kh_mua_dien_thoai",
+      "messages": [
+        "Em đang tìm điện thoại tầm 10 triệu, shop tư vấn giúp.",
+        "iPhone 13 và Galaxy S23 thì cái nào hơn ạ?",
+        "Giá hiện tại của iPhone 13 ở shop bao nhiêu?",
+        "Còn hàng màu xanh không?",
+        "Bảo hành chính hãng bao lâu?"
+      ]
+    },
+    {
+      "name": "sales_kh_thanh",
+      "role": "kh_mua_laptop",
+      "messages": [
+        "Em cần laptop làm đồ họa, ngân sách 25 triệu.",
+        "Macbook Air M2 chạy Photoshop có mượt không?",
+        "Còn bản 16GB RAM không shop?",
+        "Có chương trình trả góp 0% không?",
+        "Giao hàng Hà Nội mất bao lâu?"
+      ]
+    },
+    {
+      "name": "sales_sale_huong",
+      "role": "saler_check_ton_kho",
+      "messages": [
+        "Còn bao nhiêu iPhone 15 Pro Max?",
+        "Giá nhập của Macbook Air M2 16GB là bao nhiêu?",
+        "Sản phẩm nào tồn kho lâu nhất hiện tại?",
+        "Doanh số iPhone 13 tháng này thế nào?",
+        "Có voucher nào sắp hết hạn không?"
+      ]
+    },
+    {
+      "name": "sales_kh_doimoi_phuc",
+      "role": "kh_doi_may_cu",
+      "messages": [
+        "Em đang dùng iPhone 11, lên iPhone 15 thì được trợ giá bao nhiêu?",
+        "Máy cũ trầy xước nhẹ có bị trừ không?",
+        "Trả góp 12 tháng trả trước bao nhiêu?",
+        "Có ưu đãi sinh viên không shop?",
+        "Mua online và mua tại shop khác nhau gì?"
+      ]
+    },
+    {
+      "name": "sales_kh_phukien_my",
+      "role": "kh_mua_phu_kien",
+      "messages": [
+        "Cần ốp lưng và sạc dự phòng cho iPhone 15.",
+        "Ốp chính hãng Apple bao nhiêu?",
+        "Sạc dự phòng 20.000mAh có loại nào sạc nhanh không?",
+        "Mua combo có giảm thêm không?",
+        "Phụ kiện có bảo hành không shop?"
+      ]
+    }
+  ]
+}

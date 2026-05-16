@@ -1,0 +1,60 @@
+{
+  "tenant_id": "iot",
+  "project_id": "iot",
+  "model_mode": "lite",
+  "pace": "intermittent",
+  "min_gap_seconds": 10,
+  "max_gap_seconds": 30,
+  "users": [
+    {
+      "name": "iot_kysu_nha_may_hai",
+      "role": "kysu_giamsat_kho_lanh",
+      "messages": [
+        "Nhiệt độ kho lạnh COLD-A1 trong 24h qua thế nào?",
+        "Có lúc nào vượt ngưỡng -18°C không?",
+        "Khoảng thời gian nào nhiệt độ cao nhất?",
+        "Đề xuất hành động khắc phục."
+      ]
+    },
+    {
+      "name": "iot_kysu_nha_kinh_thanh",
+      "role": "kysu_nha_kinh",
+      "messages": [
+        "Độ ẩm nhà kính GH-02 hiện tại bao nhiêu?",
+        "Trong 24h gần nhất độ ẩm có ổn định không?",
+        "Đỉnh thấp nhất là khi nào?",
+        "Có cần tăng phun sương không?"
+      ]
+    },
+    {
+      "name": "iot_giamsat_an_toan_tuan",
+      "role": "giamsat_dien_nang",
+      "messages": [
+        "Tiêu thụ điện máy CNC-07 hôm nay so với hôm qua thế nào?",
+        "Có giờ nào tải vượt 90% không?",
+        "Mức tải trung bình ca đêm là bao nhiêu?",
+        "Có cảnh báo bảo trì nào không?"
+      ]
+    },
+    {
+      "name": "iot_quanly_van_hanh_dat",
+      "role": "quanly_tong_hop",
+      "messages": [
+        "Liệt kê các cảnh báo trong 24h qua từ tất cả cảm biến.",
+        "Cảm biến nào ổn định nhất tuần này?",
+        "Có cảm biến nào mất tín hiệu không?",
+        "Đề xuất ưu tiên bảo trì cho tuần tới."
+      ]
+    },
+    {
+      "name": "iot_kythuat_bao_tri_long",
+      "role": "kythuat_bao_tri",
+      "messages": [
+        "Cảm biến CNC-07 lần bảo trì gần nhất là khi nào?",
+        "Lịch sử cảnh báo của CNC-07 trong tháng này?",
+        "Pin cảm biến COLD-A1 còn bao nhiêu phần trăm?",
+        "Khi nào cần thay pin tiếp theo?"
+      ]
+    }
+  ]
+}

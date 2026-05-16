@@ -1,0 +1,60 @@
+{
+  "tenant_id": "fanpage",
+  "project_id": "fanpage",
+  "model_mode": "lite",
+  "pace": "intermittent",
+  "min_gap_seconds": 8,
+  "max_gap_seconds": 25,
+  "users": [
+    {
+      "name": "fanpage_kh_minh_an",
+      "role": "khach_moi_hoi_gio_mo_cua",
+      "messages": [
+        "Chào shop, cho em hỏi giờ mở cửa hôm nay với ạ?",
+        "Cuối tuần có mở không vậy shop?",
+        "Địa chỉ shop ở đâu để em qua xem trực tiếp?",
+        "Cảm ơn shop, mai em ghé."
+      ]
+    },
+    {
+      "name": "fanpage_kh_thu_huong",
+      "role": "kh_hoi_uu_dai",
+      "messages": [
+        "Hiện tại shop có chương trình ưu đãi nào không?",
+        "Em là khách mới có được giảm giá không?",
+        "Voucher 20% còn áp dụng tới khi nào?",
+        "Mua online có dùng được voucher đó không shop?"
+      ]
+    },
+    {
+      "name": "fanpage_kh_complaint_quang",
+      "role": "kh_khieu_nai",
+      "messages": [
+        "Shop ơi, đơn của em hôm qua nhận thiếu 1 món.",
+        "Mã đơn của em là FP240515-09, shop check giúp.",
+        "Vậy em phải gửi ảnh sản phẩm thiếu hay sao ạ?",
+        "Email đó là email công ty hay email cá nhân của shop vậy?"
+      ]
+    },
+    {
+      "name": "fanpage_kh_phuong_anh",
+      "role": "kh_xem_san_pham_moi",
+      "messages": [
+        "Shop có sản phẩm mới nào không ạ?",
+        "Bộ sưu tập mùa hè có những món gì?",
+        "Áo len mới có size S không vậy?",
+        "Vải có nóng không shop, mặc mùa hè được không?"
+      ]
+    },
+    {
+      "name": "fanpage_kh_quoc_thai",
+      "role": "kh_doi_tra",
+      "messages": [
+        "Em mua nhầm size, có đổi được không ạ?",
+        "Phí đổi trả tính sao shop?",
+        "Em đặt cách đây 5 ngày rồi, còn đổi kịp không?",
+        "Vậy em gửi qua bưu điện hay shipper riêng của shop?"
+      ]
+    }
+  ]
+}
