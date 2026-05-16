@@ -51,13 +51,26 @@ class SummaryService:
         project_id: str,
         tenant_id: str = DEFAULT_TENANT_ID,
     ) -> str | None:
+        # Skip the summary if it predates the user's memory boundary for this
+        # project — boundary marks "fresh start" for memory recall while
+        # keeping the underlying rows for audit.
         with get_db_connection() as conn:
             row = conn.execute(
-                "SELECT content FROM summaries WHERE tenant_id = %s AND user_id = %s AND project_id = %s "
-                "ORDER BY version DESC LIMIT 1",
+                "SELECT s.content, s.updated_at, b.boundary_at "
+                "FROM summaries s "
+                "LEFT JOIN memory_boundaries b ON b.tenant_id = s.tenant_id "
+                "  AND b.user_id = s.user_id AND b.project_id = s.project_id "
+                "WHERE s.tenant_id = %s AND s.user_id = %s AND s.project_id = %s "
+                "ORDER BY s.version DESC LIMIT 1",
                 (tenant_id, user_id, project_id),
             ).fetchone()
-        return row["content"] if row else None
+        if not row:
+            return None
+        boundary = row.get("boundary_at")
+        updated = row.get("updated_at")
+        if boundary and updated and updated < boundary:
+            return None
+        return row["content"]
 
     def _format_messages(self, messages: list[tuple[int, Message]]) -> str:
         lines: list[str] = []

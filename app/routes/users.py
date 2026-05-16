@@ -58,3 +58,28 @@ async def clear_user_history(
         tenant_id=tenant_id,
     )
     return {"cleared_sessions": cleared, "user_name": user_name, "project_id": project_id}
+
+
+@router.post("/{user_name}/memory-boundary")
+async def set_memory_boundary(
+    user_name: str,
+    request: Request,
+    project_id: str = Query(..., min_length=1, max_length=64),
+    tenant_id: str = Query(default=DEFAULT_TENANT_ID, min_length=1, max_length=64),
+) -> dict:
+    """Mark a memory boundary for the user+project. Existing messages and
+    summaries stay in the database for audit / re-export, but future memory
+    retrieval will only include rows after this point in time."""
+    user_service: UserService = request.app.state.user_service
+    history_service: HistoryService = request.app.state.history_service
+
+    user = user_service.find_by_name(user_name, tenant_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    history_service.mark_memory_boundary(
+        user_id=user.id,
+        project_id=project_id,
+        tenant_id=tenant_id,
+    )
+    return {"ok": True, "user_name": user_name, "project_id": project_id}

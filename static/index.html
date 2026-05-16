@@ -463,6 +463,36 @@
             return /^\s*\/clear\s*$/i.test(text);
         }
 
+        function isNewCommand(text) {
+            return /^\s*\/new\s*$/i.test(text);
+        }
+
+        async function setMemoryBoundary() {
+            if (!currentApiKey || !currentUserName) {
+                statusDiv.textContent = 'No active user session';
+                return;
+            }
+            try {
+                const params = new URLSearchParams({ project_id: currentProject });
+                const resp = await fetch(`/v1/users/${encodeURIComponent(currentUserName)}/memory-boundary?${params}`, {
+                    method: 'POST',
+                    headers: buildApiHeaders(),
+                });
+                if (!resp.ok) {
+                    let detail = `New session failed (${resp.status})`;
+                    try { const err = await resp.json(); detail = err.detail || detail; } catch (_) {}
+                    throw new Error(detail);
+                }
+                currentSessionId = null;
+                storage.removeItem('sessionId');
+                chatWindow.innerHTML = '';
+                addBubble('Bắt đầu cuộc trò chuyện mới. Lịch sử cũ vẫn lưu trong database nhưng sẽ không xuất hiện trong context.', false);
+                statusDiv.textContent = `New conversation for ${currentUserName}`;
+            } catch (err) {
+                statusDiv.textContent = 'Failed to start new conversation: ' + err.message;
+            }
+        }
+
         async function clearUserHistory() {
             if (!currentApiKey || !currentUserName) {
                 statusDiv.textContent = 'No active user session to clear';
@@ -578,6 +608,13 @@
             if (isClearCommand(message)) {
                 userInput.value = '';
                 await clearUserHistory();
+                userInput.focus();
+                return;
+            }
+
+            if (isNewCommand(message)) {
+                userInput.value = '';
+                await setMemoryBoundary();
                 userInput.focus();
                 return;
             }

@@ -600,19 +600,45 @@ class AIService:
 
     def _load_history(self, req: ChatRequest, session_id: str) -> list[Message]:
         limit = self._effective_history_cap(self._settings, req.model_mode, req.project_id)
-        messages = (
-            self._history.get_session_messages(session_id, tenant_id=req.tenant_id, limit=limit)
-            if not req.history
-            else req.history
-        )
+        if req.history:
+            messages = req.history
+        else:
+            session_messages = self._history.get_session_messages(
+                session_id, tenant_id=req.tenant_id, limit=limit
+            )
+            # If the resolved session is fresh (or near-empty), fall back to
+            # cross-session memory bounded by the user's memory_boundary.
+            user_id = self._users.get_or_create_user(req.user_name, req.tenant_id).id if req.user_name else None
+            if user_id and len(session_messages) < 2:
+                messages = self._history.get_recent_messages_for_user(
+                    user_id=user_id,
+                    project_id=req.project_id,
+                    tenant_id=req.tenant_id,
+                    limit=limit,
+                )
+            else:
+                messages = session_messages
         return [Message(role=msg.role, content=self._sanitize_memory_text(msg.content), images=msg.images) for msg in messages]
 
     def _load_full_session_history(self, req: ChatRequest, session_id: str) -> list[Message]:
-        messages = (
-            self._history.get_session_messages(session_id, tenant_id=req.tenant_id, limit=0)
-            if not req.history
-            else req.history
-        )
+        if req.history:
+            messages = req.history
+        else:
+            session_messages = self._history.get_session_messages(
+                session_id, tenant_id=req.tenant_id, limit=0
+            )
+            user_id = self._users.get_or_create_user(req.user_name, req.tenant_id).id if req.user_name else None
+            if user_id and len(session_messages) < 2:
+                # Memory-check on a fresh session — fall back to user-level
+                # cross-session history (bounded by memory_boundary).
+                messages = self._history.get_recent_messages_for_user(
+                    user_id=user_id,
+                    project_id=req.project_id,
+                    tenant_id=req.tenant_id,
+                    limit=0,
+                )
+            else:
+                messages = session_messages
         return [Message(role=msg.role, content=self._sanitize_memory_text(msg.content), images=msg.images) for msg in messages]
 
     def _load_summary(self, user_id: str | None, tenant_id: str, project_id: str) -> str | None:

@@ -79,6 +79,51 @@ class HistoryService:
             rows = conn.execute(query, tuple(params)).fetchall()
         return [Message(role=row["role"], content=row["content"] or "...") for row in reversed(rows)]
 
+    def get_recent_messages_for_user(
+        self,
+        user_id: str,
+        project_id: str,
+        tenant_id: str = DEFAULT_TENANT_ID,
+        limit: int = 20,
+    ) -> list[Message]:
+        """Cross-session history: latest N messages for a user in a project,
+        bounded by the user's memory boundary if one is set."""
+        query = (
+            "SELECT m.role, m.content FROM messages m "
+            "JOIN sessions s ON m.session_id = s.id "
+            "LEFT JOIN memory_boundaries b ON b.tenant_id = m.tenant_id "
+            "  AND b.user_id = m.user_id AND b.project_id = s.project_id "
+            "WHERE m.tenant_id = %s AND s.tenant_id = %s "
+            "AND m.user_id = %s AND s.project_id = %s "
+            "AND (b.boundary_at IS NULL OR m.created_at >= b.boundary_at) "
+            "ORDER BY m.id DESC"
+        )
+        params: list[str | int] = [tenant_id, tenant_id, user_id, project_id]
+        if limit > 0:
+            query += " LIMIT %s"
+            params.append(limit)
+        with get_db_connection() as conn:
+            rows = conn.execute(query, tuple(params)).fetchall()
+        return [Message(role=row["role"], content=row["content"] or "...") for row in reversed(rows)]
+
+    def mark_memory_boundary(
+        self,
+        user_id: str,
+        project_id: str,
+        tenant_id: str = DEFAULT_TENANT_ID,
+    ) -> None:
+        """Set the memory boundary for a user+project to NOW(). Existing data is preserved;
+        future memory loads will only include rows after this timestamp."""
+        with get_db_connection() as conn:
+            conn.execute(
+                "INSERT INTO memory_boundaries (tenant_id, user_id, project_id, boundary_at) "
+                "VALUES (%s, %s, %s, CURRENT_TIMESTAMP) "
+                "ON CONFLICT (tenant_id, user_id, project_id) "
+                "DO UPDATE SET boundary_at = CURRENT_TIMESTAMP",
+                (tenant_id, user_id, project_id),
+            )
+            conn.commit()
+
     def get_unsummarized_messages(
         self,
         user_id: str,

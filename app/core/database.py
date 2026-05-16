@@ -84,6 +84,17 @@ def init_db() -> None:
         """)
 
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS memory_boundaries (
+                tenant_id TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                project_id TEXT NOT NULL,
+                boundary_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (tenant_id, user_id, project_id),
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+            )
+        """)
+
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS summaries (
                 id BIGSERIAL PRIMARY KEY,
                 tenant_id TEXT NOT NULL DEFAULT 'default',
