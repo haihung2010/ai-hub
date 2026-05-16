@@ -5,6 +5,28 @@
   "pace": "intermittent",
   "min_gap_seconds": 8,
   "max_gap_seconds": 25,
+  "pool": [
+    "Shop ơi giờ mở cửa hôm nay là mấy giờ ạ?",
+    "Cuối tuần shop có mở không vậy?",
+    "Địa chỉ cửa hàng ở đâu để em ghé qua?",
+    "Hotline shop là số nào ạ?",
+    "Shop có chương trình ưu đãi gì cho khách mới không?",
+    "Voucher SALE20 áp dụng tới khi nào shop?",
+    "Em mua đơn 250k có dùng được voucher không?",
+    "Em mua online có dùng voucher giảm 20% được không?",
+    "Đơn hàng em nhận thiếu 1 món, mã FP240515-09 shop check giúp.",
+    "Em phải gửi ảnh sản phẩm thiếu hay ảnh hộp ạ?",
+    "Em mua sai size, đổi lại có mất phí không?",
+    "Em nhận hàng cách đây 5 ngày rồi còn đổi kịp không?",
+    "Bộ sưu tập mùa hè có những sản phẩm mới gì?",
+    "Áo polo linen có size XL không shop?",
+    "Vải linen mặc mùa hè có nóng không?",
+    "Váy maxi giá bao nhiêu vậy ạ?",
+    "Có ship cod không shop?",
+    "Phí ship Hà Nội là bao nhiêu?",
+    "Shop có đóng gói quà tặng không?",
+    "Em có thể đặt giữ hàng được không?"
+  ],
   "users": [
     {
       "name": "fanpage_kh_minh_an",

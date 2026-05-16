@@ -5,6 +5,28 @@
   "pace": "burst",
   "min_gap_seconds": 0,
   "max_gap_seconds": 2,
+  "pool": [
+    "Cho em xin thông tin Toyota Vios 2025 phiên bản G.",
+    "Bản E và bản G khác nhau gì shop?",
+    "Bản GR-S giá lăn bánh Hà Nội bao nhiêu?",
+    "Toyota Vios bản G có 7 túi khí không?",
+    "Tiêu thụ xăng đường trường khoảng bao nhiêu lít/100km?",
+    "Bảo hành chính hãng Toyota Vios bao nhiêu năm?",
+    "Mốc bảo dưỡng 30k km bao gồm những gì?",
+    "Gói bảo dưỡng 30k km giá bao nhiêu?",
+    "Đặt lịch bảo dưỡng tại Hà Đông được không?",
+    "Hợp đồng HD-VX-2025-0042 tổng tiền phải trả là bao nhiêu?",
+    "Hợp đồng đó kỳ trả góp bao nhiêu tháng?",
+    "Lãi suất 12 tháng đầu là bao nhiêu phần trăm?",
+    "Phí phạt nếu trả trễ một kỳ là gì?",
+    "Em muốn tất toán sớm có phí gì không?",
+    "So sánh Toyota Vios G và Honda City RS giúp tôi.",
+    "Vios G và City RS xe nào giữ giá tốt hơn sau 3 năm?",
+    "Tồn kho Toyota Vios bản G màu trắng còn bao nhiêu chiếc?",
+    "Bản GR-S còn xe màu đỏ không?",
+    "Khách trẻ thích phong cách thể thao nên đề xuất xe nào?",
+    "Phụ tùng Vios với City cái nào dễ thay thế hơn ở VN?"
+  ],
   "users": [
     {
       "name": "vehix_kh_xe_minh",

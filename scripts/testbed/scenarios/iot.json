@@ -5,6 +5,28 @@
   "pace": "intermittent",
   "min_gap_seconds": 10,
   "max_gap_seconds": 30,
+  "pool": [
+    "Nhiệt độ kho lạnh COLD-A1 trong 24h qua có ổn định không?",
+    "COLD-A1 nhiệt độ trung bình hôm nay bao nhiêu?",
+    "COLD-A1 có lúc nào vượt ngưỡng -18°C không?",
+    "Pin cảm biến COLD-A1 còn bao nhiêu phần trăm?",
+    "COLD-A1 lần bảo trì gần nhất là khi nào?",
+    "Đề xuất hành động khắc phục cho kho lạnh khu A.",
+    "Độ ẩm nhà kính GH-02 trung bình hôm nay bao nhiêu?",
+    "GH-02 có giai đoạn nào dưới 65% RH không?",
+    "GH-02 hệ thống phun sương kích hoạt mấy lần trong ngày?",
+    "Cảm biến độ ẩm GH-02 pin còn bao nhiêu?",
+    "Đề xuất tần suất phun sương cho nhà kính số 2.",
+    "Tiêu thụ điện máy CNC-07 hôm nay bao nhiêu kWh?",
+    "CNC-07 có giờ nào tải vượt 90% công suất không?",
+    "CNC-07 cảnh báo trong tháng này có những lần nào?",
+    "Mức tải trung bình ca đêm của CNC-07 bao nhiêu?",
+    "Liệt kê tất cả cảnh báo trong 24h qua từ các cảm biến.",
+    "Cảm biến nào ổn định nhất tuần này?",
+    "Có cảm biến nào mất tín hiệu không?",
+    "Đề xuất ưu tiên bảo trì tuần tới.",
+    "Cảm biến CNC-07 lần bảo trì gần nhất khi nào?"
+  ],
   "users": [
     {
       "name": "iot_kysu_nha_may_hai",

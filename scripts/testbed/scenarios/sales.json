@@ -5,6 +5,28 @@
   "pace": "burst",
   "min_gap_seconds": 0,
   "max_gap_seconds": 2,
+  "pool": [
+    "Em đang tìm điện thoại tầm 10 triệu, shop tư vấn giúp.",
+    "iPhone 13 128GB giá bao nhiêu shop?",
+    "iPhone 13 còn màu xanh không shop?",
+    "iPhone 13 và Galaxy S23 cái nào hơn?",
+    "Galaxy S23 256GB pin và màn hình thế nào?",
+    "iPhone 15 Pro Max 256GB ưu đãi có gì?",
+    "Còn iPhone 15 Pro Max màu titan tự nhiên không?",
+    "Trả góp iPhone 15 Pro Max trả trước bao nhiêu?",
+    "Macbook Air M2 16GB 512GB giá bao nhiêu?",
+    "Macbook Air M2 chạy Photoshop có mượt không?",
+    "Macbook Air có chương trình sinh viên không?",
+    "Em đang dùng iPhone 11, lên iPhone 15 trợ giá bao nhiêu?",
+    "Máy cũ trầy xước nhẹ có bị trừ không?",
+    "Cần ốp lưng và sạc dự phòng cho iPhone 15.",
+    "Ốp Apple Silicone iPhone 15 giá bao nhiêu?",
+    "Sạc dự phòng Anker 20.000mAh có sạc nhanh không?",
+    "Mua combo ốp + sạc có giảm thêm không?",
+    "Bảo hành chính hãng iPhone 13 bao lâu?",
+    "Giao hàng Hà Nội mất bao lâu shop?",
+    "Tồn kho iPhone 15 Pro Max còn bao nhiêu máy?"
+  ],
   "users": [
     {
       "name": "sales_kh_lan",
