@@ -187,5 +187,6 @@ class KnowledgeRetrievalService:
             version=int(row["version"]),
             score=score,
             tags=tags,
+            embedding=bytes(row["chunk_embedding"]) if row["chunk_embedding"] else None,
         )
         return _ScoredChunk(result, score)
