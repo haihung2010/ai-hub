@@ -15,7 +15,7 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 - **Cloud fallback**: OpenRouter (`openai/gpt-oss-20b:free`), project allow/deny policy
 - **Streaming**: SSE streaming with `[DONE]` sentinel
 - **Multimodal**: Image input (Base64 → OpenAI `image_url` content-parts format) — Lite mode only
-- **Model modes**: `lite` (Gemma4 E4B Q8, 32k ctx), `thinking` (Qwen 27B), `external` (cloud only)
+- **Model modes**: `lite` (Gemma4 E2B Q4, 8k ctx, default), `normal` (same model with default_num_ctx), `external` (cloud only)
 
 ### Memory System
 - **Rolling summaries** (`SummaryService`): async, threshold-triggered (default 20 msgs), marks `is_summarized=1`
@@ -139,12 +139,12 @@ curl http://localhost:8000/health
 
 ## Multi-Model GPU Architecture (16GB VRAM)
 
-*   **Primary Chat (Port 8080)**: `E4B Q8` (Context: 32K, Slots: 8). Handles 100% of user chat queries.
-*   **Background Tasks (Port 8081)**: `E4B Q4` (Context: 16K, Slots: 2). Dedicated to generating async Summaries and Structured Memory.
+*   **Primary Chat (Port 8080)**: `E2B Q4` (Context: 8K/slot × 16 slots = 131K total). Handles 100% of user chat queries. ~4GB VRAM.
 *   **Search Reranker (Port 8082)**: `bge-reranker-v2-m3` (Context: 4K). Re-scores knowledge RAG.
-*   **FastEmbed**: Runs directly inside API server using `CUDAExecutionProvider`.
+*   **FastEmbed**: Runs CPU inside API server (GPU has higher overhead than gain for small queries).
 *   **Whisper**: Lazy-loaded `large-v3-turbo` model in float16.
-*   **Benchmark**: 30 users × 40 questions (1200 requests) processed with 0 errors in 646s (p50: 13.6s) ~111 RPM without OOM.
+*   **Benchmark**: 50 user × 5 turn × 4 tenant (900 requests) processed with 0 errors in 118.8s ≈ 456 RPM. 5 user/tenant burst keeps p95 < 4s.
+*   **Notes**: Single-instance E2B Q4 outperforms multi-node load balancer on 1 GPU. Speculative decoding (E4B target + E2B draft) makes things worse due to GPU contention. E4B Q8 single instance is 14% slower than E2B Q4 with comparable Vietnamese chatbot quality.
 
 ## Phase Roadmap
 
@@ -158,7 +158,7 @@ curl http://localhost:8000/health
 ### Phase 2 — Hardware Upgrade (Khi cần >200 RPM)
 Nâng cấp GPU để tăng throughput thực sự:
 - **RTX 5080 (16GB)**: ~220 RPM (+100% vs hiện tại), ~$900. Tốt nếu muốn tăng slot từ 8→16
-- **RTX 5090 (32GB)**: ~400 RPM (+260%), ~$2000. Load 2 model đồng thời (chat + thinking)
+- **RTX 5090 (32GB)**: ~400 RPM (+260%), ~$2000. Load 2 model đồng thời cho hybrid quality routing
 - **2× RTX 5060 Ti (32GB tổng)**: ~250 RPM, ~$800 tổng. Phù hợp chạy song song primary + background trên GPU riêng
 - Cân nhắc: PSU phải đủ (850W+ cho 5090), PCIe slot phải có
 
@@ -180,7 +180,7 @@ Nâng cấp GPU để tăng throughput thực sự:
 
 ## Known Limitations (còn lại sau Phase 1)
 - Single llama.cpp instance — no horizontal scaling (Phase 3)
-- Two large models (e4b + qwen3.5:27b) cannot stay resident simultaneously on 16GB GPU
+- Single GPU constraint: load balancer / multi-instance không có lợi với 1 GPU vật lý — context-switch ăn hết throughput gain
 - No billing enforcement (schema có nhưng chưa implement logic)
 - Bulk operations (batch disable keys, batch delete cards) chưa có — chỉ per-row actions trong UI
 
