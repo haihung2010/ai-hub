@@ -3,6 +3,7 @@ set -euo pipefail
 
 LLAMA_SERVER=${LLAMA_SERVER:-/home/hung/llama.cpp/build-cuda13/bin/llama-server}
 MODEL=${MODEL:-/home/hung/models/gemma-4-E2B-it-Q4_K_M.gguf}
+MMPROJ=${MMPROJ:-/home/hung/models/mmproj-gemma-4-E2B-it-F16.gguf}
 HOST=${HOST:-127.0.0.1}
 PORT=${PORT:-8081}
 CTX_SIZE=${CTX_SIZE:-16384}
@@ -22,8 +23,15 @@ fi
 
 pkill -f "llama-server .*--port ${PORT}" 2>/dev/null || true
 
+MMPROJ_ARGS=()
+if [[ -f "$MMPROJ" ]]; then
+  MMPROJ_ARGS=(--mmproj "$MMPROJ")
+  echo "Vision enabled: $MMPROJ"
+fi
+
 nohup "$LLAMA_SERVER" \
   -m "$MODEL" \
+  "${MMPROJ_ARGS[@]}" \
   --host "$HOST" \
   --port "$PORT" \
   --ctx-size "$CTX_SIZE" \
