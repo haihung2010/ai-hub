@@ -67,7 +67,24 @@
         </div>
 
         <div class="input-shell shrink-0">
+            <div id="image-preview-container" class="mb-2 hidden items-center space-x-2 rounded-xl border border-slate-700 bg-slate-900 p-2">
+                <div class="relative">
+                    <img id="image-preview" src="" class="h-16 w-16 object-cover rounded-lg border border-slate-700">
+                    <button id="remove-image" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <span id="file-name" class="text-xs text-slate-400 truncate max-w-[150px]"></span>
+            </div>
             <div class="flex items-center gap-1 rounded-2xl border border-slate-700 bg-slate-900 p-2 shadow-2xl shadow-black/20 sm:gap-2">
+                <button id="attach-btn" class="shrink-0 p-2 text-slate-400 transition-all hover:text-blue-400 active:scale-90 sm:p-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </button>
+                <input type="file" id="file-input" class="hidden" accept="image/*">
                 <input type="text" id="user-input" class="min-w-0 flex-1 bg-transparent px-2 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none sm:p-4 sm:text-base" placeholder="Ask AI Hub something...">
                 <button id="send-btn" class="flex shrink-0 items-center rounded-xl bg-blue-600 px-4 py-2 font-bold text-white shadow-lg transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-50 sm:px-6">Send</button>
             </div>
@@ -85,6 +102,12 @@
         const statusDiv = document.getElementById('status');
         const modeLiteBtn = document.getElementById('mode-lite');
         const modeThinkingBtn = document.getElementById('mode-thinking');
+        const attachBtn = document.getElementById('attach-btn');
+        const fileInput = document.getElementById('file-input');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const removeImageBtn = document.getElementById('remove-image');
+        const fileNameSpan = document.getElementById('file-name');
         const currentUserBadge = document.getElementById('current-user-badge');
         const currentProjectBadge = document.getElementById('current-project-badge');
         const apiKeyBtn = document.getElementById('api-key-btn');
@@ -164,6 +187,7 @@
         }
         let currentUserName = storage.getItem('userName') || null;
         let currentApiKey = storage.getItem('apiKey') || null;
+        let selectedFile = null;
         let searchEnabled = false;
         let streamEnabled = true;
 
@@ -195,6 +219,15 @@
                 searchToggleBtn.className = 'whitespace-nowrap rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-300 transition-all';
             }
         });
+
+        // ── Image helpers ──────────────────────────────────────────────
+        function resetSelectedImage() {
+            selectedFile = null;
+            fileInput.value = '';
+            imagePreviewContainer.classList.add('hidden');
+            imagePreview.src = '';
+            fileNameSpan.textContent = '';
+        }
 
         // ── User / API key badges ──────────────────────────────────────
         function updateCurrentUserBadge() {
@@ -289,6 +322,14 @@
                 ? 'text-xs font-bold py-1 px-3 rounded-md transition-all bg-green-500 text-white shadow'
                 : 'text-xs font-bold py-1 px-3 rounded-md transition-all text-slate-400 hover:text-slate-200';
             modeThinkingBtn.className = 'hidden';
+            if (isLite) {
+                attachBtn.disabled = false;
+                attachBtn.classList.remove('hidden', 'opacity-40', 'cursor-not-allowed');
+            } else {
+                attachBtn.disabled = true;
+                attachBtn.classList.add('opacity-40', 'cursor-not-allowed');
+                resetSelectedImage();
+            }
         }
 
         async function switchServerModel(mode) {
@@ -409,6 +450,7 @@
             if (!await promptForUserName(currentUserName || '', false)) return;
             currentSessionId = null;
             storage.removeItem('sessionId');
+            resetSelectedImage();
             chatWindow.innerHTML = '';
             statusDiv.textContent = `Started a new session for ${currentUserName}`;
             try {
@@ -418,15 +460,49 @@
             }
         });
 
+        // ── File handling ──────────────────────────────────────────────
+        attachBtn.addEventListener('click', () => {
+            if (currentMode !== 'lite') { statusDiv.textContent = 'Image upload is available only in Lite mode'; return; }
+            fileInput.click();
+        });
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (currentMode !== 'lite') { resetSelectedImage(); return; }
+            if (file && file.type.startsWith('image/')) {
+                selectedFile = file;
+                fileNameSpan.textContent = file.name;
+                const reader = new FileReader();
+                reader.onload = (ev) => { imagePreview.src = ev.target.result; imagePreviewContainer.classList.remove('hidden'); };
+                reader.readAsDataURL(file);
+            }
+        });
+        removeImageBtn.addEventListener('click', resetSelectedImage);
+
+        async function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+            });
+        }
 
         // ── Chat bubble helpers ────────────────────────────────────────
-        function addBubble(text, isUser = false) {
+        function addBubble(text, isUser = false, images = []) {
             const wrapper = document.createElement('div');
             wrapper.className = isUser ? 'flex justify-end' : 'flex justify-start';
             const div = document.createElement('div');
             div.className = isUser
                 ? 'bg-blue-600 text-white p-4 rounded-2xl rounded-tr-none message-bubble shadow-md'
                 : 'border border-slate-700 bg-slate-800 text-slate-100 p-4 rounded-2xl rounded-tl-none message-bubble shadow-sm';
+            if (images.length > 0) {
+                images.forEach((src) => {
+                    const img = document.createElement('img');
+                    img.src = src;
+                    img.className = 'max-w-full h-auto rounded-lg mb-2 border border-blue-400';
+                    div.appendChild(img);
+                });
+            }
             const textSpan = document.createElement('span');
             textSpan.textContent = text;
             div.appendChild(textSpan);
@@ -603,7 +679,7 @@
             if (!await ensureUserName()) { userInput.focus(); return; }
 
             const message = userInput.value.trim();
-            if (!message) return;
+            if (!message && !selectedFile) return;
 
             if (isClearCommand(message)) {
                 userInput.value = '';
@@ -626,8 +702,15 @@
                 return;
             }
 
+            let images = [], imagePreviews = [];
+            if (selectedFile && currentMode === 'lite') {
+                images.push(await fileToBase64(selectedFile));
+                imagePreviews.push(imagePreview.src);
+                resetSelectedImage();
+            }
+
             userInput.value = '';
-            addBubble(message, true);
+            addBubble(message || 'Analyze this image', true, imagePreviews);
 
             const startTime = performance.now();
             const explicitSearch = searchEnabled && isSearchCommand(message);
@@ -654,6 +737,7 @@
                 enable_search: searchEnabled,
                 allow_external: explicitSearch,
             };
+            if (currentMode === 'lite' && images.length > 0) payload.images = images;
 
             try {
                 const { sessionId, latencyMs } = useStream

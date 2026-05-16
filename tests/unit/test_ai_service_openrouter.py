@@ -439,12 +439,15 @@ async def test_explicit_search_routes_to_openrouter_and_uses_stripped_query(open
     assert response.model == "openrouter/free-model"
     assert response.route == "cloud"
     assert response.route_reason == "explicit_search_cloud"
-    assert response.sources == ["https://example.com/news"]
-    assert search.queries == ["latest AI news"]
+    # Search now relies on the cloud :online plugin server-side, so we no
+    # longer inject a local SearXNG context block or surface URLs from it.
+    assert response.sources == []
+    assert search.queries == []
     assert cloud.calls == 1
     assert local.calls == 0
-    assert "WEB SEARCH CONTEXT" in cloud.messages[0][0].content
     assert cloud.messages[0][-1].content == "latest AI news"
+    # Web plugin should be enabled in the OpenRouter request options
+    assert cloud.options[0].get("web") is True
 
 
 @pytest.mark.unit
@@ -582,10 +585,13 @@ async def test_explicit_search_stream_routes_to_openrouter(openrouter_settings: 
     assert events[0]["provider"] == "openrouter"
     assert events[0]["model"] == "openrouter/free-model"
     assert events[0]["route"] == "cloud"
-    assert events[-1]["sources"] == ["https://example.com/news"]
-    assert search.queries == ["latest AI news"]
+    # Search now relies on the cloud :online plugin, no client-side URLs
+    assert events[-1]["sources"] == []
+    assert search.queries == []
     assert cloud.stream_calls == 1
     assert local.stream_calls == 0
+    # Web plugin enabled in stream request options
+    assert cloud.options[-1].get("web") is True
 
 
 @pytest.mark.unit

@@ -71,6 +71,8 @@ class OpenRouterProvider:
             for key in ("max_tokens", "top_p"):
                 if key in options:
                     payload[key] = options[key]
+            if options.get("web"):
+                payload["plugins"] = [{"id": "web"}]
 
         headers = {
             "Authorization": f"Bearer {self._api_key}",
@@ -135,6 +137,8 @@ class OpenRouterProvider:
             for key in ("max_tokens", "top_p"):
                 if key in options:
                     payload[key] = options[key]
+            if options.get("web"):
+                payload["plugins"] = [{"id": "web"}]
 
         headers = {
             "Authorization": f"Bearer {self._api_key}",

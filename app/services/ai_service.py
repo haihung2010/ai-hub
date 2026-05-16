@@ -401,7 +401,7 @@ class AIService:
             raise UpstreamError(f"external llm is not allowed for project={req.project_id}")
         return self._cloud
 
-    def _provider_options(self, provider: ChatProvider, model_mode: str, num_ctx: int = 0) -> dict:
+    def _provider_options(self, provider: ChatProvider, model_mode: str, num_ctx: int = 0, web_search: bool = False) -> dict:
         options: dict = {}
         if provider.name == self._local.name:
             max_tokens = self._settings.local_max_tokens or self._settings.ai_max_tokens
@@ -413,6 +413,8 @@ class AIService:
             max_tokens = self._settings.openrouter_max_tokens or self._settings.ai_max_tokens
             if max_tokens:
                 options["max_tokens"] = max_tokens
+            if web_search:
+                options["web"] = True
         if self._settings.ai_top_p:
             options["top_p"] = self._settings.ai_top_p
         return options
@@ -474,25 +476,11 @@ class AIService:
             self._effective_history_cap(self._settings, req.model_mode, req.project_id),
         )
 
-        source_urls: list[str] = []
-        # Explicit /search: command always triggers search regardless of prompt.enable_search.
-        # Auto-detection still respects the prompt-level toggle.
-        should_search = bool(search_query) and self._settings.enable_web_search_tool
-        if should_search:
-            logger.info(
-                "Triggering explicit web search tenant=%s project=%s session_mode=%s",
-                req.tenant_id,
-                req.project_id,
-                "resume" if req.session_id else "new",
-            )
-            search_context, source_urls = self._build_search_context(search_query)
-            if search_context:
-                logger.info("Search context injected with %d results", len(source_urls))
-                messages = self._inject_search_context(messages, search_context)
-            else:
-                logger.info("Search triggered but no results found")
-
-        return messages, source_urls
+        # Explicit /search: now relies on the cloud provider's :online plugin
+        # to perform web search server-side. Source URLs come back as message
+        # annotations; we surface a flag here that _provider_options can pick
+        # up to enable the plugin. No client-side search context is injected.
+        return messages, []
 
     def _evaluate_failure_risk(
         self,
@@ -891,7 +879,10 @@ class AIService:
             prompt_enable_search=prompt.enable_search,
             knowledge_block=knowledge_block,
         )
-        options = self._provider_options(provider, req.model_mode, num_ctx)
+        options = self._provider_options(
+            provider, req.model_mode, num_ctx,
+            web_search=bool(search_query) and provider.name != self._local.name,
+        )
         route_alias = "cloud" if provider.name == getattr(self._cloud, "name", None) else "local"
 
         yield {"type": "start", "session_id": session_id, "model": model, "provider": provider.name, "route": route_alias}
@@ -1129,7 +1120,10 @@ class AIService:
                 req.project_id,
                 req.tenant_id,
             )
-        options = self._provider_options(provider, req.model_mode, num_ctx)
+        options = self._provider_options(
+            provider, req.model_mode, num_ctx,
+            web_search=bool(search_query) and provider.name != self._local.name,
+        )
 
         try:
             if provider.name == self._local.name:
