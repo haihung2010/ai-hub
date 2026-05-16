@@ -5,7 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 ProviderName = Literal["local", "cloud"]
-ModelMode = Literal["lite", "thinking", "normal", "external"]
+ModelMode = Literal["lite", "normal", "external"]
 
 
 class Message(BaseModel):

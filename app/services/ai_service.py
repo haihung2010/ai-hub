@@ -101,16 +101,11 @@ class AIService:
 
     @staticmethod
     def _sanitize_memory_text(text: str) -> str:
-        for _ in range(2):
-            text = re.sub(r"(?is)^\s*&lt;\|channel(?:\|&gt;|&gt;)?[^\n]*", "", text)
-            text = re.sub(r"(?is)^\s*&lt;channel\|&gt;[^\n]*", "", text)
-            text = re.sub(r"&lt;\|[^\n&]*(?:\|&gt;|&gt;)?", "", text)
-            text = re.sub(r"&lt;channel\|&gt;", "", text, flags=re.IGNORECASE)
-            text = html.unescape(text)
-            text = re.sub(r"(?is)^\s*<\|channel(?:\|>|>)?[^\n]*", "", text)
-            text = re.sub(r"(?is)^\s*<channel\|>[^\n]*", "", text)
-            text = re.sub(r"<\|[^\n>]*(?:\|>|>)?", "", text)
-            text = re.sub(r"<channel\|>", "", text, flags=re.IGNORECASE)
+        text = html.unescape(text)
+        text = re.sub(r"(?is)^\s*<\|channel(?:\|>|>)?[^\n]*", "", text)
+        text = re.sub(r"(?is)^\s*<channel\|>[^\n]*", "", text)
+        text = re.sub(r"<\|[^\n>]*(?:\|>|>)?", "", text)
+        text = re.sub(r"<channel\|>", "", text, flags=re.IGNORECASE)
         text = re.sub(r"^\s*text(?:acular)?[-\w{}.:\"')]*\s*", "", text, flags=re.IGNORECASE)
         return text.strip()
 
@@ -381,7 +376,7 @@ class AIService:
     def _select_model(self, req: ChatRequest, prompt_model: str) -> tuple[str, int]:
         if req.model_mode == "external" or req.provider == "cloud":
             return self._settings.openrouter_model, 0
-        if req.model_mode == "thinking" or req.model_mode == "normal":
+        if req.model_mode == "normal":
             ctx = self._settings.project_context_sizes.get(req.project_id, self._settings.default_num_ctx)
             return self._settings.default_model, ctx
         ctx = self._settings.project_context_sizes.get(req.project_id, self._settings.lite_num_ctx)
@@ -409,11 +404,7 @@ class AIService:
     def _provider_options(self, provider: ChatProvider, model_mode: str, num_ctx: int = 0) -> dict:
         options: dict = {}
         if provider.name == self._local.name:
-            max_tokens = (
-                self._settings.thinking_max_tokens
-                if model_mode == "thinking" and self._settings.thinking_max_tokens
-                else self._settings.local_max_tokens or self._settings.ai_max_tokens
-            )
+            max_tokens = self._settings.local_max_tokens or self._settings.ai_max_tokens
             if max_tokens:
                 options["max_tokens"] = max_tokens
             if num_ctx:
@@ -459,13 +450,15 @@ class AIService:
         memory_bundle: RetrievedMemoryBundle | None,
         pinned_memory_block: str | None = None,
         prompt_enable_search: bool = True,
+        knowledge_block: str | None = None,
     ) -> tuple[list[Message], list[str]]:
         search_query = self._explicit_search_query(req)
-        knowledge_block = self._build_knowledge_block(
-            req.tenant_id,
-            req.project_id,
-            search_query or req.user_message,
-        )
+        if knowledge_block is None or search_query:
+            knowledge_block = self._build_knowledge_block(
+                req.tenant_id,
+                req.project_id,
+                search_query or req.user_message,
+            )
         memory_blocks = [
             *self._build_structmem_blocks(memory_bundle),
             *([knowledge_block] if knowledge_block else []),
@@ -848,7 +841,7 @@ class AIService:
         started = time.perf_counter()
         user_id = self._resolve_user(req)
         session_id = self._resolve_session(req, user_id)
-        combined_history, summary, memory_bundle, _ = await self._load_context_parallel(
+        combined_history, summary, memory_bundle, knowledge_block = await self._load_context_parallel(
             req, session_id, user_id
         )
         pinned_memory_block = (
@@ -868,6 +861,7 @@ class AIService:
         messages, source_urls = self._prepare_messages_for_request(
             req, prompt.system_prompt, combined_history, summary, memory_bundle, pinned_memory_block,
             prompt_enable_search=prompt.enable_search,
+            knowledge_block=knowledge_block,
         )
         options = self._provider_options(provider, req.model_mode, num_ctx)
         route_alias = "cloud" if provider.name == getattr(self._cloud, "name", None) else "local"
@@ -897,12 +891,16 @@ class AIService:
             "user_id": user_id,
         }
 
-        self._save_chat_messages(req, session_id, user_id, full_content)
+        await asyncio.to_thread(self._save_chat_messages, req, session_id, user_id, full_content)
         if user_id and self._pinned_memory:
-            self._pinned_memory.remember_from_message(
-                req.tenant_id, req.project_id, user_id, req.user_message, session_id=session_id
+            await asyncio.to_thread(
+                lambda: self._pinned_memory.remember_from_message(
+                    req.tenant_id, req.project_id, user_id, req.user_message, session_id=session_id
+                )
             )
-        self._save_prediction_record(req, session_id, user_id, full_content, model, provider)
+        await asyncio.to_thread(
+            self._save_prediction_record, req, session_id, user_id, full_content, model, provider
+        )
         self._schedule_memory_jobs(user_id, req.tenant_id, req.project_id, session_id, self._local)
         self._usage.record(
             UsageEvent(
@@ -945,7 +943,7 @@ class AIService:
         if self._is_memory_check(req.user_message):
             memory_history = self._load_full_session_history(req, session_id)
             content = self._build_memory_check_response(memory_history)
-            self._save_chat_messages(req, session_id, user_id, content)
+            await asyncio.to_thread(self._save_chat_messages, req, session_id, user_id, content)
             self._schedule_memory_jobs(user_id, req.tenant_id, req.project_id, session_id, self._local)
             latency_ms = round((time.perf_counter() - started) * 1000, 3)
             self._usage.record(
@@ -986,6 +984,7 @@ class AIService:
             memory_bundle,
             pinned_memory_block,
             prompt_enable_search=prompt.enable_search,
+            knowledge_block=knowledge_block,
         )
         fallback_used = False
         queue_wait_ms: float | None = None
@@ -1005,7 +1004,7 @@ class AIService:
         )
         if risk_decision.applied and risk_decision.action == "ask_clarification":
             content = risk_decision.message or "Mình cần thêm ngữ cảnh để tránh trả lời sai."
-            self._save_chat_messages(req, session_id, user_id, content)
+            await asyncio.to_thread(self._save_chat_messages, req, session_id, user_id, content)
             self._record_failure_risk(
                 risk=risk,
                 decision=risk_decision,
@@ -1147,16 +1146,20 @@ class AIService:
             logger.error("local provider unavailable")
             raise
 
-        self._save_chat_messages(req, session_id, user_id, content)
+        await asyncio.to_thread(self._save_chat_messages, req, session_id, user_id, content)
         if user_id and self._pinned_memory:
-            self._pinned_memory.remember_from_message(
-                req.tenant_id,
-                req.project_id,
-                user_id,
-                req.user_message,
-                session_id=session_id,
+            await asyncio.to_thread(
+                lambda: self._pinned_memory.remember_from_message(
+                    req.tenant_id,
+                    req.project_id,
+                    user_id,
+                    req.user_message,
+                    session_id=session_id,
+                )
             )
-        self._save_prediction_record(req, session_id, user_id, content, model, provider)
+        await asyncio.to_thread(
+            self._save_prediction_record, req, session_id, user_id, content, model, provider
+        )
         self._schedule_memory_jobs(user_id, req.tenant_id, req.project_id, session_id, self._local)
         latency_ms = round((time.perf_counter() - started) * 1000, 3)
         route_alias = "cloud" if provider.name == getattr(self._cloud, "name", None) else "local"

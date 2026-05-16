@@ -19,7 +19,6 @@ def test_defaults_available(monkeypatch: pytest.MonkeyPatch, tmp_path: pytest.Te
         "MAX_HISTORY_MESSAGES",
         "OPENROUTER_MODEL",
         "OPENROUTER_FALLBACK_MODELS",
-        "THINKING_MAX_TOKENS",
         "LOCAL_PROVIDER",
         "LLAMA_CPP_BASE_URL",
         "LLAMA_CPP_OPENAI_URL",
@@ -33,7 +32,7 @@ def test_defaults_available(monkeypatch: pytest.MonkeyPatch, tmp_path: pytest.Te
     monkeypatch.setenv("API_KEY", "test-api-key")
     s = Settings()
     assert s.app_port == 8000
-    assert s.default_model == "local-qwen3.6-27b"
+    assert s.default_model == "local-gemma4-e4b-q8"
     assert s.openrouter_model == "openai/gpt-oss-20b:free"
     assert s.openrouter_fallback_models == []
     assert s.local_provider == "llama_cpp"
@@ -47,7 +46,6 @@ def test_defaults_available(monkeypatch: pytest.MonkeyPatch, tmp_path: pytest.Te
     assert s.hybrid_force_cloud_for_allowed is False
     assert s.ai_max_tokens == 0
     assert s.local_max_tokens == 0
-    assert s.thinking_max_tokens == 0
     assert s.openrouter_max_tokens == 0
     assert s.ai_top_p == 0.0
     assert s.provider_call_timeout_seconds == 0.0
@@ -65,7 +63,6 @@ def test_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MAX_HISTORY_MESSAGES", "3")
     monkeypatch.setenv("AI_MAX_TOKENS", "256")
     monkeypatch.setenv("LOCAL_MAX_TOKENS", "128")
-    monkeypatch.setenv("THINKING_MAX_TOKENS", "512")
     monkeypatch.setenv("OPENROUTER_MAX_TOKENS", "64")
     monkeypatch.setenv("OPENROUTER_FALLBACK_MODELS", '["openrouter/auto"]')
     monkeypatch.setenv("HYBRID_FORCE_CLOUD_FOR_ALLOWED", "true")
@@ -81,7 +78,6 @@ def test_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
     assert s.max_history_messages == 3
     assert s.ai_max_tokens == 256
     assert s.local_max_tokens == 128
-    assert s.thinking_max_tokens == 512
     assert s.openrouter_max_tokens == 64
     assert s.openrouter_fallback_models == ["openrouter/auto"]
     assert s.hybrid_force_cloud_for_allowed is True

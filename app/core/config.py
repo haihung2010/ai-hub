@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     external_llm_default_allowed: bool = Field(default=False, alias="EXTERNAL_LLM_DEFAULT_ALLOWED")
 
     default_model: str = Field(
-        default="local-qwen3.6-27b",
+        default="local-gemma4-e4b-q8",
         alias="DEFAULT_MODEL",
     )
     lite_model: str = Field(
@@ -69,7 +69,6 @@ class Settings(BaseSettings):
     hybrid_latency_window: int = Field(default=20, ge=3, le=100, alias="HYBRID_LATENCY_WINDOW")
     ai_max_tokens: int = Field(default=0, ge=0, alias="AI_MAX_TOKENS")
     local_max_tokens: int = Field(default=0, ge=0, alias="LOCAL_MAX_TOKENS")
-    thinking_max_tokens: int = Field(default=0, ge=0, alias="THINKING_MAX_TOKENS")
     openrouter_max_tokens: int = Field(default=0, ge=0, alias="OPENROUTER_MAX_TOKENS")
     ai_top_p: float = Field(default=0.0, ge=0.0, le=1.0, alias="AI_TOP_P")
     provider_call_timeout_seconds: float = Field(default=0.0, ge=0.0, alias="PROVIDER_CALL_TIMEOUT_SECONDS")

@@ -20,14 +20,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 class ModelSwitchRequest(BaseModel):
-    mode: Literal["lite", "thinking"]
+    mode: Literal["lite"]
 
 
 async def _run_model_switch(mode: str) -> dict[str, object]:
-    script = "scripts/start_lite_q8.sh" if mode == "lite" else "scripts/start_thinking_qwen.sh"
+    script = "scripts/start_lite_q8.sh"
     env = os.environ.copy()
-    if mode == "lite":
-        env.update({"PARALLEL": "8", "CTX_SIZE": "65536"})
+    env.update({"PARALLEL": "8", "CTX_SIZE": "65536"})
 
     proc = await asyncio.create_subprocess_exec(
         str(PROJECT_ROOT / script),
@@ -131,9 +130,7 @@ async def switch_model(payload: ModelSwitchRequest, request: Request) -> dict[st
     if result["returncode"] != 0:
         raise HTTPException(status_code=500, detail=result)
 
-    result["models"] = [
-        "local-gemma4-e4b-q8" if payload.mode == "lite" else "local-qwen3.6-27b"
-    ]
+    result["models"] = ["local-gemma4-e4b-q8"]
     return result
 
 

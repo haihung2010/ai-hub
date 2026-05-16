@@ -127,7 +127,7 @@ def openrouter_settings() -> Settings:
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_local_model_modes_select_lite_by_default_and_thinking_model(openrouter_settings: Settings) -> None:
+async def test_local_model_modes_select_lite_by_default_and_normal_model(openrouter_settings: Settings) -> None:
     init_db()
     local = _Provider("llama_cpp", "local")
     service = AIService(
@@ -146,18 +146,18 @@ async def test_local_model_modes_select_lite_by_default_and_thinking_model(openr
             user_message="hello default",
         )
     )
-    thinking_response = await service.chat(
+    normal_response = await service.chat(
         ChatRequest(
             project_id="test",
             tenant_id="default",
-            user_name="hung-thinking",
-            user_message="hello thinking",
-            model_mode="thinking",
+            user_name="hung-normal",
+            user_message="hello normal",
+            model_mode="normal",
         )
     )
 
     assert default_response.model == "local-lite"
-    assert thinking_response.model == "local-quality"
+    assert normal_response.model == "local-quality"
     assert local.models == ["local-lite", "local-quality"]
 
 
@@ -279,35 +279,6 @@ async def test_llama_cpp_local_provider_passes_num_ctx(openrouter_settings: Sett
     )
 
     assert local.options == [{"max_tokens": 128, "num_ctx": 8192, "top_p": 0.9}]
-
-
-@pytest.mark.unit
-@pytest.mark.asyncio
-async def test_thinking_mode_uses_thinking_max_tokens(openrouter_settings: Settings) -> None:
-    init_db()
-    local = _Provider("llama_cpp", "local")
-    settings = openrouter_settings.model_copy(
-        update={"local_max_tokens": 128, "thinking_max_tokens": 512, "ai_top_p": 0.9}
-    )
-    service = AIService(
-        local=local,
-        cloud=_Provider("openrouter"),
-        history=HistoryService(),
-        settings=settings,
-        users=UserService(),
-    )
-
-    await service.chat(
-        ChatRequest(
-            project_id="test",
-            tenant_id="default",
-            user_name="hung-thinking-tokens",
-            user_message="hello thinking",
-            model_mode="thinking",
-        )
-    )
-
-    assert local.options == [{"max_tokens": 512, "num_ctx": 8192, "top_p": 0.9}]
 
 
 @pytest.mark.unit

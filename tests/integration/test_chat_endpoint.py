@@ -297,7 +297,7 @@ def test_lite_mode_forwards_images_to_ollama(
 
 
 @pytest.mark.integration
-def test_thinking_mode_uses_default_model_without_images(
+def test_normal_mode_uses_default_model_without_images(
     client: TestClient, mock_api: respx.MockRouter
 ) -> None:
     route = mock_api.post("http://llama.test/v1/chat/completions").mock(
@@ -309,7 +309,7 @@ def test_thinking_mode_uses_default_model_without_images(
         json={
             "project_id": "iot",
             "user_message": "Solve a complex problem",
-            "model_mode": "thinking",
+            "model_mode": "normal",
         },
     )
 
