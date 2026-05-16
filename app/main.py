@@ -177,6 +177,7 @@ def create_app(
                 timeout_seconds=settings.web_search_timeout_seconds,
                 google_api_key=settings.google_api_key,
                 google_search_cx=settings.google_search_cx,
+                searxng_base_url=settings.searxng_base_url,
             )
             app.state.settings = settings
             app.state.start_time = app_start_time

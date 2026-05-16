@@ -120,6 +120,7 @@ class Settings(BaseSettings):
     crew_model: str = Field(default="local-gemma4-e4b-q4", alias="CREW_MODEL")
     google_api_key: str = Field(default="", alias="GOOGLE_API_KEY")
     google_search_cx: str = Field(default="", alias="GOOGLE_SEARCH_CX")
+    searxng_base_url: str = Field(default="", alias="SEARXNG_BASE_URL")
     allowed_origins: list[str] = Field(
         default_factory=lambda: list(DEFAULT_ALLOWED_ORIGINS),
         alias="ALLOWED_ORIGINS",

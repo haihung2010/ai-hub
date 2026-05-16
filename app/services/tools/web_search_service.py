@@ -79,10 +79,12 @@ class WebSearchService:
         timeout_seconds: float = 10.0,
         google_api_key: str = "",
         google_search_cx: str = "",
+        searxng_base_url: str = "",
     ) -> None:
         self._timeout_seconds = timeout_seconds
         self._google_api_key = google_api_key
         self._google_search_cx = google_search_cx
+        self._searxng_base_url = searxng_base_url.rstrip("/")
 
     def _host(self, url: str) -> str:
         host = urlparse(url).netloc.lower()
@@ -231,6 +233,35 @@ class WebSearchService:
             logger.warning("DDGS failed: %s", e)
             return []
 
+    def _search_searxng(self, query: str, max_results: int) -> list[SearchResult]:
+        if not self._searxng_base_url:
+            return []
+        url = f"{self._searxng_base_url}/search"
+        params = {"q": query, "format": "json", "language": "vi"}
+        headers = {"User-Agent": "Mozilla/5.0 (compatible; ai-hub/1.0)"}
+        try:
+            response = requests.get(url, params=params, headers=headers, timeout=self._timeout_seconds)
+            response.raise_for_status()
+            data = response.json()
+            rows = data.get("results", []) or []
+            normalized: list[SearchResult] = []
+            for row in rows[: max_results * 2]:
+                clean_url = self._sanitize_url(row.get("url", ""))
+                if not clean_url:
+                    continue
+                normalized.append({
+                    "title": (row.get("title") or "").strip(),
+                    "url": clean_url,
+                    "snippet": (row.get("content") or "").strip()[:500],
+                })
+                if len(normalized) >= max_results:
+                    break
+            logger.info("SearXNG returned %d results", len(normalized))
+            return normalized
+        except Exception as e:
+            logger.warning("SearXNG failed: %s", type(e).__name__)
+            return []
+
     def _parse_bing_page(self, query: str, max_results: int) -> list[dict]:
         q = query
         lowered = query.lower()
@@ -333,6 +364,10 @@ class WebSearchService:
         query = self._enhance_query(query)
         candidate_limit = min(max_results * 2, 10)
         candidates: list[SearchResult] = []
+
+        candidates.extend(self._safe_search("SearXNG", self._search_searxng, query, candidate_limit))
+        if len(candidates) >= max_results and self._has_high_quality_result(candidates):
+            return self._rank_and_dedupe(candidates, query, max_results)
 
         candidates.extend(self._safe_search("Google search", self._search_google, query, candidate_limit))
         if len(candidates) >= max_results and self._has_high_quality_result(candidates):

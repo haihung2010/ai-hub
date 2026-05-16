@@ -475,7 +475,9 @@ class AIService:
         )
 
         source_urls: list[str] = []
-        should_search = search_query and prompt_enable_search and self._settings.enable_web_search_tool
+        # Explicit /search: command always triggers search regardless of prompt.enable_search.
+        # Auto-detection still respects the prompt-level toggle.
+        should_search = bool(search_query) and self._settings.enable_web_search_tool
         if should_search:
             logger.info(
                 "Triggering explicit web search tenant=%s project=%s session_mode=%s",
