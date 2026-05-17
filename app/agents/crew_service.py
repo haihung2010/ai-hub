@@ -22,10 +22,10 @@ _executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="crew")
 class CrewService:
     """Orchestrates a Researcher + Analyst crew against the local llama.cpp backend."""
 
-    def __init__(self, settings: Settings, db_path: str) -> None:
+    def __init__(self, settings: Settings, db_url: str) -> None:
         self._settings = settings
         self._search_tool = make_search_tool()
-        self._db_tool = make_db_connector(db_path)
+        self._db_tool = make_db_connector(db_url)
 
     # ------------------------------------------------------------------
     # Sync execution (runs inside thread pool)

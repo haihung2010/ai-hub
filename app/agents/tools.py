@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import logging
-import sqlite3
 
+import psycopg
+from psycopg.rows import dict_row
 from crewai.tools import BaseTool
 from ddgs import DDGS
 
@@ -27,17 +28,18 @@ class WebSearchTool(BaseTool):
 
 class DBConnectorTool(BaseTool):
     name: str = "query_chat_history"
-    description: str = "Run a read-only SQL SELECT query against the chat history SQLite database. Input: a valid SQL SELECT statement."
-    db_path: str = "ai_hub.db"
+    description: str = "Run a read-only SQL SELECT query against the chat history PostgreSQL database. Input: a valid SQL SELECT statement."
+    db_url: str = ""
 
     def _run(self, sql: str) -> str:
         if not sql.strip().upper().startswith("SELECT"):
             return "Only SELECT queries are allowed."
         try:
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row
-            rows = conn.execute(sql).fetchmany(20)
-            conn.close()
+            with psycopg.connect(self.db_url, row_factory=dict_row) as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SET LOCAL statement_timeout = '5s'")
+                    cur.execute(sql)
+                    rows = cur.fetchmany(20)
             return str([dict(r) for r in rows])
         except Exception as e:
             logger.warning("DBConnectorTool failed: %s", e)
@@ -49,6 +51,6 @@ def make_search_tool() -> WebSearchTool:
     return WebSearchTool()
 
 
-def make_db_connector(db_path: str) -> DBConnectorTool:
-    """Read-only SQLite connector for querying chat history tables."""
-    return DBConnectorTool(db_path=db_path)
+def make_db_connector(db_url: str) -> DBConnectorTool:
+    """Read-only PostgreSQL connector for querying chat history tables."""
+    return DBConnectorTool(db_url=db_url)
