@@ -185,21 +185,153 @@ async def provider_health(request: Request) -> dict[str, object]:
     }
 
 
-@router.post("/db/query")
+_DB_QUERY_MAX_ROWS = 1000
+_DB_FORBIDDEN_KEYWORDS = (
+    "insert", "update", "delete", "drop", "alter", "truncate",
+    "create", "grant", "revoke", "copy", "vacuum", "reindex",
+)
+
+
+def _validate_select_sql(sql: str) -> str | None:
+    """Return error message if SQL is unsafe; None if OK."""
+    stripped = sql.strip().rstrip(";").strip()
+    if not stripped:
+        return "Empty query."
+    lower = stripped.lower()
+    if not (lower.startswith("select") or lower.startswith("with")):
+        return "Only SELECT / WITH queries are allowed."
+    if ";" in stripped:
+        return "Multi-statement queries are not allowed."
+    tokens = set(lower.replace("(", " ").replace(")", " ").split())
+    bad = tokens.intersection(_DB_FORBIDDEN_KEYWORDS)
+    if bad:
+        return f"Forbidden keyword(s): {', '.join(sorted(bad))}"
+    return None
+
+
+@router.post("/security/unblock")
+async def security_unblock(request: Request, body: dict | None = None):
+    """Clear auth-failure block for a given IP (defaults to caller's IP)."""
+    body = body or {}
+    target_ip = (body.get("ip") or "").strip()
+    if not target_ip:
+        target_ip = (request.client.host if request.client else "") or "127.0.0.1"
+    try:
+        import redis as redis_lib
+        from app.core.config import get_settings
+        r = redis_lib.from_url(get_settings().redis_url, decode_responses=True)
+        deleted = r.delete(f"af:{target_ip}", f"aff:{target_ip}")
+        return {"ip": target_ip, "deleted_keys": deleted, "ok": True}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"detail": str(e)})
+
+
+
 async def run_query(request: Request, body: dict):
-    """Run read-only SQL query (SELECT only)."""
-    sql = body.get("query", "").strip()
-    if not sql.lower().startswith("select"):
-        return JSONResponse(
-            status_code=400,
-            content={"detail": "Only SELECT queries are allowed."}
-        )
+    """Run read-only SQL query (SELECT/WITH only, capped at 1000 rows)."""
+    sql = (body.get("query") or "").strip().rstrip(";")
+    err = _validate_select_sql(sql)
+    if err:
+        return JSONResponse(status_code=400, content={"detail": err})
+
+    capped_sql = sql
+    if " limit " not in sql.lower():
+        capped_sql = f"{sql} LIMIT {_DB_QUERY_MAX_ROWS}"
 
     try:
+        t0 = time.time()
         with get_db_connection() as conn:
-            # Use dict-like row access
-            rows = conn.execute(sql).fetchall()
-            return [dict(row) for row in rows]
+            with conn.cursor() as cur:
+                cur.execute("SET LOCAL statement_timeout = '5s'")
+                cur.execute(capped_sql)
+                rows = cur.fetchall()
+                cols = [d.name for d in cur.description] if cur.description else []
+        return {
+            "columns": cols,
+            "rows": [dict(r) for r in rows],
+            "row_count": len(rows),
+            "elapsed_ms": round((time.time() - t0) * 1000, 1),
+            "capped": " limit " not in sql.lower(),
+        }
+    except Exception as e:
+        return JSONResponse(status_code=400, content={"detail": str(e)})
+
+
+@router.get("/db/tables")
+async def list_db_tables():
+    """List all user tables with row counts and column info."""
+    try:
+        with get_db_connection() as conn:
+            tables = conn.execute(
+                """
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+                ORDER BY table_name
+                """
+            ).fetchall()
+
+            results = []
+            for t in tables:
+                name = t["table_name"]
+                cols = conn.execute(
+                    """
+                    SELECT column_name, data_type, is_nullable
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = %s
+                    ORDER BY ordinal_position
+                    """,
+                    (name,),
+                ).fetchall()
+                count_row = conn.execute(
+                    f'SELECT COUNT(*) AS n FROM "{name}"'
+                ).fetchone()
+                results.append({
+                    "name": name,
+                    "row_count": count_row["n"] if count_row else 0,
+                    "columns": [dict(c) for c in cols],
+                })
+            return {"tables": results}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"detail": str(e)})
+
+
+@router.get("/db/preview/{table_name}")
+async def preview_table(table_name: str, limit: int = 100, offset: int = 0):
+    """Preview rows of a table (safe identifier validation)."""
+    if not table_name.replace("_", "").isalnum():
+        return JSONResponse(status_code=400, content={"detail": "Invalid table name."})
+    limit = max(1, min(limit, _DB_QUERY_MAX_ROWS))
+    offset = max(0, offset)
+    try:
+        with get_db_connection() as conn:
+            exists = conn.execute(
+                """
+                SELECT 1 FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_name = %s
+                """,
+                (table_name,),
+            ).fetchone()
+            if not exists:
+                return JSONResponse(status_code=404, content={"detail": "Table not found."})
+            with conn.cursor() as cur:
+                cur.execute(
+                    f'SELECT * FROM "{table_name}" LIMIT %s OFFSET %s',
+                    (limit, offset),
+                )
+                rows = cur.fetchall()
+                cols = [d.name for d in cur.description] if cur.description else []
+            total = conn.execute(
+                f'SELECT COUNT(*) AS n FROM "{table_name}"'
+            ).fetchone()["n"]
+        return {
+            "table": table_name,
+            "columns": cols,
+            "rows": [dict(r) for r in rows],
+            "limit": limit,
+            "offset": offset,
+            "total": total,
+        }
     except Exception as e:
         return JSONResponse(status_code=400, content={"detail": str(e)})
 

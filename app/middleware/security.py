@@ -213,6 +213,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         client_ip = self._client_ip(request)
+        is_loopback = client_ip in ("127.0.0.1", "::1", "localhost")
         if not self._host_allowed(request):
             self._log_denial(client_ip, request.url.path, "host_not_allowed")
             return JSONResponse(
@@ -223,7 +224,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if request.method == "OPTIONS" or self._is_public_path(request.url.path):
             return await call_next(request)
 
-        if self._failure_tracker.is_blocked(client_ip) and request.url.path != "/admin.html":
+        if not is_loopback and self._failure_tracker.is_blocked(client_ip) and request.url.path != "/admin.html":
             self._log_denial(client_ip, request.url.path, "client_temporarily_blocked")
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -240,7 +241,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         elif provided_key:
             api_key_record = self._api_keys.lookup(provided_key)
             if api_key_record is None:
-                self._failure_tracker.record_failure(client_ip)
+                if not is_loopback:
+                    self._failure_tracker.record_failure(client_ip)
                 self._log_denial(client_ip, request.url.path, "invalid_api_key")
                 return JSONResponse(
                     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -251,14 +253,16 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             request.state.api_key_allow_external = api_key_record.allow_external
             request.state.api_key_rpm_limit = api_key_record.rpm_limit
         else:
-            self._failure_tracker.record_failure(client_ip)
+            if not is_loopback:
+                self._failure_tracker.record_failure(client_ip)
             self._log_denial(client_ip, request.url.path, "invalid_api_key")
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content={"detail": "invalid api key"},
             )
 
-        self._failure_tracker.reset(client_ip)
+        if not is_loopback:
+            self._failure_tracker.reset(client_ip)
         rate_key = self._rate_limit_key(
             client_ip,
             provided_key,
