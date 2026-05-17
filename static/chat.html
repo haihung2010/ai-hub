@@ -97,59 +97,102 @@
         .messages-container {
             flex: 1;
             overflow-y: auto;
-            padding: 2rem;
+            padding: 1rem 1.5rem;
+        }
+
+        .msg-pair {
+            display: grid;
+            grid-template-columns: 3.5rem 1fr;
+            gap: 0.1rem 0.6rem;
+            padding: 0.5rem 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            transition: background 0.15s;
+            line-height: 1.5;
+        }
+        .msg-pair:hover { background: rgba(255,255,255,0.025); }
+        .msg-pair .meta {
+            grid-row: 1 / 3;
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            align-items: flex-end;
+            gap: 0.15rem;
+            padding-top: 0.15rem;
         }
-
-        .message {
-            display: flex;
-            gap: 1rem;
-            animation: slideIn 0.3s ease;
+        .msg-pair .meta .time { font-size: 0.7rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+        .msg-pair .meta .idx { font-size: 0.6rem; color: var(--text-faint); }
+        .msg-pair .user-line {
+            font-size: 0.85rem;
+            color: var(--text-strong);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .msg-pair .user-line::before { content: '▸ '; color: var(--accent-1); }
+        .msg-pair .ai-line {
+            font-size: 0.8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-left: 0.8rem;
+            color: #6ee7b7;
         }
-
-        .message.user {
-            justify-content: flex-end;
-        }
-
-        .message-bubble {
-            max-width: 60%;
-            padding: 1rem 1.25rem;
-            border-radius: 0.875rem;
-            word-wrap: break-word;
-            line-height: 1.5;
-            font-size: 0.9375rem;
-        }
-
-        .message.assistant .message-bubble {
-            background: var(--bg-panel);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-primary);
-        }
-
-        .message.user .message-bubble {
-            background: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-2) 100%);
-            color: white;
-            box-shadow: 0 4px 18px rgba(99,102,241,0.28);
-        }
-
-        .message-time {
-            font-size: 0.75rem;
+        .msg-pair .ai-line::before { content: '↳ '; color: rgba(110,231,183,0.5); }
+        .msg-pair .ai-line.no-reply { color: var(--text-faint); font-style: italic; }
+        .date-divider {
+            font-size: 0.7rem;
             color: var(--text-faint);
-            margin-top: 0.25rem;
-            text-align: center;
+            padding: 0.5rem 0 0.2rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        /* Detail overlay */
+        .detail-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .detail-overlay.active { display: flex; }
+        .detail-panel {
+            background: var(--bg-panel, #1a1a2e);
+            border: 1px solid var(--border-subtle);
+            border-radius: 0.75rem;
+            max-width: 720px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+        .detail-panel .detail-section { margin-bottom: 1rem; }
+        .detail-panel .detail-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem; }
+        .detail-panel .detail-label.user { color: var(--accent-1); }
+        .detail-panel .detail-label.ai { color: #6ee7b7; }
+        .detail-panel .detail-box {
+            background: rgba(0,0,0,0.3);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.6;
+        }
+        .detail-panel .detail-box.user { border-left: 3px solid var(--accent-1); }
+        .detail-panel .detail-box.ai { border-left: 3px solid #6ee7b7; background: rgba(110,231,183,0.06); }
+        .detail-panel .detail-close {
+            display: block;
+            margin: 0.75rem auto 0;
+            padding: 0.4rem 1.5rem;
+            border: 1px solid var(--border-subtle);
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.8rem;
         }
 
         .empty-state {
@@ -281,36 +324,89 @@
                 return;
             }
 
-            container.innerHTML = '';
-
             // Sort messages by date (oldest first)
             const sorted = [...messages].sort((a, b) =>
                 new Date(a.created_at) - new Date(b.created_at)
             );
 
-            sorted.forEach(msg => {
-                const msgEl = document.createElement('div');
-                msgEl.className = `message ${msg.role}`;
-
-                const time = new Date(msg.created_at);
-                const timeStr = time.toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
+            // Build pairs
+            const pairs = [];
+            for (let i = 0; i < sorted.length; i++) {
+                const m = sorted[i];
+                if (m.role !== 'user') continue;
+                const next = sorted[i + 1];
+                pairs.push({
+                    idx: pairs.length + 1,
+                    time: m.created_at,
+                    request: m.content || '',
+                    response: (next && next.role === 'assistant') ? (next.content || '') : '',
+                    response_at: (next && next.role === 'assistant') ? next.created_at : null,
                 });
+            }
 
-                msgEl.innerHTML = `
-                    <div>
-                        <div class="message-bubble">${escapeHtml(msg.content)}</div>
-                        <div class="message-time">${timeStr}</div>
+            const trunc = (s, n) => s.length > n ? s.slice(0, n) + '…' : s;
+            const timeShort = (iso) => { try { const d = new Date(iso); return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); } catch { return ''; } };
+            const dateKey = (iso) => { try { return new Date(iso).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); } catch { return ''; } };
+
+            let html = '';
+            let lastDate = '';
+            for (const p of pairs) {
+                const dk = dateKey(p.time);
+                if (dk !== lastDate) { html += `<div class="date-divider">${dk}</div>`; lastDate = dk; }
+                const aiText = p.response ? trunc(p.response, 160) : 'no reply';
+                const aiClass = p.response ? 'ai-line' : 'ai-line no-reply';
+                html += `
+                <div class="msg-pair" data-idx="${p.idx - 1}">
+                    <div class="meta">
+                        <span class="time">${timeShort(p.time)}</span>
+                        <span class="idx">#${p.idx}</span>
                     </div>
-                `;
+                    <div class="user-line" title="${escapeHtml(p.request)}">${escapeHtml(trunc(p.request, 180))}</div>
+                    <div class="${aiClass}" title="${escapeHtml(p.response || '')}">${escapeHtml(aiText)}</div>
+                </div>`;
+            }
 
-                container.appendChild(msgEl);
+            container.innerHTML = `<div style="font-size:0.82rem">${html}</div>`;
+
+            // Detail overlay
+            let overlay = document.getElementById('detail-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'detail-overlay';
+                overlay.className = 'detail-overlay';
+                overlay.innerHTML = '<div class="detail-panel" id="detail-panel"></div>';
+                overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('active'); });
+                document.body.appendChild(overlay);
+            }
+
+            const showDetail = (p) => {
+                const panel = document.getElementById('detail-panel');
+                const fmt = (iso) => { try { return new Date(iso).toLocaleString(); } catch { return iso || ''; } };
+                panel.innerHTML = `
+                    <div class="detail-section">
+                        <div class="detail-label user">REQUEST #${p.idx} • ${fmt(p.time)}</div>
+                        <div class="detail-box user">${escapeHtml(p.request)}</div>
+                    </div>
+                    ${p.response ? `
+                    <div class="detail-section">
+                        <div class="detail-label ai">RESPONSE ${p.response_at ? '• ' + fmt(p.response_at) : ''}</div>
+                        <div class="detail-box ai">${escapeHtml(p.response)}</div>
+                    </div>` : '<div style="color:var(--text-faint);font-style:italic;margin-bottom:1rem">No response</div>'}
+                    <button class="detail-close" onclick="document.getElementById(\'detail-overlay\').classList.remove(\'active\')">Close</button>
+                `;
+                overlay.classList.add('active');
+            };
+
+            container.querySelectorAll('.msg-pair').forEach(row => {
+                row.style.cursor = 'pointer';
+                row.addEventListener('click', () => {
+                    const idx = parseInt(row.dataset.idx);
+                    if (pairs[idx]) showDetail(pairs[idx]);
+                });
             });
 
-            // Scroll to bottom
-            container.scrollTop = container.scrollHeight;
+            // Update header count
+            document.getElementById('message-count').textContent = `${pairs.length} pairs • ${messages.length} messages`;
         }
 
         function showEmpty(text) {

@@ -6,6 +6,16 @@
    ====================================================================== */
 
 /* ====== State & Config ====== */
+(() => {
+    const params = new URLSearchParams(location.search);
+    const k = params.get('key') || params.get('apiKey');
+    if (k) {
+        localStorage.setItem('apiKey', k);
+        params.delete('key'); params.delete('apiKey');
+        history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash);
+    }
+})();
+
 const ADMIN = {
     apiKey: localStorage.getItem('apiKey') || '',
     autoTimer: null,
@@ -97,12 +107,18 @@ function toast(message, type = 'info') {
 }
 
 /* ====== Modal ====== */
-function openModal({ title, desc, contentHtml, confirmText = 'Confirm', cancelText = 'Cancel', danger = false, onlyClose = false }) {
+function openModal({ title, desc, contentHtml, confirmText = 'Confirm', cancelText = 'Cancel', danger = false, onlyClose = false, onConfirm = null }) {
     return new Promise(resolve => {
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
-        const close = (val) => { overlay.remove(); document.removeEventListener('keydown', onKey); resolve(val); };
-        const onKey = e => { if (e.key === 'Escape') close(false); };
+        const close = (val) => {
+            let captured = val;
+            if (val && typeof onConfirm === 'function') {
+                try { const r = onConfirm(overlay); if (r !== undefined) captured = r; } catch (e) { console.error(e); }
+            }
+            overlay.remove(); document.removeEventListener('keydown', onKey); resolve(captured);
+        };
+        const onKey = e => { if (e.key === 'Escape') close(false); else if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); close(true); } };
         overlay.innerHTML = `
             <div class="modal-card" role="dialog" aria-modal="true">
                 <div class="modal-title">${escapeHtml(title || 'Confirm')}</div>
@@ -119,6 +135,8 @@ function openModal({ title, desc, contentHtml, confirmText = 'Confirm', cancelTe
         if (cancelBtn) cancelBtn.addEventListener('click', () => close(false));
         document.addEventListener('keydown', onKey);
         document.body.appendChild(overlay);
+        const firstInput = overlay.querySelector('input, textarea, select');
+        if (firstInput) setTimeout(() => firstInput.focus(), 0);
     });
 }
 const confirmDialog = (title, desc, opts = {}) => openModal({ title, desc, ...opts });
@@ -878,18 +896,16 @@ async function loadUserDetail(userId, userName) {
 async function loadUserChat(userId, userName) {
     switchTenantView('chat');
     const el = document.getElementById('user-chat-content');
-    el.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;gap:0.75rem;color:var(--text-secondary)"><div class="dt-skel" style="width:20px;height:20px;border-radius:50%;animation:spin 1s linear infinite"></div><span>Loading messages...</span></div>`;
+    el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-muted)">Loading…</div>';
 
     try {
         const data = await api(`/v1/admin/users/${encodeURIComponent(userId)}/messages?project_id=${encodeURIComponent(ADMIN.tenant.selectedTenant || '')}`);
 
-        // Update header
         document.getElementById('chat-header-info').innerHTML = `${escapeHtml(userName)} • ${data.length} messages`;
 
-        // Setup open full view button
         const openBtn = document.getElementById('open-chat-viewer-btn');
         openBtn.onclick = () => {
-            const chatUrl = `/chat.html?user_id=${encodeURIComponent(userId)}&project_id=${encodeURIComponent(ADMIN.tenant.selectedTenant || '')}&user_name=${encapeHtml(userName)}`;
+            const chatUrl = `/chat.html?user_id=${encodeURIComponent(userId)}&project_id=${encodeURIComponent(ADMIN.tenant.selectedTenant || '')}&user_name=${encodeURIComponent(userName)}`;
             window.open(chatUrl, '_blank');
         };
 
@@ -898,27 +914,56 @@ async function loadUserChat(userId, userName) {
             return;
         }
 
-        // Sort messages by date (oldest first)
         const sorted = [...data].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        const pairs = [];
+        for (let i = 0; i < sorted.length; i++) {
+            const m = sorted[i];
+            if (m.role !== 'user') continue;
+            const next = sorted[i + 1];
+            pairs.push({
+                idx: pairs.length + 1,
+                time: m.created_at,
+                request: m.content || '',
+                response: (next && next.role === 'assistant') ? (next.content || '') : '',
+                response_at: (next && next.role === 'assistant') ? next.created_at : null,
+                session_id: m.session_id || '',
+                summarized: !!m.is_summarized,
+            });
+        }
 
-        el.innerHTML = sorted.map(m => {
-            const time = new Date(m.created_at);
-            const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            const isAssistant = m.role === 'assistant';
+        // Compact timeline-style list
+        const trunc = (s, n) => s.length > n ? s.slice(0, n) + '…' : s;
+        const timeShort = (iso) => { try { const d = new Date(iso); return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); } catch { return ''; } };
+        const dateKey = (iso) => { try { return new Date(iso).toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); } catch { return ''; } };
 
-            return `
-                <div style="display:flex;gap:0.75rem;${isAssistant ? 'flex-direction:row-reverse' : ''}">
-                    <div style="width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:800;flex-shrink:0;${isAssistant ? 'background:rgba(99,102,241,0.18);color:#a5b4fc' : 'background:rgba(255,255,255,0.05);color:var(--text-secondary)'}">${isAssistant ? 'AI' : 'U'}</div>
-                    <div style="flex:1;max-width:85%">
-                        <div style="display:flex;gap:0.5rem;margin-bottom:0.35rem;${isAssistant ? 'justify-content:flex-end' : ''};font-size:0.65rem;color:var(--text-faint)">
-                            <span>${timeStr}</span>
-                            ${m.is_summarized ? '<span style="background:rgba(245,158,11,0.2);color:#fbbf24;padding:0.1rem 0.4rem;border-radius:3px">Summarized</span>' : ''}
-                        </div>
-                        <div style="background:${isAssistant ? 'var(--bg-panel)' : 'rgba(99,102,241,0.15)'};border:1px solid ${isAssistant ? 'var(--border-subtle)' : 'rgba(99,102,241,0.3)'};color:var(--text-primary);padding:0.75rem 1rem;border-radius:0.75rem;word-wrap:break-word;line-height:1.5;font-size:0.9375rem">${escapeHtml(m.content || '')}</div>
-                    </div>
+        let html = '';
+        let lastDate = '';
+        for (const p of pairs) {
+            const dk = dateKey(p.time);
+            if (dk !== lastDate) { html += `<div style="font-size:0.85rem;color:var(--text-muted);padding:0.8rem 0 0.3rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase">${dk}</div>`; lastDate = dk; }
+            const sumBadge = p.summarized ? ' <span style="background:rgba(245,158,11,0.2);color:#fbbf24;padding:0.1rem 0.5rem;border-radius:3px;font-size:0.7rem;vertical-align:middle">SUM</span>' : '';
+            const respPreview = p.response ? `<span style="color:#6ee7b7">${escapeHtml(trunc(p.response, 240))}</span>` : '<span style="color:var(--text-faint);font-style:italic">no reply</span>';
+            html += `
+            <div class="chat-pair-row" data-idx="${p.idx - 1}" style="display:grid;grid-template-columns:5rem 1fr;gap:0.3rem 1rem;padding:0.7rem 0.8rem;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:background 0.15s;line-height:1.5" onmouseenter="this.style.background='rgba(255,255,255,0.03)'" onmouseleave="this.style.background='transparent'">
+                <div style="grid-row:1/3;display:flex;flex-direction:column;align-items:flex-end;gap:0.2rem;padding-top:0.15rem">
+                    <span class="mono" style="font-size:0.85rem;color:var(--text-muted)">${timeShort(p.time)}</span>
+                    <span style="font-size:0.7rem;color:var(--text-faint)">#${p.idx}</span>
+                    ${sumBadge}
                 </div>
-            `;
-        }).join('');
+                <div style="font-size:1rem;color:var(--text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapeHtml(p.request)}">▸ ${escapeHtml(trunc(p.request, 280))}</div>
+                <div style="font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:1.2rem" title="${escapeHtml(p.response || '')}">↳ ${respPreview}</div>
+            </div>`;
+        }
+
+        el.innerHTML = `<div style="font-size:0.95rem">${html}</div>`;
+
+        // Click handler: expand pair detail
+        el.querySelectorAll('.chat-pair-row').forEach(row => {
+            row.addEventListener('click', () => {
+                const idx = parseInt(row.dataset.idx);
+                if (pairs[idx]) showAuditDetail(pairs[idx]);
+            });
+        });
 
     } catch (e) {
         el.innerHTML = `<div class="dt-empty" style="margin:auto"><div class="title">Error loading messages</div><div class="hint">${escapeHtml(e.message)}</div></div>`;
@@ -1323,7 +1368,7 @@ function showTab(tabId) {
     if (tab) tab.classList.add('active');
     const link = document.querySelector(`.tab-link[data-tab="${tabId}"]`);
     if (link) link.classList.add('active');
-    const titleMap = { dashboard: 'System Overview', gpu: 'GPU Command Center', management: 'Access Keys', knowledge: 'RAG Knowledge', tenants: 'Tenants & Users', audit: 'Chat Audit', system: 'System Health' };
+    const titleMap = { dashboard: 'System Overview', gpu: 'GPU Command Center', management: 'Access Keys', knowledge: 'RAG Knowledge', tenants: 'Tenants & Users', audit: 'Chat Audit', database: 'Database Explorer', system: 'System Health' };
     setText('current-tab-title', titleMap[tabId] || tabId);
     if (tabId === 'dashboard') { showStatSkeletons(); restoreStatCards(); refreshDashboard(); }
     if (tabId === 'gpu') refreshDashboard();
@@ -1331,6 +1376,7 @@ function showTab(tabId) {
     if (tabId === 'knowledge') refreshKnowledge();
     if (tabId === 'tenants') loadTenants();
     if (tabId === 'audit') initAuditTab();
+    if (tabId === 'database') initDatabaseTab();
     if (tabId === 'system') { refreshSystemHealth(); refreshSecurityLogs(); refreshSystemCharts(); }
 }
 
@@ -1352,57 +1398,351 @@ async function loadAuditMessages() {
         return;
     }
 
-    container.innerHTML = '<div style="text-align:center;color:var(--text-muted)">Loading messages...</div>';
+    container.innerHTML = '<div id="audit-table"></div>';
+    DataTable.setLoading('audit-table');
 
     try {
         const params = new URLSearchParams();
         if (projectId) params.append('project_id', projectId);
-        params.append('limit', '100');
+        params.append('limit', '200');
 
         const messages = await api(`/v1/admin/users/${encodeURIComponent(userId)}/messages?${params.toString()}`);
 
         if (!messages || messages.length === 0) {
-            container.innerHTML = '<div style="text-align:center;color:var(--text-muted)">No messages found</div>';
+            container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:2rem">No messages found</div>';
             return;
         }
 
-        // Group messages into request/response pairs
         const pairs = [];
         for (let i = 0; i < messages.length; i += 2) {
             const userMsg = messages[i];
             const assistantMsg = messages[i + 1];
             if (userMsg && userMsg.role === 'user') {
                 pairs.push({
-                    request: userMsg,
-                    response: assistantMsg || null
+                    idx: pairs.length + 1,
+                    time: userMsg.created_at,
+                    request: userMsg.content || '',
+                    response: assistantMsg ? (assistantMsg.content || '') : '',
+                    response_at: assistantMsg ? assistantMsg.created_at : null,
+                    session_id: userMsg.session_id || '',
+                    request_obj: userMsg,
+                    response_obj: assistantMsg,
                 });
             }
         }
 
-        container.innerHTML = pairs.map((pair, idx) => `
-            <div class="glass-panel panel-padded" style="border-left:3px solid var(--accent-1)">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
-                    <div style="font-weight:700;color:var(--accent-1)">Request #${idx + 1}</div>
-                    <div style="font-size:0.7rem;color:var(--text-muted)">${fmtDateTime(pair.request.created_at)}</div>
-                </div>
-                <div style="background:rgba(0,0,0,0.2);padding:0.75rem;border-radius:0.375rem;margin-bottom:0.75rem;font-size:0.875rem;color:var(--text-secondary);max-height:200px;overflow-y:auto;font-family:'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-word">
-                    ${escapeHtml(pair.request.content)}
-                </div>
-                ${pair.response ? `
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;margin-top:1rem">
-                        <div style="font-weight:700;color:#6ee7b7">Response</div>
-                        <div style="font-size:0.7rem;color:var(--text-muted)">${fmtDateTime(pair.response.created_at)}</div>
-                    </div>
-                    <div style="background:rgba(110,231,183,0.1);padding:0.75rem;border-radius:0.375rem;font-size:0.875rem;color:var(--text-secondary);max-height:200px;overflow-y:auto;font-family:'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-word">
-                        ${escapeHtml(pair.response.content)}
-                    </div>
-                ` : '<div style="color:var(--text-muted);font-style:italic">No response yet</div>'}
-            </div>
-        `).join('');
+        AUDIT_PAIRS = pairs;
+
+        DataTable.mount('audit-table', {
+            columns: [
+                { key: 'idx', label: '#', sortable: true, align: 'right' },
+                { key: 'time', label: 'Time', sortable: true, format: (_, r) => `<span class="mono" style="font-size:0.7rem">${fmtDateTime(r.time)}</span>` },
+                { key: 'session_id', label: 'Session', search: true, format: (v) => `<span class="mono" style="font-size:0.65rem;color:var(--text-faint)" title="${escapeHtml(v || '')}">${escapeHtml((v || '').slice(0, 8))}</span>` },
+                { key: 'request', label: 'Request', search: true, format: (v) => `<span title="${escapeHtml(v || '')}">${escapeHtml((v || '').slice(0, 100))}${(v || '').length > 100 ? '…' : ''}</span>` },
+                { key: 'response', label: 'Response', search: true, format: (v) => v ? `<span style="color:#6ee7b7" title="${escapeHtml(v)}">${escapeHtml(v.slice(0, 100))}${v.length > 100 ? '…' : ''}</span>` : '<span style="color:var(--text-faint);font-style:italic">no reply</span>' },
+            ],
+            rows: pairs,
+            pageSize: 30,
+            rowActions: (r) => [
+                { icon: 'eye', tooltip: 'View full', onClick: () => showAuditDetail(r) },
+            ],
+            emptyState: { icon: 'database', title: 'No messages' },
+        });
 
         toast(`Loaded ${pairs.length} request/response pairs`, 'ok');
     } catch (e) {
         container.innerHTML = `<div style="color:var(--status-err)">${escapeHtml(e.message)}</div>`;
+        toast(e.message, 'err');
+    }
+}
+
+let AUDIT_PAIRS = [];
+
+function showAuditDetail(pair) {
+    const html = `
+        <div style="display:flex;flex-direction:column;gap:0.75rem;max-height:70vh;overflow-y:auto">
+            <div>
+                <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-bottom:0.3rem">
+                    <span style="font-weight:700;color:var(--accent-1)">REQUEST #${pair.idx}</span>
+                    <span class="mono">${fmtDateTime(pair.time)}</span>
+                </div>
+                <div style="background:rgba(0,0,0,0.3);padding:0.75rem;border-radius:0.375rem;font-size:0.85rem;color:var(--text-strong);font-family:'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-word;border-left:3px solid var(--accent-1)">${escapeHtml(pair.request)}</div>
+            </div>
+            ${pair.response ? `
+                <div>
+                    <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-bottom:0.3rem">
+                        <span style="font-weight:700;color:#6ee7b7">RESPONSE</span>
+                        <span class="mono">${fmtDateTime(pair.response_at)}</span>
+                    </div>
+                    <div style="background:rgba(110,231,183,0.08);padding:0.75rem;border-radius:0.375rem;font-size:0.85rem;color:var(--text-strong);font-family:'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-word;border-left:3px solid #6ee7b7">${escapeHtml(pair.response)}</div>
+                </div>
+            ` : '<div style="color:var(--text-muted);font-style:italic">No response yet</div>'}
+            ${pair.session_id ? `<div style="font-size:0.65rem;color:var(--text-faint)" class="mono">session: ${escapeHtml(pair.session_id)}</div>` : ''}
+        </div>
+    `;
+    previewDialog(`Message detail`, html);
+}
+
+/* ====== Database Tab ====== */
+const DB_TAB = { tables: [], selected: null, sqlMode: false, lastResult: null };
+
+const DB_RELATIONS = {
+    users: [
+        { table: 'sessions', fk: 'user_id' },
+        { table: 'messages', fk: 'user_id' },
+        { table: 'api_keys', fk: 'owner_user_id' },
+        { table: 'usage_events', fk: 'user_id' },
+        { table: 'memory_episodes', fk: 'user_id' },
+        { table: 'pinned_memories', fk: 'user_id' },
+        { table: 'memory_boundaries', fk: 'user_id' },
+        { table: 'failure_risk_events', fk: 'user_id' },
+    ],
+    sessions: [
+        { table: 'messages', fk: 'session_id' },
+        { table: 'summaries', fk: 'session_id' },
+    ],
+    knowledge_cards: [
+        { table: 'knowledge_card_chunks', fk: 'card_id' },
+    ],
+};
+
+const DB_SAVED_KEY = 'db_saved_queries_v1';
+const DB_SAVED_PRESETS = [
+    { name: 'Recent messages (50)', query: "SELECT id, user_id, role, LEFT(content, 80) AS preview, created_at FROM messages ORDER BY created_at DESC LIMIT 50" },
+    { name: 'Top 10 users by message count', query: "SELECT user_id, COUNT(*) AS msgs FROM messages GROUP BY user_id ORDER BY msgs DESC LIMIT 10" },
+    { name: 'Active API keys', query: "SELECT id, name, owner_user_id, tenant_id, rpm, monthly_budget_usd, is_admin, enabled FROM api_keys WHERE enabled = true" },
+    { name: 'Tenants summary', query: "SELECT tenant_id, project_id, COUNT(DISTINCT user_id) AS users, COUNT(*) AS sessions FROM sessions GROUP BY tenant_id, project_id ORDER BY sessions DESC" },
+    { name: 'Usage last 24h', query: "SELECT provider, model, COUNT(*) AS calls, SUM(prompt_tokens) AS in_tok, SUM(completion_tokens) AS out_tok FROM usage_events WHERE created_at > NOW() - INTERVAL '24 hours' GROUP BY provider, model" },
+];
+
+async function initDatabaseTab() {
+    const refreshBtn = document.getElementById('db-refresh-tables-btn');
+    const toggleBtn = document.getElementById('db-toggle-sql-btn');
+    const runBtn = document.getElementById('db-run-sql-btn');
+    const sqlInput = document.getElementById('db-sql-input');
+    const exportBtn = document.getElementById('db-export-csv-btn');
+    const savedSel = document.getElementById('db-saved-queries');
+    const saveBtn = document.getElementById('db-save-query-btn');
+    const delBtn = document.getElementById('db-delete-query-btn');
+
+    if (!refreshBtn._wired) {
+        refreshBtn.addEventListener('click', loadDbTables);
+        toggleBtn.addEventListener('click', toggleDbSqlPanel);
+        runBtn.addEventListener('click', runDbSql);
+        exportBtn.addEventListener('click', exportDbCsv);
+        saveBtn.addEventListener('click', saveDbQuery);
+        delBtn.addEventListener('click', deleteDbQuery);
+        savedSel.addEventListener('change', loadSavedQuery);
+        sqlInput.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runDbSql(); }
+        });
+        refreshBtn._wired = true;
+    }
+    renderSavedQueries();
+    await loadDbTables();
+}
+
+async function loadDbTables() {
+    const list = document.getElementById('db-tables-list');
+    list.innerHTML = '<div class="mono" style="color:var(--text-muted); padding:0.5rem; font-size:0.7rem">Loading...</div>';
+    try {
+        const data = await api('/v1/admin/db/tables');
+        DB_TAB.tables = data.tables || [];
+        renderDbTablesList();
+    } catch (e) {
+        list.innerHTML = `<div style="color:var(--status-err); padding:0.5rem; font-size:0.7rem">${escapeHtml(e.message)}</div>`;
+    }
+}
+
+function renderDbTablesList() {
+    const list = document.getElementById('db-tables-list');
+    if (!DB_TAB.tables.length) {
+        list.innerHTML = '<div class="mono" style="color:var(--text-muted); padding:0.5rem; font-size:0.7rem">No tables found</div>';
+        return;
+    }
+    list.innerHTML = DB_TAB.tables.map(t => {
+        const active = DB_TAB.selected === t.name;
+        return `<button class="db-table-row ${active ? 'active' : ''}" data-table="${escapeHtml(t.name)}" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:0.5rem 0.7rem; background:${active ? 'rgba(56,189,248,0.12)' : 'transparent'}; border:none; border-radius:0.375rem; color:${active ? 'var(--accent-1)' : 'var(--text-strong)'}; cursor:pointer; font-size:0.75rem; text-align:left; margin-bottom:0.15rem">
+            <span class="mono">${escapeHtml(t.name)}</span>
+            <span class="mono" style="font-size:0.65rem; color:var(--text-faint)">${t.row_count}</span>
+        </button>`;
+    }).join('');
+    list.querySelectorAll('.db-table-row').forEach(b => {
+        b.addEventListener('click', () => previewDbTable(b.getAttribute('data-table')));
+    });
+}
+
+async function previewDbTable(name) {
+    DB_TAB.selected = name;
+    renderDbTablesList();
+    setText('db-current-table', `Preview: ${name}`);
+    DataTable.setLoading('db-result-table');
+    try {
+        const data = await api(`/v1/admin/db/preview/${encodeURIComponent(name)}?limit=100`);
+        renderDbResult(data);
+    } catch (e) {
+        document.getElementById('db-result-table').innerHTML = `<div style="color:var(--status-err); padding:1rem">${escapeHtml(e.message)}</div>`;
+    }
+}
+
+function renderDbResult(data) {
+    DB_TAB.lastResult = data;
+    const cols = (data.columns || []).map(c => ({
+        key: c, label: c, search: true, sortable: true,
+        format: (v) => formatDbCell(v, c, data.table),
+    }));
+    DataTable.mount('db-result-table', {
+        columns: cols,
+        rows: data.rows || [],
+        pageSize: 25,
+        emptyState: { icon: 'database', title: 'No rows', hint: data.table ? `Table ${data.table} is empty` : '' },
+    });
+    const meta = data.elapsed_ms !== undefined
+        ? `${data.row_count || (data.rows || []).length} rows · ${data.elapsed_ms} ms${data.capped ? ' · capped' : ''}`
+        : `${(data.rows || []).length}/${data.total ?? '?'} rows`;
+    setText('db-sql-status', meta);
+    wireRelationChips();
+}
+
+function formatDbCell(v, colKey, currentTable) {
+    if (v === null || v === undefined) return '<span style="color:var(--text-faint); font-style:italic">null</span>';
+    if (typeof v === 'object') {
+        const s = JSON.stringify(v);
+        return `<span class="mono" title="${escapeHtml(s)}">${escapeHtml(s.length > 80 ? s.slice(0, 80) + '…' : s)}</span>`;
+    }
+    const s = String(v);
+    if (currentTable && colKey === 'id' && DB_RELATIONS[currentTable]) {
+        const chips = DB_RELATIONS[currentTable].map(rel =>
+            `<a class="db-rel-chip mono" data-table="${escapeHtml(rel.table)}" data-fk="${escapeHtml(rel.fk)}" data-val="${escapeHtml(s)}" style="font-size:0.6rem; padding:0.1rem 0.4rem; border-radius:3px; background:rgba(56,189,248,0.1); color:var(--accent-1); cursor:pointer; margin-left:0.3rem; border:1px solid rgba(56,189,248,0.2)" title="Show ${escapeHtml(rel.table)}.${escapeHtml(rel.fk)} = ${escapeHtml(s.slice(0,8))}">→${escapeHtml(rel.table)}</a>`
+        ).join('');
+        const truncated = s.length > 36 ? s.slice(0, 8) + '…' : s;
+        return `<span class="mono" title="${escapeHtml(s)}">${escapeHtml(truncated)}</span>${chips}`;
+    }
+    if (s.length > 120) return `<span title="${escapeHtml(s)}">${escapeHtml(s.slice(0, 120))}…</span>`;
+    return escapeHtml(s);
+}
+
+function wireRelationChips() {
+    document.querySelectorAll('#db-result-table .db-rel-chip').forEach(el => {
+        if (el._wired) return;
+        el._wired = true;
+        el.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tbl = el.getAttribute('data-table');
+            const fk = el.getAttribute('data-fk');
+            const val = el.getAttribute('data-val');
+            DB_TAB.sqlMode = true;
+            document.getElementById('db-sql-panel').style.display = 'block';
+            const sql = `SELECT * FROM "${tbl}" WHERE "${fk}" = '${val.replace(/'/g, "''")}' ORDER BY 1 DESC LIMIT 100`;
+            document.getElementById('db-sql-input').value = sql;
+            runDbSql();
+        });
+    });
+}
+
+function exportDbCsv() {
+    const data = DB_TAB.lastResult;
+    if (!data || !(data.rows || []).length) { toast('No rows to export', 'warn'); return; }
+    const cols = data.columns || Object.keys(data.rows[0] || {});
+    const escape = (v) => {
+        if (v === null || v === undefined) return '';
+        const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [cols.join(',')].concat(data.rows.map(r => cols.map(c => escape(r[c])).join(',')));
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const name = data.table || 'query';
+    a.href = url; a.download = `${name}_${Date.now()}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    toast(`Exported ${data.rows.length} rows`, 'ok');
+}
+
+function loadSavedList() {
+    try { return JSON.parse(localStorage.getItem(DB_SAVED_KEY) || '[]'); } catch { return []; }
+}
+function persistSavedList(list) {
+    localStorage.setItem(DB_SAVED_KEY, JSON.stringify(list));
+}
+
+function renderSavedQueries() {
+    const sel = document.getElementById('db-saved-queries');
+    if (!sel) return;
+    const user = loadSavedList();
+    const opts = ['<option value="">— Saved queries —</option>'];
+    if (DB_SAVED_PRESETS.length) {
+        opts.push('<optgroup label="Presets">');
+        DB_SAVED_PRESETS.forEach((p, i) => opts.push(`<option value="preset:${i}">${escapeHtml(p.name)}</option>`));
+        opts.push('</optgroup>');
+    }
+    if (user.length) {
+        opts.push('<optgroup label="My queries">');
+        user.forEach((p, i) => opts.push(`<option value="user:${i}">${escapeHtml(p.name)}</option>`));
+        opts.push('</optgroup>');
+    }
+    sel.innerHTML = opts.join('');
+}
+
+function loadSavedQuery() {
+    const sel = document.getElementById('db-saved-queries');
+    const v = sel.value;
+    if (!v) return;
+    const [src, idx] = v.split(':');
+    const list = src === 'preset' ? DB_SAVED_PRESETS : loadSavedList();
+    const item = list[+idx];
+    if (item) document.getElementById('db-sql-input').value = item.query;
+}
+
+async function saveDbQuery() {
+    const sql = document.getElementById('db-sql-input').value.trim();
+    if (!sql) { toast('Nothing to save', 'warn'); return; }
+    const html = `<input id="save-name-input" class="input" placeholder="Query name" autofocus />`;
+    const ok = await openModal({ title: 'Save query', desc: 'Stored in browser localStorage', contentHtml: html, confirmText: 'Save' });
+    if (!ok) return;
+    const name = document.getElementById('save-name-input').value.trim();
+    if (!name) return;
+    const list = loadSavedList();
+    list.push({ name, query: sql });
+    persistSavedList(list);
+    renderSavedQueries();
+    toast('Query saved', 'ok');
+}
+
+function deleteDbQuery() {
+    const sel = document.getElementById('db-saved-queries');
+    const v = sel.value;
+    if (!v.startsWith('user:')) { toast('Select one of your saved queries', 'warn'); return; }
+    const idx = +v.split(':')[1];
+    const list = loadSavedList();
+    if (!list[idx]) return;
+    list.splice(idx, 1);
+    persistSavedList(list);
+    renderSavedQueries();
+    toast('Deleted', 'ok');
+}
+
+function toggleDbSqlPanel() {
+    DB_TAB.sqlMode = !DB_TAB.sqlMode;
+    document.getElementById('db-sql-panel').style.display = DB_TAB.sqlMode ? 'block' : 'none';
+}
+
+async function runDbSql() {
+    const sql = document.getElementById('db-sql-input').value.trim();
+    if (!sql) { toast('Enter a SELECT query', 'warn'); return; }
+    setText('db-sql-status', 'Running...');
+    DataTable.setLoading('db-result-table');
+    setText('db-current-table', 'Custom SQL result');
+    DB_TAB.selected = null;
+    renderDbTablesList();
+    try {
+        const data = await api('/v1/admin/db/query', { method: 'POST', body: JSON.stringify({ query: sql }) });
+        renderDbResult(data);
+        toast(`${data.row_count} rows · ${data.elapsed_ms}ms`, 'ok');
+    } catch (e) {
+        document.getElementById('db-result-table').innerHTML = `<div style="color:var(--status-err); padding:1rem">${escapeHtml(e.message)}</div>`;
+        setText('db-sql-status', 'Error');
         toast(e.message, 'err');
     }
 }
@@ -1413,9 +1753,13 @@ function bindStaticEvents() {
 
     document.getElementById('api-key-btn').addEventListener('click', async () => {
         const html = `<input id="apikey-input" class="input mono" type="password" placeholder="Paste your master/admin key" value="${escapeHtml(ADMIN.apiKey)}"/>`;
-        const ok = await openModal({ title: 'Set Admin Key', desc: 'API key được lưu trong localStorage của trình duyệt.', contentHtml: html, confirmText: 'Save' });
-        if (!ok) return;
-        const v = document.getElementById('apikey-input').value;
+        const v = await openModal({
+            title: 'Set Admin Key',
+            desc: 'API key được lưu trong localStorage của trình duyệt.',
+            contentHtml: html,
+            confirmText: 'Save',
+            onConfirm: (overlay) => overlay.querySelector('#apikey-input')?.value || '',
+        });
         if (v) { ADMIN.apiKey = v; localStorage.setItem('apiKey', v); toast('API key saved', 'ok'); refreshDashboard(); }
     });
 

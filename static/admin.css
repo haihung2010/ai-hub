@@ -322,6 +322,8 @@ body {
 .modal-card .modal-title { font-size: 1rem; font-weight: 800; margin-bottom: 0.5rem; }
 .modal-card .modal-desc  { font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.55; margin-bottom: 1.25rem; }
 .modal-card .modal-content { font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.55; max-height: 50vh; overflow-y: auto; padding: 0.75rem; background: rgba(2,6,23,0.5); border-radius: 0.625rem; border: 1px solid var(--border-subtle); white-space: pre-wrap; word-break: break-word; }
+.modal-card .modal-content:has(input, textarea, select) { white-space: normal; word-break: normal; padding: 0; background: transparent; border: none; overflow: visible; }
+.modal-card .modal-content input, .modal-card .modal-content textarea, .modal-card .modal-content select { width: 100%; box-sizing: border-box; }
 .modal-card .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem; }
 
 /* ====== Toast ====== */
