@@ -13,15 +13,17 @@ class HistoryService:
         project_id: str,
         user_id: str | None = None,
         tenant_id: str = DEFAULT_TENANT_ID,
+        session_id: str | None = None,
     ) -> str:
-        session_id = str(uuid.uuid4())
+        sid = session_id or str(uuid.uuid4())
         with get_db_connection() as conn:
             conn.execute(
-                "INSERT INTO sessions (id, tenant_id, project_id, user_id) VALUES (%s, %s, %s, %s)",
-                (session_id, tenant_id, project_id, user_id),
+                "INSERT INTO sessions (id, tenant_id, project_id, user_id) VALUES (%s, %s, %s, %s) "
+                "ON CONFLICT (id) DO NOTHING",
+                (sid, tenant_id, project_id, user_id),
             )
             conn.commit()
-        return session_id
+        return sid
 
     def session_belongs_to(
         self,

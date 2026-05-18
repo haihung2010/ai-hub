@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import struct
+import threading
 import warnings
 from typing import TYPE_CHECKING
 
@@ -17,9 +18,14 @@ class KnowledgeEmbeddingService:
     def __init__(self, model_name: str = _DEFAULT_MODEL) -> None:
         self._model_name = model_name
         self._model: TextEmbedding | None = None
+        self._load_lock = threading.Lock()
 
     def _get_model(self) -> TextEmbedding:
-        if self._model is None:
+        if self._model is not None:
+            return self._model
+        with self._load_lock:
+            if self._model is not None:
+                return self._model
             from fastembed import TextEmbedding
             logger.info("Loading embedding model: %s", self._model_name)
             with warnings.catch_warnings():

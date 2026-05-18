@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import uuid
 from collections.abc import Sequence
 
@@ -19,7 +20,19 @@ Each key maps to a list of objects with fields:
 - content
 - salience
 Only keep durable or reusable information. Ignore chit-chat.
+Output ONLY the JSON object, no markdown, no commentary, no code fence.
 """
+
+_JSON_OBJECT_RE = re.compile(r"\{.*\}", re.DOTALL)
+
+
+def _extract_json_payload(payload: str) -> str:
+    text = payload.strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```[a-zA-Z]*\n?", "", text)
+        text = re.sub(r"\n?```\s*$", "", text)
+    match = _JSON_OBJECT_RE.search(text)
+    return match.group(0) if match else text
 
 
 class MemoryExtractionService:
@@ -33,10 +46,14 @@ class MemoryExtractionService:
         ]
 
     def _parse_payload(self, payload: str) -> dict[str, list[dict]]:
+        cleaned = _extract_json_payload(payload)
         try:
-            parsed = json.loads(payload)
+            parsed = json.loads(cleaned)
         except json.JSONDecodeError:
-            logger.warning("StructMem extraction returned invalid JSON")
+            logger.warning(
+                "StructMem extraction returned invalid JSON (preview=%s)",
+                payload[:200].replace("\n", " "),
+            )
             return {"episodic": [], "semantic": [], "relational": [], "procedural": []}
 
         result: dict[str, list[dict]] = {}

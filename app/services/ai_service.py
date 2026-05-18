@@ -686,7 +686,12 @@ class AIService:
             tenant_id=req.tenant_id,
             user_id=user_id,
         ):
-            raise SessionAccessDenied(req.session_id)
+            return self._history.create_session(
+                req.project_id,
+                user_id=user_id,
+                tenant_id=req.tenant_id,
+                session_id=req.session_id,
+            )
         return req.session_id
 
     def _assemble(

@@ -6,8 +6,8 @@ MODEL=${MODEL:-/home/hung/models/gemma-4-E2B-it-Q4_K_M.gguf}
 MMPROJ=${MMPROJ:-/home/hung/models/mmproj-gemma-4-E2B-it-F16.gguf}
 HOST=${HOST:-127.0.0.1}
 PORT=${PORT:-8080}
-CTX_SIZE=${CTX_SIZE:-131072}
-PARALLEL=${PARALLEL:-16}
+CTX_SIZE=${CTX_SIZE:-49152}
+PARALLEL=${PARALLEL:-12}
 ALIAS=${ALIAS:-local-gemma4-e2b-q4}
 LOG_FILE=${LOG_FILE:-/tmp/aihub-llama-lite-q8.log}
 PID_FILE=${PID_FILE:-/tmp/aihub-llama-server.pid}
@@ -24,11 +24,11 @@ fi
 pkill -f "llama-server .*--port ${PORT}" 2>/dev/null || true
 
 MMPROJ_ARGS=()
-if [[ -f "$MMPROJ" ]]; then
+if [[ "${ENABLE_MMPROJ:-0}" == "1" && -f "$MMPROJ" ]]; then
   MMPROJ_ARGS=(--mmproj "$MMPROJ")
   echo "Vision enabled: $MMPROJ"
 else
-  echo "Warning: mmproj not found at $MMPROJ — image input disabled"
+  echo "Vision disabled (set ENABLE_MMPROJ=1 to enable)"
 fi
 
 nohup "$LLAMA_SERVER" \
