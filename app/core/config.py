@@ -154,6 +154,34 @@ class Settings(BaseSettings):
     fanpage_max_history_messages: int = Field(default=10, ge=1, alias="FANPAGE_MAX_HISTORY_MESSAGES")
     fanpage_knowledge_max_chunks: int = Field(default=3, ge=0, le=10, alias="FANPAGE_KNOWLEDGE_MAX_CHUNKS")
     fanpage_enable_failure_risk_scoring: bool = Field(default=True, alias="FANPAGE_ENABLE_FAILURE_RISK_SCORING")
+    # BRANE query router: mapping query intent type -> list of diacritic-stripped regex patterns
+    query_type_patterns: dict[str, list[str]] = Field(
+        default_factory=lambda: {
+            "greeting": [r"\b(chao|hello|hi|ok|cam on|thanks)\b"],
+            "casual_chat": [r"\b(khach hoi|tra loi ngan|mot cau|1 cau|duoi 3 cau)\b"],
+            "factual_qa": [r"\b(gia|price|ti gia|rate|vang|gold|btc|bitcoin|crypto|chung khoan|stock)\b", r"\b(ai|la ai|who|chu tich|tong bi thu|thu tuong|lanh dao)\b"],
+            "reasoning": [r"\b(phan tich|analysis|chien luoc|strategy|roadmap|ke hoach|plan|thiet ke|design)\b"],
+            "coding": [r"\b(code|python|sql|javascript|typescript|fastapi|debug|error|traceback|bug|exception|algorithm)\b"],
+            "search": [r"\b(search|tim|tra|google|web|mang|internet)\b"],
+            "rag_query": [r"\b(tai lieu|document|docs|knowledge|rag|noi bo|internal|chinh sach|policy|du lieu|database|bao cao|report|quy trinh|procedure)\b"],
+            "creative": [r"\b(viet|viet bai|viet thơ|thơ|van|ke chuyen|story|poem|essay)\b"],
+        },
+        alias="QUERY_TYPE_PATTERNS",
+    )
+    # BRANE query router: mapping query intent type -> preferred model override
+    # Values: "lite", "normal", "external", "fast_background"
+    query_type_model_map: dict[str, str] = Field(
+        default_factory=lambda: {
+            "greeting": "fast_background",
+            "casual_chat": "fast_background",
+            "coding": "normal",
+            "reasoning": "normal",
+        },
+        alias="QUERY_TYPE_MODEL_MAP",
+    )
+    # Generic per-project override dict (replaces hard-coded fanpage checks)
+    # Format: {"project_name": {"max_history_messages": 10, "model_mode": "lite", ...}}
+    per_project_overrides: dict[str, dict] = Field(default_factory=dict, alias="PER_PROJECT_OVERRIDES")
 
     @field_validator("allowed_origins", "allowed_hosts", "openrouter_allowed_projects", "openrouter_denied_projects", "llama_cpp_nodes", mode="before")
     @classmethod
@@ -166,7 +194,7 @@ class Settings(BaseSettings):
                 return parsed
         raise ValueError("value must be a list of strings")
 
-    @field_validator("project_context_sizes", mode="before")
+    @field_validator("project_context_sizes", "query_type_patterns", "query_type_model_map", "per_project_overrides", mode="before")
     @classmethod
     def _parse_dict(cls, value: dict | str) -> dict:
         if isinstance(value, dict):

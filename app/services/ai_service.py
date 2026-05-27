@@ -11,6 +11,7 @@ import re
 import time
 import unicodedata
 from collections.abc import AsyncIterator
+from dataclasses import dataclass, field
 
 from app.core.config import Settings
 from app.core.errors import OllamaUnavailable, SessionAccessDenied, UpstreamError, UpstreamTimeout, VramExhausted
@@ -50,6 +51,87 @@ class _LatencyTracker:
         if len(self._samples) < self._min_samples:
             return False
         return (sum(self._samples) / len(self._samples)) > self._threshold_ms
+
+
+@dataclass
+class QueryIntent:
+    """BRANE-style query intent classification for model/pipeline routing."""
+
+    type: str = "casual_chat"  # greeting | casual_chat | factual_qa | reasoning | search | rag_query | coding | creative
+    complexity: int = 0  # 0=simple, 1=moderate, 2=complex
+    domain: str | None = None  # e.g. "finance", "code", "legal"
+    requires_search: bool = False
+    requires_rag: bool = False
+    requires_vision: bool = False
+
+    def routing_hint(self) -> str:
+        """Return suggested routing hint based on intent."""
+        return self.type
+
+
+class QueryClassifier:
+    """Lightweight pattern-based query classifier per BRANE paper."""
+
+    def __init__(self, settings: Settings) -> None:
+        self._settings = settings
+        self._patterns: dict[str, list[re.Pattern]] = {}
+        for intent_type, pattern_strs in settings.query_type_patterns.items():
+            compiled = [re.compile(p, re.IGNORECASE) for p in pattern_strs]
+            self._patterns[intent_type] = compiled
+
+    def classify(self, req: ChatRequest) -> QueryIntent:
+        """Classify a chat request into query intent.
+
+        Checks patterns in priority order and returns the best match.
+        """
+        if req.images:
+            return QueryIntent(type="casual_chat", complexity=0, domain=None, requires_search=False, requires_rag=False, requires_vision=True)
+
+        # Strategy: first-match among high-specificity types
+        text = req.user_message.strip()
+        normalized = self._strip_diacritics(text)
+
+        type_priority = ["coding", "reasoning", "search", "rag_query", "factual_qa", "greeting", "casual_chat", "creative"]
+        for intent_type in type_priority:
+            patterns = self._patterns.get(intent_type, [])
+            if any(p.search(normalized) for p in patterns):
+                intent = QueryIntent(type=intent_type)
+                intent.requires_search = intent_type == "search"
+                intent.requires_rag = intent_type == "rag_query"
+                intent.complexity = self._complexity_from_type(intent_type, text)
+                if intent_type == "factual_qa":
+                    intent.domain = self._detect_domain(normalized)
+                return intent
+
+        # Default
+        return QueryIntent(type="casual_chat", complexity=self._complexity_from_type("casual_chat", text))
+
+    @staticmethod
+    def _strip_diacritics(text: str) -> str:
+        return unicodedata.normalize("NFD", text).encode("ascii", "ignore").decode("ascii").lower()
+
+    @staticmethod
+    def _complexity_from_type(intent_type: str, text: str) -> int:
+        if intent_type in ("coding", "reasoning"):
+            return 2
+        if intent_type in ("factual_qa", "rag_query", "search"):
+            return 1
+        if len(text) > 140:
+            return 1
+        return 0
+
+    @staticmethod
+    def _detect_domain(normalized: str) -> str | None:
+        domain_patterns = {
+            "finance": [r"\b(gia|vang|gold|btc|bitcoin|crypto|chung khoan|stock|ti gia|exchange)\b"],
+            "code": [r"\b(code|python|sql|javascript|typescript|fastapi|debug|error|bug)\b"],
+            "legal": [r"\b(chinh sach|policy|quy trinh|procedure|luat|law|bien ban|contract)\b"],
+            "news": [r"\b(tin|news|moi|cap nhat|hot|hien tai)\b"],
+        }
+        for domain, patterns in domain_patterns.items():
+            if any(re.search(p, normalized) for p in patterns):
+                return domain
+        return None
 
 
 class AIService:
@@ -100,6 +182,7 @@ class AIService:
             window=settings.hybrid_latency_window,
             threshold_ms=settings.hybrid_latency_threshold_ms,
         )
+        self._query_classifier = QueryClassifier(settings)
         logger.info(
             "AIService initialized with gpu_concurrency=%s latency_threshold_ms=%s",
             settings.gpu_concurrency,
@@ -268,6 +351,11 @@ class AIService:
                 )
             )
 
+    def _per_project_setting(self, project_id: str, key: str, default: bool) -> bool:
+        """BRANE: look up per-project boolean override, default to project-agnostic setting."""
+        override = self._settings.per_project_overrides.get(project_id.lower(), {})
+        return override.get(key, default)
+
     async def _schedule_fact_extraction(
         self,
         user_id: str,
@@ -295,8 +383,11 @@ class AIService:
 
     @staticmethod
     def _effective_history_cap(settings: Settings, model_mode: str, project_id: str | None = None) -> int:
-        if project_id and project_id.lower() == "fanpage":
-            return settings.fanpage_max_history_messages
+        # BRANE: use generic per_project_overrides instead of hard-coded fanpage check
+        if project_id:
+            override = settings.per_project_overrides.get(project_id.lower(), {})
+            if "max_history_messages" in override:
+                return override["max_history_messages"]
         if model_mode == "lite":
             return settings.lite_max_history_messages
         return settings.max_history_messages
@@ -396,6 +487,19 @@ class AIService:
         return prompt_temperature
 
     def _select_model(self, req: ChatRequest, prompt_model: str) -> tuple[str, int]:
+        # BRANE: use query intent to override model selection
+        intent = self._query_classifier.classify(req)
+        hint = self._settings.query_type_model_map.get(intent.type)
+        if hint == "fast_background":
+            # fast_background handled in _route_fast_background_if_eligible
+            pass
+        elif hint == "normal":
+            ctx = self._settings.project_context_sizes.get(req.project_id, self._settings.default_num_ctx)
+            return self._settings.default_model, ctx
+        elif hint == "external":
+            return self._settings.openrouter_model, 0
+
+        # Default routing (fallback or explicit model_mode)
         if req.provider == "gemini":
             return self._settings.gemini_model, 0
         if req.model_mode == "external" or req.provider == "cloud":
@@ -431,31 +535,18 @@ class AIService:
         return cloud
 
     def _should_use_fast_background_model(self, req: ChatRequest) -> bool:
-        """Route short/simple non-image local requests to the smaller background model."""
+        """Route short/simple non-image local requests to the smaller background model.
+
+        Now delegates to QueryClassifier for BRANE-style intent-based routing.
+        """
         if req.provider == "gemini":
             return False
         if not self._background_local or req.images:
             return False
         if req.model_mode != "lite" or req.provider == "cloud":
             return False
-        text = req.user_message.strip()
-        if len(text) > 140:
-            return False
-        normalized = self._strip_diacritics(text)
-        simple_patterns = [
-            r"\b(chao|hello|hi|ok|cam on|thanks)\b",
-            r"\b(khach hoi|tra loi ngan|mot cau|1 cau|duoi 3 cau)\b",
-            r"\b(json|status|health ok|dich sang)\b",
-        ]
-        if not any(re.search(pattern, normalized) for pattern in simple_patterns):
-            return False
-        heavy_patterns = [
-            r"\b(code|python|sql|javascript|typescript|fastapi|debug|error|traceback|bug|exception)\b",
-            r"\b(phan tich|analysis|chien luoc|strategy|bao cao|report|tai chinh|stock)\b",
-            r"\b(viet dai|chi tiet|detailed|roadmap|ke hoach|plan|thiet ke|design)\b",
-            r"\b(tao|viet|liet ke|neu|giai thich|tom tat|so sanh|de xuat|checklist)\b",
-        ]
-        return not any(re.search(pattern, normalized) for pattern in heavy_patterns)
+        intent = self._query_classifier.classify(req)
+        return intent.type in ("greeting", "casual_chat") and intent.complexity == 0
 
     def _route_fast_background_if_eligible(
         self,
@@ -590,11 +681,39 @@ class AIService:
             self._effective_history_cap(self._settings, req.model_mode, req.project_id),
         )
 
+        # MUSE-Autoskill: inject active skill prompt templates matching the message
+        messages = self._inject_skill_prompts(req, messages)
+
         # Explicit /search: now relies on the cloud provider's :online plugin
         # to perform web search server-side. Source URLs come back as message
         # annotations; we surface a flag here that _provider_options can pick
         # up to enable the plugin. No client-side search context is injected.
         return messages, []
+
+    def _inject_skill_prompts(self, req: ChatRequest, messages: list[Message]) -> list[Message]:
+        """MUSE-Autoskill: match active skills and inject their prompt templates."""
+        try:
+            from app.services.skill_service import SkillService
+        except Exception:
+            return messages
+
+        if not req.user_id:
+            return messages
+
+        try:
+            service = SkillService()
+            matched = service.match_skills(req.tenant_id, req.project_id, req.user_message)
+            if not matched:
+                return messages
+            skill_blocks = [service.format_prompt_for_skill(s) for s in matched]
+            skill_block_str = "\n\n".join(b for b in skill_blocks if b)
+            if skill_block_str:
+                return self._normalize_system_messages(
+                    [Message(role="system", content=skill_block_str), *messages]
+                )
+        except Exception:
+            pass
+        return messages
 
     def _evaluate_failure_risk(
         self,

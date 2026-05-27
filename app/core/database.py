@@ -348,6 +348,27 @@ def init_db() -> None:
             )
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS skills (
+                id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL DEFAULT 'default',
+                project_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                description TEXT NOT NULL DEFAULT '',
+                trigger_patterns_json TEXT NOT NULL DEFAULT '[]',
+                prompt_template TEXT NOT NULL DEFAULT '',
+                expected_behavior TEXT NOT NULL DEFAULT '',
+                test_cases_json TEXT NOT NULL DEFAULT '[]',
+                version INTEGER NOT NULL DEFAULT 1,
+                is_active INTEGER NOT NULL DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_evaluated_at TIMESTAMP,
+                eval_score FLOAT NOT NULL DEFAULT 0.0,
+                UNIQUE (tenant_id, project_id, name)
+            )
+        """)
+
         # Create indexes
         for stmt in [
             "CREATE INDEX IF NOT EXISTS idx_messages_tenant_session ON messages (tenant_id, session_id, id)",
@@ -373,6 +394,8 @@ def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_knowledge_links_target ON knowledge_links (target_card_id)",
             "CREATE INDEX IF NOT EXISTS idx_fanpage_facts_user_project ON fanpage_facts (user_id, project_id, created_at)",
             "CREATE INDEX IF NOT EXISTS idx_fanpage_facts_confidence ON fanpage_facts (project_id, confidence DESC)",
+            "CREATE INDEX IF NOT EXISTS idx_skills_tenant_project_active ON skills (tenant_id, project_id, is_active)",
+            "CREATE INDEX IF NOT EXISTS idx_skills_eval_score ON skills (eval_score DESC)",
         ]:
             conn.execute(stmt)
 

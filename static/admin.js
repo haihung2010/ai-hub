@@ -1368,7 +1368,7 @@ function showTab(tabId) {
     if (tab) tab.classList.add('active');
     const link = document.querySelector(`.tab-link[data-tab="${tabId}"]`);
     if (link) link.classList.add('active');
-    const titleMap = { dashboard: 'System Overview', gpu: 'GPU Command Center', management: 'Access Keys', knowledge: 'RAG Knowledge', tenants: 'Tenants & Users', audit: 'Chat Audit', database: 'Database Explorer', system: 'System Health' };
+    const titleMap = { dashboard: 'System Overview', gpu: 'GPU Command Center', management: 'Access Keys', knowledge: 'RAG Knowledge', tenants: 'Tenants & Users', audit: 'Chat Audit', database: 'Database Explorer', system: 'System Health', skills: 'Skill Registry' };
     setText('current-tab-title', titleMap[tabId] || tabId);
     if (tabId === 'dashboard') { showStatSkeletons(); restoreStatCards(); refreshDashboard(); }
     if (tabId === 'gpu') refreshDashboard();
@@ -1377,6 +1377,7 @@ function showTab(tabId) {
     if (tabId === 'tenants') loadTenants();
     if (tabId === 'audit') initAuditTab();
     if (tabId === 'database') initDatabaseTab();
+    if (tabId === 'skills') initSkillsTab();
     if (tabId === 'system') { refreshSystemHealth(); refreshSecurityLogs(); refreshSystemCharts(); }
 }
 
@@ -1841,3 +1842,121 @@ document.addEventListener('DOMContentLoaded', () => {
         navigator.serviceWorker.register('/admin-sw.js').catch(() => {});
     }
 });
+
+/* ====== Skills Tab (MUSE-Autoskill) ====== */
+function initSkillsTab() {
+    const loadBtn = document.getElementById('btn-load-skills');
+    if (loadBtn) loadBtn.addEventListener('click', loadSkills);
+    const filterInput = document.getElementById('skills-filter');
+    if (filterInput) filterInput.addEventListener('input', () => loadSkills());
+    loadSkills();
+}
+
+async function loadSkills() {
+    const projectId = document.getElementById('skills-project-id').value.trim() || 'fanpage';
+    const filter = document.getElementById('skills-filter').value.trim().toLowerCase();
+    const includeInactive = document.getElementById('skills-show-inactive').checked;
+    DataTable.setLoading('skills-table-container');
+    const container = document.getElementById('skills-table-container');
+    try {
+        const data = await api(`/v1/projects/${encodeURIComponent(projectId)}/skills?include_inactive=${includeInactive}`);
+        const skills = (data.skills || []).filter(s => !filter || s.name.toLowerCase().includes(filter));
+        DataTable.mount('skills-table-container', {
+            columns: [
+                { key: 'name', label: 'Name' },
+                { key: 'description', label: 'Description', render: v => v || '—' },
+                { key: 'version', label: 'Ver', render: v => `v${v}` },
+                { key: 'eval_score', label: 'Score', render: v => v != null ? v.toFixed(2) : '—' },
+                {
+                    key: 'is_active',
+                    label: 'Active',
+                    render: v => `<span class="chip ${v ? 'chip-ok' : 'chip-fail'}">${v ? 'Yes' : 'No'}</span>`
+                },
+                {
+                    key: 'last_evaluated_at',
+                    label: 'Last Eval',
+                    render: v => v ? new Date(v).toLocaleString() : 'Never'
+                },
+                {
+                    key: 'actions',
+                    label: 'Actions',
+                    sortable: false,
+                    render: (_, row) => `
+                        <div style="display:flex;gap:0.4rem;align-items:center">
+                            <button class="btn btn-sm btn-secondary" onclick="evaluateSkill('${row.id}', '${projectId}')">Test</button>
+                            <button class="btn btn-sm btn-secondary" onclick="openSkillEdit('${row.id}', '${projectId}')">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteSkill('${row.id}', '${projectId}')">Del</button>
+                        </div>`
+                }
+            ],
+            rows: skills,
+            key: 'id',
+        });
+    } catch (e) {
+        container.innerHTML = `<div class="callout callout-err">${e.message}</div>`;
+    }
+}
+
+async function evaluateSkill(skillId, projectId) {
+    toast('Evaluating skill…', 'info');
+    try {
+        const r = await api(`/v1/projects/${encodeURIComponent(projectId)}/skills/${skillId}/evaluate`, { method: 'POST' });
+        toast(`Eval: ${(r.score * 100).toFixed(0)}% — ${r.passed}/${r.total} passed`, 'ok');
+        loadSkills();
+    } catch (e) { toast('Eval failed: ' + e.message, 'err'); }
+}
+
+function openSkillEdit(skillId, projectId) {
+    const modal = document.getElementById('skill-edit-modal');
+    if (!skillId || skillId === 'new') {
+        document.getElementById('skill-edit-id').value = '';
+        document.getElementById('skill-edit-name').value = '';
+        document.getElementById('skill-edit-desc').value = '';
+        document.getElementById('skill-edit-patterns').value = '[]';
+        document.getElementById('skill-edit-template').value = '';
+        document.getElementById('skill-edit-expected').value = '';
+        document.getElementById('skill-edit-tests').value = '[]';
+    }
+    modal.style.display = 'flex';
+}
+
+function closeSkillModal() {
+    document.getElementById('skill-edit-modal').style.display = 'none';
+}
+
+async function saveSkill() {
+    const projectId = document.getElementById('skills-project-id').value.trim() || 'fanpage';
+    const skillId = document.getElementById('skill-edit-id').value;
+    const payload = {
+        name: document.getElementById('skill-edit-name').value.trim(),
+        description: document.getElementById('skill-edit-desc').value.trim(),
+    };
+    let patterns, tests;
+    try { patterns = JSON.parse(document.getElementById('skill-edit-patterns').value); } catch { patterns = []; }
+    try { tests = JSON.parse(document.getElementById('skill-edit-tests').value); } catch { tests = []; }
+    payload.trigger_patterns = patterns;
+    payload.prompt_template = document.getElementById('skill-edit-template').value;
+    payload.expected_behavior = document.getElementById('skill-edit-expected').value;
+    payload.test_cases = tests;
+    try {
+        if (skillId) {
+            await api(`/v1/projects/${encodeURIComponent(projectId)}/skills/${skillId}`, { method: 'PATCH', body: payload });
+            toast('Skill updated', 'ok');
+        } else {
+            await api(`/v1/projects/${encodeURIComponent(projectId)}/skills`, { method: 'POST', body: payload });
+            toast('Skill created', 'ok');
+        }
+        closeSkillModal();
+        loadSkills();
+    } catch (e) { toast('Save failed: ' + e.message, 'err'); }
+}
+
+async function deleteSkill(skillId, projectId) {
+    const ok = await confirmDialog('Delete Skill', 'Delete this skill permanently?');
+    if (!ok) return;
+    try {
+        await api(`/v1/projects/${encodeURIComponent(projectId)}/skills/${skillId}`, { method: 'DELETE' });
+        toast('Skill deleted', 'ok');
+        loadSkills();
+    } catch (e) { toast('Delete failed: ' + e.message, 'err'); }
+}
