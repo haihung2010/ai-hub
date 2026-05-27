@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import logging
-import time
 import weakref
+import time
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -34,10 +34,10 @@ from app.routes import health as health_routes
 from app.routes import knowledge as knowledge_routes
 from app.routes import memory as memory_routes
 from app.routes import predictions as predictions_routes
+from app.routes import skills as skills_routes
 from app.routes import users as users_routes
 from app.routes import mcp_tools as mcp_tools_routes
 from app.routes import facebook_webhook as fb_webhook_routes
-from app.routes import skills as skills_routes
 from app.agents.crew_service import CrewService
 from app.core.database import _get_database_url
 from app.services.ai_service import AIService
@@ -93,6 +93,14 @@ def _register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(UpstreamError)
     async def _upstream(_: Request, exc: UpstreamError) -> JSONResponse:
         return await _json(502, f"upstream error: {exc}")
+
+
+_ai_service_instance = None
+
+
+def get_ai_service():
+    """Get the AIService instance (module-level reference set during startup)."""
+    return _ai_service_instance
 
 
 def create_app(
@@ -254,36 +262,7 @@ def create_app(
             # Store module-level reference for get_ai_service() callers
             global _ai_service_instance
             _ai_service_instance = app.state.ai_service
-
-
-_ai_service_instance = None
-
-
-def get_ai_service():
-    """Get the AIService instance (module-level reference set during startup)."""
-    return _ai_service_instance
-
-
-# ── App factory (must appear after get_ai_service to avoid forward reference) ──
-
-
-def create_app(
-    settings: Settings | None = None,
-    limiter=None,
-    failure_tracker=None,
-) -> FastAPI:
-    settings = settings or get_settings()
-    configure_logging(settings.log_level, settings.security_log_file)
-    init_db()
-    app_start_time = time.time()
-
-    @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        # Store service reference for downstream callers
-        global _ai_service_instance
-        _ai_service_instance = app.state.ai_service
-        yield
-        _ai_service_instance = None
+            yield
 
     app = FastAPI(
         title="AI Hub",
