@@ -71,10 +71,14 @@ class AIService:
         knowledge_retrieval: KnowledgeRetrievalService | None = None,
         background_local: ChatProvider | None = None,
         fact_extraction: FactExtractionService | None = None,
+        gemini: ChatProvider | None = None,
+        nine_router: ChatProvider | None = None,
     ) -> None:
         self._local = local
         self._background_local = background_local
         self._cloud = cloud
+        self._gemini = gemini
+        self._nine_router = nine_router
         self._history = history
         self._settings = settings
         self._users = users
@@ -89,6 +93,9 @@ class AIService:
         self._knowledge_retrieval = knowledge_retrieval
         self._fact_extraction = fact_extraction
         self._gpu_lock = asyncio.Semaphore(settings.gpu_concurrency)
+        self._bg_lock = asyncio.Semaphore(settings.background_llama_cpp_parallel if settings.background_llama_cpp_parallel else settings.gpu_concurrency)
+        self._cloud_lock = asyncio.Semaphore(settings.cloud_fallback_max_concurrency)
+        self._active_requests = 0
         self._latency_tracker = _LatencyTracker(
             window=settings.hybrid_latency_window,
             threshold_ms=settings.hybrid_latency_threshold_ms,
@@ -179,6 +186,9 @@ class AIService:
     def _build_knowledge_block(self, tenant_id: str, project_id: str, query: str) -> str | None:
         if not self._settings.enable_knowledge_rag or not self._knowledge_retrieval:
             return None
+        if not self._should_knowledge_rag(query):
+            logger.debug("Knowledge RAG skipped: query not knowledge-like")
+            return None
         results = self._knowledge_retrieval.search(
             tenant_id=tenant_id,
             project_id=project_id,
@@ -194,6 +204,18 @@ class AIService:
             len(results),
         )
         return self._knowledge_retrieval.format_for_prompt(results)
+
+    def _should_knowledge_rag(self, query: str) -> bool:
+        """Use RAG only for likely knowledge/document lookups, not every chat."""
+        normalized = self._strip_diacritics(query)
+        if len(normalized) > 240:
+            return True
+        patterns = [
+            r"\b(tai lieu|document|docs|knowledge|rag|noi bo|internal|chinh sach|policy)\b",
+            r"\b(du lieu|database|bao cao|report|quy trinh|procedure|huong dan|guide)\b",
+            r"\b(theo|dua tren|trong file|trong tai lieu|tra cuu|lookup|search)\b",
+        ]
+        return any(re.search(pattern, normalized) for pattern in patterns)
 
     def _schedule_memory_jobs(
         self,
@@ -374,6 +396,8 @@ class AIService:
         return prompt_temperature
 
     def _select_model(self, req: ChatRequest, prompt_model: str) -> tuple[str, int]:
+        if req.provider == "gemini":
+            return self._settings.gemini_model, 0
         if req.model_mode == "external" or req.provider == "cloud":
             return self._settings.openrouter_model, 0
         if req.model_mode == "normal":
@@ -392,20 +416,75 @@ class AIService:
         return bool(explicit and (not allowed or project in allowed))
 
     def _select_provider(self, req: ChatRequest) -> ChatProvider:
+        if req.provider == "gemini" and self._gemini:
+            return self._gemini
         wants_cloud = req.model_mode == "external" or req.provider == "cloud"
         if not wants_cloud:
             return self._local
-        if not self._settings.openrouter_enabled or not self._cloud:
+        cloud = self._nine_router or self._cloud
+        if not self._settings.openrouter_enabled and not self._settings.nine_router_enabled:
             raise UpstreamError("external llm provider is not enabled")
+        if not cloud:
+            raise UpstreamError("external llm provider is not available")
         if not self._external_allowed(req):
             raise UpstreamError(f"external llm is not allowed for project={req.project_id}")
-        return self._cloud
+        return cloud
 
-    def _provider_options(self, provider: ChatProvider, model_mode: str, num_ctx: int = 0, web_search: bool = False) -> dict:
+    def _should_use_fast_background_model(self, req: ChatRequest) -> bool:
+        """Route short/simple non-image local requests to the smaller background model."""
+        if req.provider == "gemini":
+            return False
+        if not self._background_local or req.images:
+            return False
+        if req.model_mode != "lite" or req.provider == "cloud":
+            return False
+        text = req.user_message.strip()
+        if len(text) > 140:
+            return False
+        normalized = self._strip_diacritics(text)
+        simple_patterns = [
+            r"\b(chao|hello|hi|ok|cam on|thanks)\b",
+            r"\b(khach hoi|tra loi ngan|mot cau|1 cau|duoi 3 cau)\b",
+            r"\b(json|status|health ok|dich sang)\b",
+        ]
+        if not any(re.search(pattern, normalized) for pattern in simple_patterns):
+            return False
+        heavy_patterns = [
+            r"\b(code|python|sql|javascript|typescript|fastapi|debug|error|traceback|bug|exception)\b",
+            r"\b(phan tich|analysis|chien luoc|strategy|bao cao|report|tai chinh|stock)\b",
+            r"\b(viet dai|chi tiet|detailed|roadmap|ke hoach|plan|thiet ke|design)\b",
+            r"\b(tao|viet|liet ke|neu|giai thich|tom tat|so sanh|de xuat|checklist)\b",
+        ]
+        return not any(re.search(pattern, normalized) for pattern in heavy_patterns)
+
+    def _route_fast_background_if_eligible(
+        self,
+        req: ChatRequest,
+        provider: ChatProvider,
+        model: str,
+        route_reason: str | None = None,
+    ) -> tuple[ChatProvider, str, str | None]:
+        if req.provider == "gemini":
+            return provider, model, route_reason
+        if provider.name == self._local.name and self._should_use_fast_background_model(req):
+            bg_provider = self._background_local
+            if bg_provider is None:
+                return provider, model, route_reason
+            logger.info("FAST_ROUTE: switched to background model=%s", self._settings.summary_model)
+            return bg_provider, self._settings.summary_model, "fast_background"
+        return provider, model, route_reason
+
+    def _provider_options(self, req: ChatRequest, provider: ChatProvider, model_mode: str, num_ctx: int = 0, web_search: bool = False) -> dict:
         options: dict = {}
         if provider.name == self._local.name:
             max_tokens = self._settings.local_max_tokens or self._settings.ai_max_tokens
             if max_tokens:
+                effective = self._adaptive_max_tokens(self._queue_depth())
+                if effective and effective < max_tokens:
+                    max_tokens = effective
+                # Explicit per-request override always wins
+                if req.max_tokens and req.max_tokens < max_tokens:
+                    max_tokens = req.max_tokens
                 options["max_tokens"] = max_tokens
             if num_ctx:
                 options["num_ctx"] = num_ctx
@@ -428,20 +507,55 @@ class AIService:
         """
         if req.model_mode == "external" or req.provider == "cloud":
             return False
-        if not self._settings.openrouter_enabled or not self._cloud:
+        cloud = self._nine_router or self._cloud
+        if not self._settings.openrouter_enabled and not self._settings.nine_router_enabled:
+            return False
+        if not cloud:
             return False
         if req.allow_external is False:
             return False
         project = req.project_id.lower()
-        denied = {item.lower() for item in self._settings.openrouter_denied_projects}
-        allowed = {item.lower() for item in self._settings.openrouter_allowed_projects}
-        if project in denied:
+        nine_denied = {item.lower() for item in self._settings.nine_router_denied_projects}
+        nine_allowed = {item.lower() for item in self._settings.nine_router_allowed_projects}
+        if project in nine_denied:
             return False
-        if allowed and project not in allowed:
+        if nine_allowed and project not in nine_allowed:
             return False
         if req.allow_external is None:
             return self._settings.external_llm_default_allowed
         return bool(req.allow_external)
+
+    def _queue_depth(self) -> int:
+        """Number of requests currently holding or waiting on the GPU lock."""
+        return self._active_requests
+
+    def _adaptive_max_tokens(self, queue_depth: int) -> int | None:
+        """Reduce output token budget when queue is saturated to prevent backlog growth."""
+        if not self._settings.adaptive_max_tokens_enabled:
+            return None
+        base = self._settings.local_max_tokens or self._settings.ai_max_tokens
+        if not base:
+            return None
+        if queue_depth >= self._settings.gpu_concurrency:
+            return int(base * self._settings.adaptive_max_tokens_severe_pct)
+        if queue_depth >= self._settings.adaptive_max_tokens_threshold:
+            return int(base * self._settings.adaptive_max_tokens_cutoff_pct)
+        return None
+
+    def _priority_adjusted_timeout(self, req: ChatRequest) -> float:
+        """Shorter queue timeout for low-priority requests so they spill to cloud faster."""
+        if not self._settings.priority_queue_timeout_enabled:
+            return self._settings.hybrid_local_queue_timeout_seconds
+        base = self._settings.hybrid_local_queue_timeout_seconds
+        # priority 10 → 1.0x, priority 0 → 0.5x multiplier
+        multiplier = 0.5 + (req.priority / 10) * 0.5
+        return base * multiplier
+
+    def current_queue_waiting(self) -> int:
+        """Total requests holding or waiting on GPU locks (primary + background)."""
+        primary_in_use = self._settings.gpu_concurrency - self._gpu_lock._value
+        bg_in_use = self._settings.background_llama_cpp_parallel - self._bg_lock._value
+        return max(primary_in_use, 0) + max(bg_in_use, 0)
 
     def _prepare_messages_for_request(
         self,
@@ -770,11 +884,9 @@ class AIService:
             provider.name,
             len(messages),
         )
-        if provider.name == self._local.name:
-            async with self._gpu_lock:
-                async for chunk in provider.stream_complete(messages, model, temperature, options):
-                    yield chunk
-        else:
+        is_bg = provider is self._background_local
+        lock = self._bg_lock if is_bg else self._gpu_lock
+        async with lock:
             async for chunk in provider.stream_complete(messages, model, temperature, options):
                 yield chunk
 
@@ -834,27 +946,37 @@ class AIService:
 
     async def _complete_local_with_queue_timeout(
         self,
+        req: ChatRequest,
+        provider: ChatProvider,
         messages: list[Message],
         model: str,
         temperature: float,
         options: dict | None,
     ) -> tuple[str, float]:
         start = time.perf_counter()
-        timeout = self._settings.hybrid_local_queue_timeout_seconds
+        timeout = self._priority_adjusted_timeout(req)
+        self._active_requests += 1
         try:
-            if timeout == 0:
-                await self._gpu_lock.acquire()
-            else:
-                await asyncio.wait_for(self._gpu_lock.acquire(), timeout=timeout)
-        except asyncio.TimeoutError as exc:
-            queue_wait_ms = round((time.perf_counter() - start) * 1000, 3)
-            raise UpstreamTimeout(f"local queue wait exceeded {timeout}s") from exc
-        queue_wait_ms = round((time.perf_counter() - start) * 1000, 3)
-        try:
-            content = await self._complete(self._local, messages, model, temperature, options)
+            if provider.name == self._local.name:
+                try:
+                    if timeout == 0:
+                        await self._gpu_lock.acquire()
+                    else:
+                        await asyncio.wait_for(self._gpu_lock.acquire(), timeout=timeout)
+                except asyncio.TimeoutError as exc:
+                    queue_wait_ms = round((time.perf_counter() - start) * 1000, 3)
+                    raise UpstreamTimeout(f"local queue wait exceeded {timeout}s") from exc
+                queue_wait_ms = round((time.perf_counter() - start) * 1000, 3)
+                try:
+                    content = await self._complete(provider, messages, model, temperature, options)
+                finally:
+                    self._gpu_lock.release()
+                return content, queue_wait_ms
+
+            content = await self._complete(provider, messages, model, temperature, options)
+            return content, round((time.perf_counter() - start) * 1000, 3)
         finally:
-            self._gpu_lock.release()
-        return content, queue_wait_ms
+            self._active_requests -= 1
 
     async def chat_stream(
         self, req: ChatRequest, api_key_id: str | None = None
@@ -879,16 +1001,27 @@ class AIService:
             model, num_ctx = self._select_model(req, prompt.model)
             provider = self._select_provider(req)
         temperature = self._select_temperature(req, prompt.temperature)
+        # Route image requests to background model (has mmproj for vision)
+        logger.info('IMAGE_ROUTE: images=%s, background_local=%s, provider=%s', bool(req.images), self._background_local is not None, provider.name if provider else None)
+        if req.images and self._background_local:
+            provider = self._background_local
+            model = self._settings.summary_model
+            logger.info('IMAGE_ROUTE: switched to background vision provider model=%s', model)
+        else:
+            provider, model, fast_route_reason = self._route_fast_background_if_eligible(req, provider, model)
+            if fast_route_reason:
+                num_ctx = 0
+
         messages, source_urls = self._prepare_messages_for_request(
             req, prompt.system_prompt, combined_history, summary, memory_bundle, pinned_memory_block,
             prompt_enable_search=prompt.enable_search,
             knowledge_block=knowledge_block,
         )
         options = self._provider_options(
-            provider, req.model_mode, num_ctx,
+            req, provider, req.model_mode, num_ctx,
             web_search=bool(search_query) and provider.name != self._local.name,
         )
-        route_alias = "cloud" if provider.name == getattr(self._cloud, "name", None) else "local"
+        route_alias = "gemini" if provider.name == "gemini" else "9router" if provider.name == "ninerouter" else "cloud" if provider.name == getattr(self._cloud, "name", None) else "local"
 
         yield {"type": "start", "session_id": session_id, "model": model, "provider": provider.name, "route": route_alias}
 
@@ -962,7 +1095,19 @@ class AIService:
         else:
             model, num_ctx = self._select_model(req, prompt.model)
             provider = self._select_provider(req)
+            if provider is self._nine_router:
+                model = self._settings.nine_router_model
         temperature = self._select_temperature(req, prompt.temperature)
+        fast_route_reason: str | None = None
+
+        if req.images and self._background_local:
+            provider = self._background_local
+            model = self._settings.summary_model
+            logger.info('IMAGE_ROUTE: switched to background vision provider model=%s', model)
+        else:
+            provider, model, fast_route_reason = self._route_fast_background_if_eligible(req, provider, model)
+            if fast_route_reason:
+                num_ctx = 0
 
         if self._is_memory_check(req.user_message):
             memory_history = self._load_full_session_history(req, session_id)
@@ -1012,8 +1157,10 @@ class AIService:
         )
         fallback_used = False
         queue_wait_ms: float | None = None
-        route_reason = "explicit_search_cloud" if search_query else "explicit_cloud" if provider.name != self._local.name else "local_available"
-        route_before = "cloud" if provider.name == getattr(self._cloud, "name", None) else "local"
+        route_reason = "explicit_search_cloud" if search_query else "explicit_gemini" if provider.name == "gemini" else "explicit_9router" if provider.name == "ninerouter" else "explicit_cloud" if provider.name != self._local.name and provider.name == getattr(self._cloud, "name", None) else "local_available"
+        if 'fast_route_reason' in locals() and fast_route_reason:
+            route_reason = fast_route_reason
+        route_before = "gemini" if provider.name == "gemini" else "9router" if provider.name == "ninerouter" else "cloud" if provider.name == getattr(self._cloud, "name", None) else "local"
         model_before = model
         risk, risk_decision = self._evaluate_failure_risk(
             req=req,
@@ -1085,8 +1232,8 @@ class AIService:
             and self._settings.hybrid_force_cloud_for_allowed
             and self._overload_fallback_allowed(req)
         ):
-            provider = self._cloud  # type: ignore[assignment]
-            model = self._settings.openrouter_model
+            provider = self._nine_router or self._cloud  # type: ignore[assignment]
+            model = self._settings.nine_router_model or self._settings.openrouter_model
             num_ctx = 0
             route_reason = "throughput_cloud"
             logger.info(
@@ -1100,8 +1247,8 @@ class AIService:
             and self._gpu_lock.locked()
             and self._overload_fallback_allowed(req)
         ):
-            provider = self._cloud  # type: ignore[assignment]
-            model = self._settings.openrouter_model
+            provider = self._nine_router or self._cloud  # type: ignore[assignment]
+            model = self._settings.nine_router_model or self._settings.openrouter_model
             num_ctx = 0
             fallback_used = True
             route_reason = "local_locked_fallback"
@@ -1115,8 +1262,8 @@ class AIService:
             and self._latency_tracker.is_elevated()
             and self._overload_fallback_allowed(req)
         ):
-            provider = self._cloud  # type: ignore[assignment]
-            model = self._settings.openrouter_model
+            provider = self._nine_router or self._cloud  # type: ignore[assignment]
+            model = self._settings.nine_router_model or self._settings.openrouter_model
             num_ctx = 0
             fallback_used = True
             route_reason = "local_latency_elevated"
@@ -1126,7 +1273,7 @@ class AIService:
                 req.tenant_id,
             )
         options = self._provider_options(
-            provider, req.model_mode, num_ctx,
+            req, provider, req.model_mode, num_ctx,
             web_search=bool(search_query) and provider.name != self._local.name,
         )
 
@@ -1134,38 +1281,48 @@ class AIService:
             if provider.name == self._local.name:
                 try:
                     content, queue_wait_ms = await self._complete_local_with_queue_timeout(
-                        messages, model, temperature, options
+                        req, provider, messages, model, temperature, options
                     )
                 except UpstreamTimeout:
-                    if not self._overload_fallback_allowed(req):
+                    if provider is self._local and self._background_local is not None:
+                        bg_provider = self._background_local
+                        provider = bg_provider
+                        model = self._settings.summary_model
+                        fallback_used = True
+                        route_reason = "local_timeout_background_fallback"
+                        logger.warning(
+                            "Local completion timed out; routing to background local fallback project=%s tenant=%s",
+                            req.project_id,
+                            req.tenant_id,
+                        )
+                        options = self._provider_options(req, bg_provider, req.model_mode)
+                        content = await self._complete(bg_provider, messages, model, temperature, options)
+                    elif not self._overload_fallback_allowed(req):
                         route_reason = "local_queue_timeout"
                         raise
-                    provider = self._cloud  # type: ignore[assignment]
-                    model = self._settings.openrouter_model
-                    fallback_used = True
-                    route_reason = "local_queue_timeout_fallback"
-                    logger.warning(
-                        "Local queue wait timed out; routing to cloud fallback project=%s tenant=%s",
-                        req.project_id,
-                        req.tenant_id,
-                    )
-                    options = self._provider_options(provider, req.model_mode)
-                    content = await self._complete(provider, messages, model, temperature, options)
-                except (OllamaUnavailable, VramExhausted):
-                    if not self._overload_fallback_allowed(req):
-                        route_reason = "local_unavailable"
-                        raise
-                    provider = self._cloud  # type: ignore[assignment]
-                    model = self._settings.openrouter_model
-                    fallback_used = True
-                    route_reason = "local_unavailable_fallback"
-                    logger.warning(
-                        "Local provider unavailable; routing to cloud fallback project=%s tenant=%s",
-                        req.project_id,
-                        req.tenant_id,
-                    )
-                    options = self._provider_options(provider, req.model_mode)
-                    content = await self._complete(provider, messages, model, temperature, options)
+                    else:
+                        cloud = self._nine_router or self._cloud
+                        cloud_model = self._settings.nine_router_model or self._settings.openrouter_model
+                        fallback_used = True
+                        route_reason = "local_queue_timeout_fallback"
+                        logger.warning(
+                            "Local queue wait timed out; routing to cloud fallback project=%s tenant=%s",
+                            req.project_id,
+                            req.tenant_id,
+                        )
+                        try:
+                            await asyncio.wait_for(self._cloud_lock.acquire(), timeout=2.0)
+                        except asyncio.TimeoutError:
+                            raise UpstreamTimeout("cloud spillover exhausted, queue full") from None
+                        try:
+                            options = self._provider_options(req, cloud, req.model_mode)
+                            content = await self._complete(cloud, messages, cloud_model, temperature, options)
+                        finally:
+                            self._cloud_lock.release()
+                        provider = cloud
+                        model = cloud_model
+            elif provider.name == self._local.name:
+                content = await self._complete(provider, messages, model, temperature, options)
             else:
                 content = await self._complete(provider, messages, model, temperature, options)
             content = self._append_sources_if_missing(content, source_urls)
@@ -1189,7 +1346,7 @@ class AIService:
         )
         self._schedule_memory_jobs(user_id, req.tenant_id, req.project_id, session_id, self._local)
         latency_ms = round((time.perf_counter() - started) * 1000, 3)
-        route_alias = "cloud" if provider.name == getattr(self._cloud, "name", None) else "local"
+        route_alias = "gemini" if provider.name == "gemini" else "9router" if provider.name == "ninerouter" else "cloud" if provider.name == getattr(self._cloud, "name", None) else "local"
         if route_alias == "local" and not fallback_used:
             self._latency_tracker.record(latency_ms)
         self._record_failure_risk(

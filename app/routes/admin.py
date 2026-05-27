@@ -130,7 +130,7 @@ async def switch_model(payload: ModelSwitchRequest, request: Request) -> dict[st
     if result["returncode"] != 0:
         raise HTTPException(status_code=500, detail=result)
 
-    result["models"] = ["local-gemma4-e4b-q8"]
+    result["models"] = ["local-gemma4-e4b-q4"]
     return result
 
 

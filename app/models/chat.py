@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-ProviderName = Literal["local", "cloud"]
+ProviderName = Literal["local", "cloud", "gemini"]
 ModelMode = Literal["lite", "normal", "external"]
 
 
@@ -27,6 +27,8 @@ class ChatRequest(BaseModel):
     model_mode: ModelMode = Field(default="lite")
     allow_external: bool | None = Field(default=None)
     enable_search: bool = Field(default=False)
+    max_tokens: int | None = Field(default=None, ge=1, le=8192)
+    priority: int = Field(default=0, ge=0, le=10)
 
 
 class ChatResponse(BaseModel):

@@ -86,5 +86,5 @@ def test_virtual_api_key_denies_external_when_policy_disallows(client: TestClien
         },
     )
 
-    assert response.status_code == 502
+    assert response.status_code == 403
     assert "external" in response.json()["detail"].lower()

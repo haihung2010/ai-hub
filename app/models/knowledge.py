@@ -105,4 +105,4 @@ class KnowledgeSearchResult(BaseModel):
     version: int
     score: float
     tags: list[str] = Field(default_factory=list)
-    embedding: bytes | None = None
+    embedding: bytes | None = Field(default=None, exclude=True)

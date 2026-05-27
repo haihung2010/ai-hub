@@ -10,9 +10,9 @@
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icon-192.png">
     <title>AI Hub | Admin OS</title>
-    <link rel="stylesheet" href="/admin.css?v=20260517">
+    <link rel="stylesheet" href="/admin.v2.css?v=1779503547">
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
-    <script src="/admin.js?v=20260517" defer></script>
+    <script src="/admin.v2.js?v=1779503547" defer></script>
 </head>
 <body>
     <div class="app-shell">
@@ -79,7 +79,14 @@
         </div>
     </aside>
 
-    <!-- ===== Main ===== -->
+    <!-- Mobile config token button -->
+<button id="mobile-token-btn" onclick="document.getElementById('api-key-btn').click()"
+    style="position:fixed;bottom:1rem;right:1rem;z-index:9999;background:#4338ca;color:#fff;border:none;border-radius:50%;width:48px;height:48px;font-size:1.25rem;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.4);display:none">
+    🔑
+</button>
+<style>@media(max-width:768px){#mobile-token-btn{display:block!important}}</style>
+
+<!-- ===== Main ===== -->
     <main class="app-main">
 
         <header class="app-header">
@@ -299,7 +306,7 @@
                 <div id="user-detail-content"></div>
             </div>
 
-            <div id="tenants-view-chat" style="display:none">
+            <div id="tenants-view-chat" style="display:none; flex-direction:column; height:100%">
                 <div style="display:flex;flex-direction:column;height:100%;gap:1rem">
                     <!-- Header -->
                     <div class="glass-panel panel-padded">

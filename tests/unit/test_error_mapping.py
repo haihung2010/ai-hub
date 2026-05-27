@@ -26,8 +26,17 @@ class _Stub:
     def __init__(self, exc: Exception) -> None:
         self._exc = exc
 
-    async def chat(self, _req: Any) -> Any:
+    async def chat(self, _req: Any, **_: Any) -> Any:
         raise self._exc
+
+    def current_queue_waiting(self) -> int:
+        return 0
+
+    @property
+    def _settings(self) -> Any:
+        class _S:
+            load_shed_threshold = 999
+        return _S()
 
 
 @pytest.mark.unit

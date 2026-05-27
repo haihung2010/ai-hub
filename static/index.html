@@ -37,32 +37,94 @@
 </head>
 <body class="bg-slate-950 font-sans text-slate-100">
     <div class="app-shell mx-auto flex max-w-2xl flex-col overflow-hidden p-2 sm:p-4">
-        <header class="mb-2 flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900 p-3 shadow-2xl shadow-black/20 sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:p-4">
-            <div class="min-w-0">
-                <h1 class="truncate text-lg font-bold text-white sm:text-xl">AI Hub</h1>
-                <p class="truncate text-[10px] font-semibold uppercase tracking-wider text-slate-400 sm:text-xs">Local Model Performance Test</p>
+        <header class="mb-2 flex flex-col gap-2 rounded-xl border border-slate-800 bg-slate-900 p-3 shadow-2xl shadow-black/20 sm:mb-4 sm:gap-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+            <!-- Brand + connection -->
+            <div class="flex items-center justify-between sm:min-w-0">
+                <div class="min-w-0">
+                    <h1 class="truncate text-base font-bold text-white sm:text-lg">🤖 AI Hub</h1>
+                    <div class="flex items-center gap-1.5 text-[10px] text-slate-400 sm:text-xs">
+                        <span id="connection-dot" class="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"></span>
+                        <span id="connection-label" class="shrink-0">Local · Gemma 4</span>
+                    </div>
+                </div>
+                <!-- Mobile: compact status row -->
+                <div class="flex items-center gap-1.5 sm:hidden">
+                    <span id="queue-badge-mobile" class="hidden text-[10px] rounded bg-yellow-800 px-1.5 py-0.5 text-yellow-200">⏳ <span id="queue-active-mobile">0</span>/<span id="queue-cap-mobile">8</span></span>
+                    <span id="mode-dot-mobile" class="w-2 h-2 rounded-full bg-green-500" title="Lite mode"></span>
+                    <span class="text-[10px] text-slate-500">Lite</span>
+                </div>
             </div>
-            <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-                <button id="api-key-btn" class="cursor-pointer whitespace-nowrap rounded-lg border px-3 py-2 text-xs font-semibold transition-all" title="Click to change API key">No Key</button>
-                <a href="/admin.html" class="whitespace-nowrap rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-200 transition-all hover:bg-slate-700">Admin</a>
-                <button id="current-user-badge" class="max-w-[140px] truncate rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-300 transition-all hover:bg-slate-700" title="Click to change user name">Name</button>
-                <button id="current-project-badge" class="max-w-[140px] truncate rounded-lg border border-indigo-700 bg-indigo-900/40 px-3 py-2 text-xs font-semibold text-indigo-300 transition-all hover:bg-indigo-800/50" title="Click to change project">Project: test</button>
-                <div class="flex items-center rounded-lg border border-slate-700 bg-slate-800 p-1">
-                    <button id="mode-lite" class="text-xs font-bold py-1 px-3 rounded-md transition-all bg-green-500 text-white shadow">Lite ⚡</button>
-                    <button id="mode-thinking" class="text-xs font-bold py-1 px-3 rounded-md transition-all text-slate-400 hover:text-slate-200 hidden">Thinking</button>
+
+            <!-- Controls — right side -->
+            <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <!-- User badge -->
+                <button id="current-user-badge" class="group flex items-center gap-1.5 max-w-[120px] truncate rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-300 transition-all hover:bg-slate-700 sm:max-w-[140px] sm:px-3 sm:py-2" title="Tap to change name">
+                    <span class="text-slate-500 shrink-0">👤</span>
+                    <span id="user-name-text" class="truncate">Name</span>
+                </button>
+
+                <!-- Project badge -->
+                <button id="current-project-badge" class="group flex items-center gap-1.5 max-w-[110px] truncate rounded-lg border border-indigo-700 bg-indigo-900/40 px-2.5 py-1.5 text-xs font-semibold text-indigo-300 transition-all hover:bg-indigo-800/50 sm:max-w-[140px] sm:px-3 sm:py-2" title="Tap to change project">
+                    <span class="text-indigo-400 shrink-0">📁</span>
+                    <span id="project-name-text" class="truncate">test</span>
+                </button>
+
+                <!-- Mode toggle (compact) -->
+                <button id="mode-toggle-compact" class="flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-green-400 transition-all hover:bg-slate-700 sm:hidden" title="Toggle mode">
+                    <span id="mode-icon-compact">⚡</span>
+                    <span id="mode-label-compact" class="hidden sm:inline">Lite</span>
+                </button>
+
+                <!-- Full mode pills (desktop) -->
+                <div class="hidden items-center rounded-lg border border-slate-700 bg-slate-800 p-1 sm:flex">
+                    <button id="mode-lite" class="text-xs font-bold py-1 px-3 rounded-md transition-all bg-green-500 text-white shadow">⚡ Lite</button>
+                    <button id="mode-thinking" class="text-xs font-bold py-1 px-3 rounded-md transition-all text-slate-400 hover:text-slate-200">🧠</button>
                 </div>
-                <button id="stream-toggle-btn" class="whitespace-nowrap rounded-lg border border-purple-300 bg-purple-100 px-3 py-2 text-xs font-bold text-purple-700 transition-all" title="Toggle streaming response">⚡ Stream: ON</button>
-                <button id="search-toggle-btn" class="whitespace-nowrap rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-300 transition-all" title="Toggle web search">🔍 Search: OFF</button>
-                <button id="refresh-btn" class="whitespace-nowrap rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-200 transition-all hover:bg-slate-700">New Chat</button>
-                <div id="connection-status" class="flex items-center whitespace-nowrap text-xs font-medium text-green-500">
-                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span> Connected
-                </div>
+
+                <!-- Stream toggle -->
+                <button id="stream-toggle-btn" class="flex items-center gap-1 whitespace-nowrap rounded-lg border border-purple-300 bg-purple-100 px-2.5 py-1.5 text-xs font-bold text-purple-700 transition-all sm:px-3 sm:py-2" title="Toggle streaming">
+                    <span>⚡</span><span class="hidden sm:inline">Stream</span><span id="stream-state"> ON</span>
+                </button>
+
+                <!-- Search toggle -->
+                <button id="search-toggle-btn" class="flex items-center gap-1 whitespace-nowrap rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs font-bold text-slate-300 transition-all hover:bg-slate-600 sm:px-3 sm:py-2" title="Toggle web search">
+                    <span>🔍</span><span class="hidden sm:inline">Search</span><span id="search-state"> OFF</span>
+                </button>
+
+                <!-- New chat -->
+                <button id="refresh-btn" class="flex items-center gap-1 whitespace-nowrap rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs font-bold text-slate-200 transition-all hover:bg-slate-600 sm:px-3 sm:py-2" title="New chat">
+                    <span>➕</span><span class="hidden sm:inline">New</span>
+                </button>
+
+                <!-- Admin link (desktop only) -->
+                <a href="/admin.html" class="hidden rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs font-bold text-slate-200 transition-all hover:bg-slate-600 sm:inline-flex sm:px-3 sm:py-2">⚙️</a>
+
+                <!-- API Key (desktop) -->
+                <button id="api-key-btn" class="hidden rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-all sm:inline-flex sm:px-3 sm:py-2" title="Click to change API key">🔑</button>
             </div>
         </header>
 
+        <!-- Desktop info bar -->
+        <div class="mb-2 hidden flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-900 px-4 py-2 text-xs text-slate-400 sm:flex">
+            <div class="flex items-center gap-3">
+                <span id="info-user">👤 <span class="text-slate-200">—</span></span>
+                <span class="text-slate-600">·</span>
+                <span id="info-project">📁 <span class="text-indigo-300">test</span></span>
+                <span class="text-slate-600">·</span>
+                <span id="info-mode">⚡ <span class="text-green-400">Lite</span></span>
+                <span class="text-slate-600">·</span>
+                <span id="info-model">Gemma 4 E2B Q4 · 131K ctx</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="info-stream" class="text-purple-400">⚡ Stream ON</span>
+                <span id="info-search" class="text-slate-500">🔍 Search OFF</span>
+                <span id="info-queue" class="text-yellow-600">⏳ Queue: <span id="queue-active-info">0</span>/<span id="queue-cap-info">8</span></span>
+            </div>
+        </div>
+
         <div id="chat-window" class="chat-container mb-2 flex min-h-0 flex-1 flex-col space-y-3 overflow-y-auto rounded-xl border border-slate-800 bg-slate-900 p-3 shadow-2xl shadow-black/20 sm:mb-4 sm:space-y-4 sm:p-6">
             <div class="self-start rounded-2xl rounded-tl-none border border-slate-700 bg-slate-800 p-4 text-slate-100 shadow-sm message-bubble">
-                Hi! I'm running locally. Lite mode uses fast Gemma E4B. I will remember our conversation.
+                Xin chào! Mình là AI Assistant chạy local trên GPU. Gõ câu hỏi để bắt đầu nhé.
             </div>
         </div>
 
@@ -85,7 +147,7 @@
                     </svg>
                 </button>
                 <input type="file" id="file-input" class="hidden" accept="image/*">
-                <input type="text" id="user-input" class="min-w-0 flex-1 bg-transparent px-2 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none sm:p-4 sm:text-base" placeholder="Ask AI Hub something...">
+                <input type="text" id="user-input" class="min-w-0 flex-1 bg-transparent px-2 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none sm:p-4 sm:text-base" placeholder="Nhập câu hỏi...">
                 <button id="send-btn" class="flex shrink-0 items-center rounded-xl bg-blue-600 px-4 py-2 font-bold text-white shadow-lg transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-50 sm:px-6">Send</button>
             </div>
             <div id="status" class="mt-2 min-h-4 truncate px-2 font-mono text-[10px] text-slate-500">
@@ -186,37 +248,45 @@
             storage.setItem('modelMode', currentMode);
         }
         let currentUserName = storage.getItem('userName') || null;
-        let currentApiKey = storage.getItem('apiKey') || null;
+        let currentApiKey = storage.getItem('apiKey') || 'ah_CNbXTLNbDFHPc6-FZtmW-_nIksBIOmBAS3UyeU8JVSI';
         let selectedFile = null;
         let searchEnabled = false;
         let streamEnabled = true;
 
+        // ── Stream toggle ──────────────────────────────────────────────
         function setStreamEnabled(enabled) {
             streamEnabled = enabled;
-            if (streamEnabled) {
-                streamToggleBtn.textContent = '⚡ Stream: ON';
-                streamToggleBtn.className = 'whitespace-nowrap rounded-lg border border-purple-300 bg-purple-100 px-3 py-2 text-xs font-bold text-purple-700 transition-all';
-            } else {
-                streamToggleBtn.textContent = '⚡ Stream: OFF';
-                streamToggleBtn.className = 'whitespace-nowrap rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-300 transition-all';
+            const stateEl = document.getElementById('stream-state');
+            const infoEl = document.getElementById('info-stream');
+            const infoMobileEl = document.getElementById('stream-toggle-btn');
+            if (stateEl) stateEl.textContent = enabled ? ' ON' : ' OFF';
+            if (infoEl) infoEl.className = enabled ? 'text-purple-400' : 'text-slate-500';
+            if (infoEl) infoEl.textContent = enabled ? '⚡ Stream ON' : '⚡ Stream OFF';
+            if (infoMobileEl) {
+                infoMobileEl.className = enabled
+                    ? 'flex items-center gap-1 whitespace-nowrap rounded-lg border border-purple-300 bg-purple-100 px-2.5 py-1.5 text-xs font-bold text-purple-700 transition-all sm:px-3 sm:py-2'
+                    : 'flex items-center gap-1 whitespace-nowrap rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs font-bold text-slate-300 transition-all hover:bg-slate-600 sm:px-3 sm:py-2';
             }
         }
 
-        // ── Stream toggle ──────────────────────────────────────────────
         streamToggleBtn.addEventListener('click', () => {
             setStreamEnabled(!streamEnabled);
         });
 
         // ── Search toggle ──────────────────────────────────────────────
+        function setSearchEnabled(enabled) {
+            searchEnabled = enabled;
+            const stateEl = document.getElementById('search-state');
+            const infoEl = document.getElementById('info-search');
+            if (stateEl) stateEl.textContent = enabled ? ' ON' : ' OFF';
+            if (infoEl) infoEl.className = enabled ? 'text-green-400' : 'text-slate-500';
+            if (infoEl) infoEl.textContent = enabled ? '🔍 Search ON' : '🔍 Search OFF';
+        }
+
         searchToggleBtn.addEventListener('click', () => {
-            searchEnabled = !searchEnabled;
+            setSearchEnabled(!searchEnabled);
             if (searchEnabled) {
-                searchToggleBtn.textContent = '🔍 Search: ON';
-                searchToggleBtn.className = 'whitespace-nowrap rounded-lg border border-green-300 bg-green-100 px-3 py-2 text-xs font-bold text-green-700 transition-all';
                 statusDiv.textContent = 'Muốn dùng search thì nhập /search: nội dung cần search';
-            } else {
-                searchToggleBtn.textContent = '🔍 Search: OFF';
-                searchToggleBtn.className = 'whitespace-nowrap rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-300 transition-all';
             }
         });
 
@@ -231,23 +301,29 @@
 
         // ── User / API key badges ──────────────────────────────────────
         function updateCurrentUserBadge() {
-            currentUserBadge.textContent = currentUserName ? `User: ${currentUserName}` : 'Name';
+            const nameText = document.getElementById('user-name-text');
+            const infoUser = document.getElementById('info-user');
+            if (nameText) nameText.textContent = currentUserName || '—';
+            if (infoUser) infoUser.innerHTML = `👤 <span class="text-slate-200">${currentUserName || '—'}</span>`;
         }
 
         function updateCurrentApiKeyBadge() {
             if (!currentApiKey) {
-                apiKeyBtn.textContent = 'Add Key';
-                apiKeyBtn.className = 'cursor-pointer whitespace-nowrap rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 transition-all hover:bg-red-100';
+                apiKeyBtn.textContent = '🔑';
+                apiKeyBtn.className = 'hidden rounded-lg border border-red-500 bg-red-950 px-2.5 py-1.5 text-xs font-semibold text-red-400 transition-all sm:inline-flex sm:px-3 sm:py-2';
                 return;
             }
-            apiKeyBtn.textContent = 'Key: ...' + currentApiKey.slice(-4);
-            apiKeyBtn.className = 'cursor-pointer whitespace-nowrap rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs font-semibold text-green-600 transition-all hover:bg-green-100';
+            apiKeyBtn.textContent = '🔑';
+            apiKeyBtn.className = 'hidden rounded-lg border border-green-700 bg-green-950 px-2.5 py-1.5 text-xs font-semibold text-green-400 transition-all sm:inline-flex sm:px-3 sm:py-2';
         }
 
-        const KNOWN_PROJECTS = ['test','playground','research_lab','support_bot','sales_bot','legal_advisor','medical_q','customer_q','internal_wiki','iot','vehix','stock_prediction'];
+        const KNOWN_PROJECTS_DEFAULT = ['test','playground','research_lab','support_bot','sales_bot','legal_advisor','medical_q','customer_q','internal_wiki','iot','vehix','stock_prediction']; const KNOWN_PROJECTS_DEMO = ['test','sales_bot','playground','internal_wiki']; const KNOWN_PROJECTS = (currentApiKey === 'ah_CNbXTLNbDFHPc6-FZtmW-_nIksBIOmBAS3UyeU8JVSI') ? KNOWN_PROJECTS_DEMO : KNOWN_PROJECTS_DEFAULT;
 
         function updateCurrentProjectBadge() {
-            currentProjectBadge.textContent = `Project: ${currentProject}`;
+            const projText = document.getElementById('project-name-text');
+            const infoProject = document.getElementById('info-project');
+            if (projText) projText.textContent = currentProject;
+            if (infoProject) infoProject.innerHTML = `📁 <span class="text-indigo-300">${currentProject}</span>`;
         }
 
         function promptForProject() {
@@ -330,6 +406,14 @@
                 attachBtn.classList.add('opacity-40', 'cursor-not-allowed');
                 resetSelectedImage();
             }
+
+            // Sync mode info across UI
+            const modeLabel = document.getElementById('mode-label-compact');
+            const modeDotMobile = document.getElementById('mode-dot-mobile');
+            const infoMode = document.getElementById('info-mode');
+            if (modeLabel) modeLabel.textContent = isLite ? 'Lite' : 'Thinking';
+            if (modeDotMobile) modeDotMobile.className = isLite ? 'w-2 h-2 rounded-full bg-green-500' : 'w-2 h-2 rounded-full bg-purple-500';
+            if (infoMode) infoMode.innerHTML = isLite ? '⚡ <span class="text-green-400">Lite</span>' : '🧠 <span class="text-purple-400">Thinking</span>';
         }
 
         async function switchServerModel(mode) {
@@ -372,16 +456,16 @@
             currentMode = mode;
             storage.setItem('modelMode', currentMode);
             applyModeUI();
-            statusDiv.textContent = `Switching to ${label} in background...`;
+            statusDiv.textContent = `Đang chuyển sang ${label}...`;
 
             switchServerModel(mode)
                 .then((result) => {
-                    statusDiv.textContent = `${label} ready: ${(result.models || []).join(', ')}`;
+                    statusDiv.textContent = `${label} sẵn sàng: ${(result.models || []).join(', ')}`;
                 })
                 .catch((error) => {
                     statusDiv.textContent = error.name === 'AbortError'
-                        ? `${label} switch is still running. Wait a bit, then refresh if chat does not work.`
-                        : `Model switch may still be running. Refresh if chat does not work: ${error.message}`;
+                        ? `${label} đang chạy nền. Đợi một chút rồi thử lại nếu chat không hoạt động.`
+                        : `Model đang chuyển nền. Thử refresh nếu chat không hoạt động: ${error.message}`;
                 });
         }
 
@@ -456,7 +540,7 @@
             try {
                 addBubble(await loadExistingMemoryGreeting() || 'New session ready. How can I help you today?', false);
             } catch (_) {
-                addBubble('New session ready. How can I help you today?', false);
+                addBubble('Sẵn sàng trò chuyện. Mình có thể giúp gì cho bạn?', false);
             }
         });
 
@@ -722,8 +806,8 @@
                 statusDiv.textContent = 'Search đang ON. Muốn dùng search thì nhập /search: nội dung cần search';
             } else {
                 statusDiv.innerHTML = useStream
-                    ? '<span class="loader mr-2"></span> Streaming response...'
-                    : `<span class="loader mr-2"></span> ${currentMode === 'lite' ? 'Gemma E4B' : 'Qwen 27B'} is generating...`;
+                    ? '<span class="loader mr-2"></span> Đang trả lời...'
+                    : `<span class="loader mr-2"></span> ${currentMode === 'lite' ? 'Gemma 4' : 'Thinking'} đang xử lý...`;
             }
             sendBtn.disabled = true;
             _startQueuePoll();
@@ -781,9 +865,27 @@
                     const r = await fetch('/v1/admin/queue', { headers: { 'X-API-KEY': currentApiKey || '' } });
                     if (!r.ok) return;
                     const d = await r.json();
+
+                    // Mobile badge
                     queueCap.textContent = d.capacity;
                     queueActive.textContent = d.active;
                     queueBadge.classList.toggle('hidden', d.active === 0);
+
+                    // Mobile compact header badge
+                    const queueBadgeMobile = document.getElementById('queue-badge-mobile');
+                    const queueActiveMobile = document.getElementById('queue-active-mobile');
+                    const queueCapMobile = document.getElementById('queue-cap-mobile');
+                    if (queueBadgeMobile) {
+                        queueActiveMobile.textContent = d.active;
+                        queueCapMobile.textContent = d.capacity;
+                        queueBadgeMobile.classList.toggle('hidden', d.active === 0);
+                    }
+
+                    // Desktop info bar
+                    const queueActiveInfo = document.getElementById('queue-active-info');
+                    const queueCapInfo = document.getElementById('queue-cap-info');
+                    if (queueActiveInfo) queueActiveInfo.textContent = d.active;
+                    if (queueCapInfo) queueCapInfo.textContent = d.capacity;
                 } catch (_) {}
             }, 3000);
         }
@@ -791,6 +893,8 @@
             clearInterval(_queueTimer);
             _queueTimer = null;
             queueBadge.classList.add('hidden');
+            const queueBadgeMobile = document.getElementById('queue-badge-mobile');
+            if (queueBadgeMobile) queueBadgeMobile.classList.add('hidden');
         }
 
 
@@ -800,11 +904,11 @@
         updateCurrentProjectBadge();
         applyModeUI();
         if (!currentApiKey) {
-            statusDiv.textContent = 'Enter your API key before using the chatbot';
+            statusDiv.textContent = 'Nhập API key để bắt đầu trò chuyện';
         } else if (!currentUserName) {
-            statusDiv.textContent = 'Enter your user name before starting a chat';
+            statusDiv.textContent = 'Nhập tên của bạn để bắt đầu';
         } else {
-            restoreLatestSessionForUser().catch((err) => { console.error(err); statusDiv.textContent = 'Failed to restore previous session'; });
+            restoreLatestSessionForUser().catch((err) => { console.error(err); statusDiv.textContent = 'Không khôi phục được session trước'; });
         }
         userInput.focus();
     </script>

@@ -131,7 +131,11 @@ class MemoryExtractionService:
 
         prompt_messages = self._build_prompt(messages)
         source_text = self._build_source_text(messages)
-        payload = await provider.complete(prompt_messages, model, 0.2)
+        try:
+            payload = await provider.complete(prompt_messages, model, 0.2)
+        except Exception:
+            logger.exception("StructMem extraction LLM call failed user=%s project=%s", user_id, project_id)
+            return None
         extracted = self._parse_payload(payload)
         start_message_id = messages[0][0]
         end_message_id = messages[-1][0]

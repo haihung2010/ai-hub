@@ -7,6 +7,7 @@ import uuid
 from app.core.database import get_db_connection
 from app.models.knowledge import KnowledgeCardCreate, KnowledgeCardRecord
 from app.services.knowledge_embedding_service import KnowledgeEmbeddingService
+from app.services.knowledge_link_service import KnowledgeLinkService
 
 _PARAGRAPH_RE = re.compile(r"\n\s*\n+")
 
@@ -16,12 +17,15 @@ class KnowledgeIngestionService:
         self,
         *,
         chunk_chars: int = 2000,
+        chunk_overlap_chars: int = 200,
         max_card_chars: int = 100000,
         embedding_service: KnowledgeEmbeddingService | None = None,
     ) -> None:
         self._chunk_chars = chunk_chars
+        self._chunk_overlap_chars = chunk_overlap_chars
         self._max_card_chars = max_card_chars
         self._embedding = embedding_service
+        self._linker = KnowledgeLinkService()
 
     def create_card(self, req: KnowledgeCardCreate) -> KnowledgeCardRecord:
         content = req.content[: self._max_card_chars]
@@ -58,6 +62,12 @@ class KnowledgeIngestionService:
             )
             self._replace_chunks(conn, card_id, req.tenant_id, req.project_id, chunks)
             conn.commit()
+
+        # Auto-generate knowledge links
+        try:
+            self._linker.auto_link_card(card_id, req.project_id)
+        except Exception as e:
+            logger.warning('auto-link failed for card %s: %s', card_id, e)
 
         return self.get_card(card_id)
 
@@ -99,6 +109,12 @@ class KnowledgeIngestionService:
             self._replace_chunks(conn, card_id, req.tenant_id, req.project_id, chunks)
             conn.commit()
 
+        # Auto-generate knowledge links
+        try:
+            self._linker.auto_link_card(card_id, req.project_id)
+        except Exception as e:
+            logger.warning('auto-link failed for card %s: %s', card_id, e)
+
         return self.get_card(card_id)
 
     def get_card(self, card_id: str) -> KnowledgeCardRecord:
@@ -135,7 +151,6 @@ class KnowledgeIngestionService:
         paragraphs = [part.strip() for part in _PARAGRAPH_RE.split(content) if part.strip()]
         if not paragraphs:
             return [content.strip()] if content.strip() else []
-
         chunks: list[str] = []
         current = ""
         for paragraph in paragraphs:
@@ -143,39 +158,65 @@ class KnowledgeIngestionService:
                 if current:
                     chunks.append(current)
                     current = ""
-                chunks.extend(paragraph[i : i + self._chunk_chars].strip() for i in range(0, len(paragraph), self._chunk_chars))
+                # Long paragraph: split without overlap (each piece independent)
+                for i in range(0, len(paragraph), self._chunk_chars):
+                    piece = paragraph[i : i + self._chunk_chars].strip()
+                    if piece:
+                        chunks.append(piece)
                 continue
             candidate = f"{current}\n\n{paragraph}" if current else paragraph
             if len(candidate) <= self._chunk_chars:
                 current = candidate
             else:
+                # Keep overlap tail from previous chunk for context continuity
+                overlap = current[-self._chunk_overlap_chars :] if self._chunk_overlap_chars > 0 else ""
                 chunks.append(current)
-                current = paragraph
+                current = f"{overlap}\n\n{paragraph}" if overlap else paragraph
         if current:
             chunks.append(current)
         return chunks
 
     def _replace_chunks(self, conn, card_id: str, tenant_id: str, project_id: str, chunks: list[str]) -> None:
         conn.execute("DELETE FROM knowledge_card_chunks WHERE card_id = %s", (card_id,))
+        has_vector_column = self._has_column(conn, "knowledge_card_chunks", "embedding_vec")
         for index, chunk in enumerate(chunks):
             embedding = self._embedding.embed(chunk) if self._embedding else None
-            conn.execute(
-                """
-                INSERT INTO knowledge_card_chunks (
-                    id, card_id, tenant_id, project_id, chunk_index, content, token_estimate, embedding
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """,
-                (
-                    str(uuid.uuid4()),
-                    card_id,
-                    tenant_id,
-                    project_id,
-                    index,
-                    chunk,
-                    max(1, len(chunk) // 4),
-                    embedding,
-                ),
+            base_values = (
+                str(uuid.uuid4()),
+                card_id,
+                tenant_id,
+                project_id,
+                index,
+                chunk,
+                max(1, len(chunk) // 4),
+                embedding,
             )
+            if has_vector_column:
+                conn.execute(
+                    """
+                    INSERT INTO knowledge_card_chunks (
+                        id, card_id, tenant_id, project_id, chunk_index, content, token_estimate, embedding, embedding_vec
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::vector)
+                    """,
+                    (*base_values, self._embedding.embed_as_pgvector(chunk) if self._embedding else None),
+                )
+            else:
+                conn.execute(
+                    """
+                    INSERT INTO knowledge_card_chunks (
+                        id, card_id, tenant_id, project_id, chunk_index, content, token_estimate, embedding
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    base_values,
+                )
+
+    @staticmethod
+    def _has_column(conn, table: str, column: str) -> bool:
+        row = conn.execute(
+            "SELECT 1 FROM information_schema.columns WHERE table_name = %s AND column_name = %s",
+            (table, column),
+        ).fetchone()
+        return row is not None
 
     def fill_missing_embeddings(
         self,
@@ -207,10 +248,11 @@ class KnowledgeIngestionService:
         for row in rows:
             try:
                 embedding = self._embedding.embed(row["content"])
+                vec_str = self._embedding.embed_as_pgvector(row["content"])
                 with get_db_connection() as conn:
                     conn.execute(
-                        "UPDATE knowledge_card_chunks SET embedding = %s WHERE id = %s",
-                        (embedding, row["id"]),
+                        "UPDATE knowledge_card_chunks SET embedding = %s, embedding_vec = %s::vector WHERE id = %s",
+                        (embedding, vec_str, row["id"]),
                     )
                     conn.commit()
                 updated += 1

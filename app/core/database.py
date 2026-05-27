@@ -318,6 +318,20 @@ def init_db() -> None:
             )
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS knowledge_links (
+                id TEXT PRIMARY KEY,
+                source_card_id TEXT NOT NULL,
+                target_card_id TEXT NOT NULL,
+                relation TEXT NOT NULL,
+                score DOUBLE PRECISION NOT NULL DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (source_card_id) REFERENCES knowledge_cards (id) ON DELETE CASCADE,
+                FOREIGN KEY (target_card_id) REFERENCES knowledge_cards (id) ON DELETE CASCADE,
+                UNIQUE (source_card_id, target_card_id, relation)
+            )
+        """)
+
         conn.execute(f"""
             CREATE TABLE IF NOT EXISTS fanpage_facts (
                 id TEXT PRIMARY KEY,
@@ -355,6 +369,8 @@ def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_knowledge_cards_scope ON knowledge_cards (tenant_id, project_id, status, knowledge_domain, updated_at)",
             "CREATE INDEX IF NOT EXISTS idx_knowledge_cards_project_status ON knowledge_cards (project_id, status, trust_level)",
             "CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_scope ON knowledge_card_chunks (tenant_id, project_id, card_id, chunk_index)",
+            "CREATE INDEX IF NOT EXISTS idx_knowledge_links_source ON knowledge_links (source_card_id, score DESC)",
+            "CREATE INDEX IF NOT EXISTS idx_knowledge_links_target ON knowledge_links (target_card_id)",
             "CREATE INDEX IF NOT EXISTS idx_fanpage_facts_user_project ON fanpage_facts (user_id, project_id, created_at)",
             "CREATE INDEX IF NOT EXISTS idx_fanpage_facts_confidence ON fanpage_facts (project_id, confidence DESC)",
         ]:
@@ -367,5 +383,50 @@ def init_db() -> None:
             logger.info("Adding is_admin column to api_keys")
             conn.execute("ALTER TABLE api_keys ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0")
             conn.commit()
+
+        if not _column_exists(conn, "knowledge_cards", "linked_card_ids"):
+            logger.info("Adding linked_card_ids column to knowledge_cards")
+            conn.execute("ALTER TABLE knowledge_cards ADD COLUMN linked_card_ids TEXT NOT NULL DEFAULT '[]'")
+            conn.commit()
+
+        if not _column_exists(conn, "knowledge_card_chunks", "content_tsv"):
+            logger.info("Adding content_tsv column to knowledge_card_chunks")
+            conn.execute("ALTER TABLE knowledge_card_chunks ADD COLUMN content_tsv tsvector")
+            conn.execute("UPDATE knowledge_card_chunks SET content_tsv = to_tsvector('simple', COALESCE(content, '')) WHERE content_tsv IS NULL")
+            conn.commit()
+
+        try:
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_chunks_content_tsv ON knowledge_card_chunks USING gin(content_tsv)")
+            conn.execute("""
+                CREATE OR REPLACE FUNCTION update_chunk_tsv() RETURNS trigger AS $$
+                BEGIN
+                  NEW.content_tsv := to_tsvector('simple', COALESCE(NEW.content, ''));
+                  RETURN NEW;
+                END;
+                $$ LANGUAGE plpgsql
+            """)
+            conn.execute("DROP TRIGGER IF EXISTS trg_chunk_tsv ON knowledge_card_chunks")
+            conn.execute("""
+                CREATE TRIGGER trg_chunk_tsv
+                BEFORE INSERT OR UPDATE OF content ON knowledge_card_chunks
+                FOR EACH ROW EXECUTE FUNCTION update_chunk_tsv()
+            """)
+            conn.commit()
+        except Exception as exc:
+            logger.warning("Could not initialize knowledge FTS support: %s", exc)
+            conn.rollback()
+
+        try:
+            conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+            conn.commit()
+            if not _column_exists(conn, "knowledge_card_chunks", "embedding_vec"):
+                logger.info("Adding embedding_vec column to knowledge_card_chunks")
+                conn.execute("ALTER TABLE knowledge_card_chunks ADD COLUMN embedding_vec vector(384)")
+                conn.commit()
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_chunks_embedding_hnsw ON knowledge_card_chunks USING hnsw (embedding_vec vector_cosine_ops) WITH (m = 16, ef_construction = 200)")
+            conn.commit()
+        except Exception as exc:
+            logger.warning("Could not initialize pgvector support: %s", exc)
+            conn.rollback()
 
     logger.info("Database initialized (PostgreSQL)")

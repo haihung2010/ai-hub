@@ -49,7 +49,11 @@ def load_prompt(project_id: str) -> ProjectPrompt:
 
     path = _PROMPTS_DIR / f"{project_id}.md"
     if not path.is_file():
-        raise ProjectNotFound(project_id)
+        # Fall back to 'default' prompt if project-specific not found
+        default_path = _PROMPTS_DIR / "default.md"
+        if not default_path.is_file():
+            raise ProjectNotFound(project_id)
+        path = default_path
 
     meta, body = _parse_frontmatter(path.read_text(encoding="utf-8"))
     if not body:

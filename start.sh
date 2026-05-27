@@ -17,7 +17,7 @@ pkill -f "uvicorn app.main:app" 2>/dev/null || true
 sleep 0.5
 nohup ./venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 >/tmp/aihub-uvicorn.log 2>&1 &
 
-until curl -fsS -H "X-API-KEY: $(grep '^API_KEY=' .env | cut -d= -f2)" http://127.0.0.1:8000/health >/dev/null; do
+until curl -fsS -H "X-API-KEY: $(grep '^API_KEY=' .env | cut -d= -f2)" http://127.0.0.1:8000/health | grep -q '"status":"ok"'; do
   sleep 0.5
 done
 

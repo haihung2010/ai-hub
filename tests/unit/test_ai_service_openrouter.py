@@ -457,11 +457,12 @@ async def test_enable_search_without_command_stays_local(openrouter_settings: Se
     local = _Provider("llama_cpp", "local")
     cloud = _Provider("openrouter", "cloud")
     search = _SearchService()
+    settings = openrouter_settings.model_copy(update={"hybrid_force_cloud_for_allowed": False})
     service = AIService(
         local=local,
         cloud=cloud,
         history=HistoryService(),
-        settings=openrouter_settings,
+        settings=settings,
         users=UserService(),
         web_search=search,
     )
@@ -667,11 +668,12 @@ async def test_local_overload_routes_to_openrouter_fallback(openrouter_settings:
     init_db()
     local = _Provider("llama_cpp", "local")
     cloud = _Provider("openrouter", "cloud")
+    settings = openrouter_settings.model_copy(update={"hybrid_force_cloud_for_allowed": False})
     service = AIService(
         local=local,
         cloud=cloud,
         history=HistoryService(),
-        settings=openrouter_settings,
+        settings=settings,
         users=UserService(),
     )
     service._gpu_lock = _LockedButNonBlockingSemaphore()
@@ -702,7 +704,7 @@ async def test_local_queue_timeout_routes_to_openrouter_fallback(openrouter_sett
     init_db()
     local = _Provider("llama_cpp", "local")
     cloud = _Provider("openrouter", "cloud")
-    settings = openrouter_settings.model_copy(update={"hybrid_force_cloud_when_locked": False, "hybrid_local_queue_timeout_seconds": 0.01})
+    settings = openrouter_settings.model_copy(update={"hybrid_force_cloud_when_locked": False, "hybrid_local_queue_timeout_seconds": 0.01, "hybrid_force_cloud_for_allowed": False})
     service = AIService(
         local=local,
         cloud=cloud,
@@ -727,7 +729,7 @@ async def test_local_queue_timeout_routes_to_openrouter_fallback(openrouter_sett
     assert response.fallback_used is True
     assert response.route_reason == "local_queue_timeout_fallback"
     assert cloud.calls == 1
-    assert cloud.options == [{}]
+    assert cloud.options == [{"max_tokens": 1000}]
     assert local.calls == 0
 
 

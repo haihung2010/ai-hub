@@ -2,13 +2,13 @@
 set -euo pipefail
 
 LLAMA_SERVER=${LLAMA_SERVER:-/home/hung/llama.cpp/build-cuda13/bin/llama-server}
-MODEL=${MODEL:-/home/hung/models/gemma-4-E2B-it-Q4_K_M.gguf}
+MODEL=${MODEL:-/home/hung/models/gemma-4-E4B-it-obliterated-Q8_0.gguf}
 MMPROJ=${MMPROJ:-/home/hung/models/mmproj-gemma-4-E2B-it-F16.gguf}
 HOST=${HOST:-127.0.0.1}
 PORT=${PORT:-8080}
-CTX_SIZE=${CTX_SIZE:-49152}
-PARALLEL=${PARALLEL:-12}
-ALIAS=${ALIAS:-local-gemma4-e2b-q4}
+CTX_SIZE=${CTX_SIZE:-65536}
+PARALLEL=${PARALLEL:-8}
+ALIAS=${ALIAS:-local-gemma4-e4b-q8}
 LOG_FILE=${LOG_FILE:-/tmp/aihub-llama-lite-q8.log}
 PID_FILE=${PID_FILE:-/tmp/aihub-llama-server.pid}
 
@@ -41,6 +41,10 @@ nohup "$LLAMA_SERVER" \
   --n-gpu-layers 999 \
   --alias "$ALIAS" \
   --reasoning off \
+  --flash-attn on \
+  --cache-type-k q8_0 \
+  --cache-type-v q8_0 \
+  --cont-batching \
   >"$LOG_FILE" 2>&1 &
 
 pid=$!

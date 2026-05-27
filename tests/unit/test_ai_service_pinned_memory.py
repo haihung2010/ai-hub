@@ -161,7 +161,7 @@ async def test_project_knowledge_is_injected_into_prompt(service_settings: Setti
         ChatRequest(
             project_id="test",
             tenant_id="default",
-            user_message="How does refund work with order code?",
+            user_message="tra cuu chinh sach refund",  # matches RAG patterns
         )
     )
 

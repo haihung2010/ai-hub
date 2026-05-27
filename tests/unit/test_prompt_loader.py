@@ -48,10 +48,13 @@ def test_load_stock_prediction() -> None:
 
 
 @pytest.mark.unit
-def test_unknown_project_raises() -> None:
+def test_unknown_project_falls_back_to_default() -> None:
+    """Missing project files fall back to default.md (if it exists)."""
     load_prompt.cache_clear()
-    with pytest.raises(ProjectNotFound):
-        load_prompt("nope")
+    p = load_prompt("this_project_does_not_exist")
+    # Should get the default prompt instead of raising
+    assert p.project_id == "this_project_does_not_exist"
+    assert p.system_prompt  # default.md has content
 
 
 @pytest.mark.unit

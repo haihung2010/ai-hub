@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
+from app.core.database import get_db_connection
 
 from app.core.database import DEFAULT_TENANT_ID
 from app.models.knowledge import KnowledgeCardCreate, KnowledgeSearchRequest
@@ -70,3 +71,50 @@ def _card_to_dict(card) -> dict[str, object]:
         "created_at": card.created_at,
         "updated_at": card.updated_at,
     }
+
+
+# ── Knowledge Graph & Related Cards ──────────────────────────────────
+from app.services.knowledge_link_service import KnowledgeLinkService
+
+_linker = KnowledgeLinkService()
+
+
+@router.get("/cards/{card_id}/related")
+async def get_related_cards(card_id: str, limit: int = 5):
+    """Get cards related to the given card."""
+    related = _linker.get_related_cards(card_id, limit=limit)
+    return {"card_id": card_id, "related": related}
+
+
+@router.get("/graph")
+async def get_knowledge_graph(project_id: str):
+    """Get the knowledge graph for a project."""
+    graph = _linker.get_graph(project_id)
+    return graph
+
+
+@router.post("/cards/{card_id}/relink")
+async def relink_card(card_id: str):
+    """Re-generate links for a card."""
+    with get_db_connection() as conn:
+        card = conn.execute(
+            "SELECT project_id FROM knowledge_cards WHERE id = %s", (card_id,)
+        ).fetchone()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    created = _linker.auto_link_card(card_id, card["project_id"])
+    return {"card_id": card_id, "links_created": created}
+
+
+@router.post("/relink")
+async def relink_all(project_id: str):
+    """Re-generate links for all cards in a project."""
+    with get_db_connection() as conn:
+        cards = conn.execute(
+            "SELECT id FROM knowledge_cards WHERE project_id = %s AND status = 'active'",
+            (project_id,),
+        ).fetchall()
+    total = 0
+    for c in cards:
+        total += _linker.auto_link_card(c["id"], project_id)
+    return {"project_id": project_id, "cards_processed": len(cards), "links_created": total}

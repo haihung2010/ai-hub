@@ -166,8 +166,10 @@ class TestFillMissingEmbeddings:
         assert result["error"] == "no embedding service"
 
     def test_fills_embeddings(self):
+        import struct
         mock_embed = MagicMock()
-        mock_embed.embed = MagicMock(return_value=b"\x00" * 384)
+        mock_embed.embed = MagicMock(return_value=struct.pack("f" * 384, *([0.0] * 384)))
+        mock_embed.embed_as_pgvector = MagicMock(return_value="[" + ",".join(["0.0"] * 384) + "]")
         svc = KnowledgeIngestionService(chunk_chars=2000, embedding_service=mock_embed)
         req = _make_card_req(content="embed me please")
         card = svc.create_card(req)

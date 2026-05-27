@@ -47,6 +47,13 @@ class Settings(BaseSettings):
     openrouter_timeout_seconds: float = Field(default=90.0, alias="OPENROUTER_TIMEOUT_SECONDS")
     external_llm_default_allowed: bool = Field(default=False, alias="EXTERNAL_LLM_DEFAULT_ALLOWED")
 
+    nine_router_enabled: bool = Field(default=False, alias="NINE_ROUTER_ENABLED")
+    nine_router_base_url: str = Field(default="http://localhost:20128", alias="NINE_ROUTER_BASE_URL")
+    nine_router_api_key: str = Field(default="", alias="NINE_ROUTER_API_KEY")
+    nine_router_model: str = Field(default="kr/claude-sonnet-4.5", alias="NINE_ROUTER_MODEL")
+    nine_router_allowed_projects: list[str] = Field(default_factory=list, alias="NINE_ROUTER_ALLOWED_PROJECTS")
+    nine_router_denied_projects: list[str] = Field(default_factory=list, alias="NINE_ROUTER_DENIED_PROJECTS")
+
     default_model: str = Field(
         default="local-gemma4-e4b-q8",
         alias="DEFAULT_MODEL",
@@ -67,9 +74,16 @@ class Settings(BaseSettings):
     hybrid_long_prompt_char_threshold: int = Field(default=0, ge=0, alias="HYBRID_LONG_PROMPT_CHAR_THRESHOLD")
     hybrid_latency_threshold_ms: float = Field(default=8000.0, gt=0, alias="HYBRID_LATENCY_THRESHOLD_MS")
     hybrid_latency_window: int = Field(default=20, ge=3, le=100, alias="HYBRID_LATENCY_WINDOW")
+    cloud_fallback_max_concurrency: int = Field(default=5, ge=1, alias="CLOUD_FALLBACK_MAX_CONCURRENCY")
     ai_max_tokens: int = Field(default=0, ge=0, alias="AI_MAX_TOKENS")
     local_max_tokens: int = Field(default=0, ge=0, alias="LOCAL_MAX_TOKENS")
     openrouter_max_tokens: int = Field(default=0, ge=0, alias="OPENROUTER_MAX_TOKENS")
+    adaptive_max_tokens_enabled: bool = Field(default=True, alias="ADAPTIVE_MAX_TOKENS_ENABLED")
+    adaptive_max_tokens_threshold: int = Field(default=5, ge=1, alias="ADAPTIVE_MAX_TOKENS_THRESHOLD")
+    adaptive_max_tokens_cutoff_pct: float = Field(default=0.75, ge=0.1, le=1.0, alias="ADAPTIVE_MAX_TOKENS_CUTOFF_PCT")
+    adaptive_max_tokens_severe_pct: float = Field(default=0.50, ge=0.1, le=1.0, alias="ADAPTIVE_MAX_TOKENS_SEVERE_PCT")
+    priority_queue_timeout_enabled: bool = Field(default=True, alias="PRIORITY_QUEUE_TIMEOUT_ENABLED")
+    load_shed_threshold: int = Field(default=5, ge=0, alias="LOAD_SHED_THRESHOLD")
     ai_top_p: float = Field(default=0.0, ge=0.0, le=1.0, alias="AI_TOP_P")
     provider_call_timeout_seconds: float = Field(default=0.0, ge=0.0, alias="PROVIDER_CALL_TIMEOUT_SECONDS")
     api_key: str = Field(alias="API_KEY")
@@ -103,6 +117,7 @@ class Settings(BaseSettings):
     enable_knowledge_rag: bool = Field(default=True, alias="ENABLE_KNOWLEDGE_RAG")
     knowledge_max_chunks: int = Field(default=4, ge=0, le=10, alias="KNOWLEDGE_MAX_CHUNKS")
     knowledge_chunk_chars: int = Field(default=2000, ge=500, le=8000, alias="KNOWLEDGE_CHUNK_CHARS")
+    knowledge_chunk_overlap_chars: int = Field(default=200, ge=0, le=1000, alias="KNOWLEDGE_CHUNK_OVERLAP_CHARS")
     knowledge_max_card_chars: int = Field(default=100000, ge=1000, alias="KNOWLEDGE_MAX_CARD_CHARS")
     knowledge_embedding_model: str = Field(
         default="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
@@ -113,12 +128,15 @@ class Settings(BaseSettings):
     reranker_timeout_seconds: float = Field(default=10.0, gt=0, alias="RERANKER_TIMEOUT_SECONDS")
     background_llama_cpp_openai_url: str = Field(default="http://localhost:8081/v1", alias="BACKGROUND_LLAMA_CPP_OPENAI_URL")
     background_llama_cpp_enabled: bool = Field(default=False, alias="BACKGROUND_LLAMA_CPP_ENABLED")
+    background_llama_cpp_parallel: int = Field(default=8, ge=1, alias="BACKGROUND_LLAMA_CPP_PARALLEL")
     llama_cpp_nodes: list[str] = Field(default_factory=list, alias="LLAMA_CPP_NODES")
     web_search_max_results: int = Field(default=5, ge=1, le=10, alias="WEB_SEARCH_MAX_RESULTS")
     web_search_timeout_seconds: float = Field(default=8.0, gt=0, alias="WEB_SEARCH_TIMEOUT_SECONDS")
     enable_crew_agents: bool = Field(default=False, alias="ENABLE_CREW_AGENTS")
     crew_model: str = Field(default="local-gemma4-e4b-q4", alias="CREW_MODEL")
     google_api_key: str = Field(default="", alias="GOOGLE_API_KEY")
+    google_ai_studio_api_key: str = Field(default="", alias="GOOGLE_AI_STUDIO_API_KEY")
+    gemini_model: str = Field(default="gemini-2.0-flash", alias="GEMINI_MODEL")
     google_search_cx: str = Field(default="", alias="GOOGLE_SEARCH_CX")
     searxng_base_url: str = Field(default="", alias="SEARXNG_BASE_URL")
     allowed_origins: list[str] = Field(

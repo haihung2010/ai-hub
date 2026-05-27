@@ -19,6 +19,7 @@ class ApiKeyRecord:
     max_parallel_requests: int
     is_admin: bool = False
     monthly_budget_usd: float | None = None
+    allowed_projects: list[str] | None = None
 
 
 class ApiKeyService:
@@ -30,13 +31,16 @@ class ApiKeyService:
         key_hash = self.hash_key(raw_key)
         with get_db_connection() as conn:
             row = conn.execute(
-                "SELECT id, tenant_id, name, allow_external, rpm_limit, max_parallel_requests, monthly_budget_usd, is_admin "
+                "SELECT id, tenant_id, name, allow_external, rpm_limit, max_parallel_requests, monthly_budget_usd, is_admin, allowed_projects_json "
                 "FROM api_keys WHERE key_hash = %s AND enabled = 1 "
                 "AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)",
                 (key_hash,),
             ).fetchone()
         if row is None:
             return None
+        import json as _json
+        _ap = row["allowed_projects_json"]
+        allowed_projects = _json.loads(_ap) if _ap and _ap != '[]' else None
         return ApiKeyRecord(
             id=row["id"],
             tenant_id=row["tenant_id"],
@@ -46,6 +50,7 @@ class ApiKeyService:
             max_parallel_requests=int(row["max_parallel_requests"]),
             is_admin=bool(row["is_admin"]),
             monthly_budget_usd=float(row["monthly_budget_usd"]) if row["monthly_budget_usd"] is not None else None,
+            allowed_projects=allowed_projects,
         )
 
     @staticmethod

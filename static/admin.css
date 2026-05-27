@@ -944,8 +944,10 @@ body {
     .dt-scroll {
         -webkit-overflow-scrolling: touch;
         overflow-x: auto;
-        overflow-y: hidden;
+        overflow-y: visible;
         position: relative;
+        width: 100%;
+        max-width: calc(100vw - 2rem);
     }
     .dt-table {
         min-width: 640px;
@@ -973,6 +975,173 @@ body {
 
     /* Crumbs (Tenants drilldown) wrap nicely */
     .crumbs { flex-wrap: wrap; gap: 0.35rem; font-size: 0.7rem; }
+
+    /* Ensure all panels are visible on mobile */
+    .tab-content.active {
+        display: flex !important;
+        flex-direction: column;
+        overflow: visible;
+    }
+    .panel-padded {
+        overflow: visible;
+    }
+    .grid-knowledge {
+        grid-template-columns: 1fr;
+        overflow: visible;
+    }
+    .grid-knowledge > * {
+        min-width: 0;
+        max-width: 100%;
+        overflow: visible;
+        width: 100%;
+    }
+
+    /* AGGRESSIVE: force all knowledge tab elements to fit mobile */
+    #tab-knowledge,
+    #tab-knowledge .glass-panel,
+    #tab-knowledge .panel-padded,
+    #tab-knowledge .form-stack,
+    #tab-knowledge .drop-zone,
+    #tab-knowledge .textarea,
+    #tab-knowledge .input,
+    #tab-knowledge .select {
+        width: 100% !important;
+        max-width: 100vw !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        overflow-wrap: break-word;
+    }
+    #tab-knowledge .drop-zone {
+        padding: 1rem 0.75rem !important;
+    }
+    #tab-knowledge .textarea-tall {
+        min-height: 6rem !important;
+    }
+    /* Force the grid to single column with no min width */
+    .grid-knowledge {
+        grid-template-columns: 1fr !important;
+        min-width: 0 !important;
+    }
+
+    /* Knowledge tab: full-width form elements */
+    #tab-knowledge .form-stack {
+        width: 100%;
+    }
+    #tab-knowledge .form-stack .input,
+    #tab-knowledge .form-stack .select,
+    #tab-knowledge .form-stack .textarea,
+    #tab-knowledge .form-stack .btn {
+        width: 100% !important;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        font-size: 16px;
+    }
+    #tab-knowledge .drop-zone {
+        padding: 1rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    #tab-knowledge .drop-zone svg {
+        width: 24px;
+        height: 24px;
+    }
+    #tab-knowledge .textarea-tall {
+        min-height: 8rem;
+        width: 100%;
+    }
+    #tab-knowledge .panel-header {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    #rag-table,
+    #rag-table .dt-scroll {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    #rag-table .dt-table {
+        min-width: 480px !important;
+    }
+    /* Ensure action buttons are visible */
+    .dt-table td.actions,
+    .dt-table th.actions {
+        position: sticky;
+        right: 0;
+        background: rgba(15,23,42,0.95);
+        z-index: 1;
+    }
+
+    /* form-stack: full width on mobile */
+    .form-stack {
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+    }
+    .form-stack .input,
+    .form-stack .select,
+    .form-stack .textarea,
+    .form-stack .btn {
+        width: 100% !important;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        font-size: 16px; /* prevent iOS zoom */
+    }
+    .form-row-toggle {
+        flex-wrap: wrap;
+        width: 100%;
+    }
+    .form-row-toggle .input {
+        flex: 1 1 80px;
+        min-width: 0;
+    }
+    .form-toggle-label {
+        flex-shrink: 0;
+    }
+
+    /* grid-management: single column + prevent overflow */
+    .grid-management {
+        grid-template-columns: 1fr !important;
+        overflow: hidden;
+    }
+    .grid-management .glass-panel {
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+    }
+
+    /* keys-table + sessions-table: horizontal scroll */
+    #keys-table,
+    #sessions-table,
+    .dt-scroll {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    .dt-table {
+        min-width: 560px !important;
+    }
+    .dt-table td,
+    .dt-table th {
+        white-space: nowrap;
+        padding: 0.5rem 0.4rem;
+        font-size: 0.7rem;
+    }
+    .dt-table td.actions {
+        position: sticky;
+        right: 0;
+        background: rgba(15,23,42,0.96);
+        z-index: 2;
+    }
+
+    /* Hide Tenant + RPM columns on small mobile */
+    .dt-table th:nth-child(3),
+    .dt-table td:nth-child(3) {
+        display: none;
+    }
 
     /* Toast: bottom, full-width, above bottom-nav */
     .toast-stack {

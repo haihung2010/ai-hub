@@ -155,13 +155,17 @@ class TestChatErrorHandling:
         })
         assert resp.status_code in (504, 502)
 
-    def test_unknown_project_returns_404(self, client: TestClient, mock_api: respx.MockRouter):
+    def test_unknown_project_returns_200_with_default_prompt(self, client: TestClient, mock_api: respx.MockRouter):
+        """Non-existent projects fall back to default.md instead of 404."""
+        mock_api.post("http://llama.test/v1/chat/completions").respond(
+            json={"id": "x", "object": "chat.completion", "model": "test", "choices": [{"message": {"role": "assistant", "content": "ok"}}]}
+        )
         resp = client.post("/v1/chat", json={
             "project_id": "nonexistent_project_xyz",
             "user_message": "hello",
             "user_name": "e2e_404_user",
         })
-        assert resp.status_code == 404
+        assert resp.status_code == 200
 
     def test_missing_api_key_returns_401(self, client: TestClient):
         no_key = TestClient(client.app)

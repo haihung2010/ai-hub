@@ -107,4 +107,4 @@ def test_admin_model_switch_runs_whitelisted_mode(
     assert response.status_code == 200
     payload = response.json()
     assert payload["mode"] == "lite"
-    assert payload["models"] == ["local-gemma4-e4b-q8"]
+    assert payload["models"] == ["local-gemma4-e4b-q4"]

@@ -34,6 +34,8 @@ from app.routes import knowledge as knowledge_routes
 from app.routes import memory as memory_routes
 from app.routes import predictions as predictions_routes
 from app.routes import users as users_routes
+from app.routes import mcp_tools as mcp_tools_routes
+from app.routes import facebook_webhook as fb_webhook_routes
 from app.agents.crew_service import CrewService
 from app.core.database import _get_database_url
 from app.services.ai_service import AIService
@@ -51,6 +53,8 @@ from app.services.prediction_service import PredictionService
 from app.services.providers.llama_cpp import LlamaCppProvider
 from app.services.providers.load_balancer import LlamaCppLoadBalancer
 from app.services.providers.openrouter import OpenRouterProvider
+from app.services.providers.gemini import GeminiProvider
+from app.services.providers.nine_router import NineRouterProvider
 from app.services.structmem_service import StructMemService
 from app.services.summary_service import SummaryService
 from app.services.tools.web_search_service import WebSearchService
@@ -135,6 +139,24 @@ def create_app(
                 if settings.openrouter_enabled
                 else None
             )
+            gemini = (
+                GeminiProvider(
+                    client=client,
+                    api_key=settings.google_ai_studio_api_key,
+                )
+                if settings.google_ai_studio_api_key
+                else None
+            )
+            nine_router = (
+                NineRouterProvider(
+                    client=client,
+                    base_url=settings.nine_router_base_url,
+                    api_key=settings.nine_router_api_key,
+                    model=settings.nine_router_model,
+                )
+                if settings.nine_router_enabled
+                else None
+            )
             history = HistoryService()
             users = UserService()
             summaries = SummaryService(history=history, max_concurrency=settings.summary_concurrency)
@@ -148,6 +170,7 @@ def create_app(
             )
             knowledge_ingestion = KnowledgeIngestionService(
                 chunk_chars=settings.knowledge_chunk_chars,
+                chunk_overlap_chars=settings.knowledge_chunk_overlap_chars,
                 max_card_chars=settings.knowledge_max_card_chars,
                 embedding_service=knowledge_embedding,
             )
@@ -183,6 +206,7 @@ def create_app(
             app.state.start_time = app_start_time
             app.state.local_provider = local_provider
             app.state.openrouter_provider = openrouter
+            app.state.gemini_provider = gemini
             app.state.history_service = history
             app.state.user_service = users
             app.state.summary_service = summaries
@@ -219,6 +243,8 @@ def create_app(
                 failure_risk=failure_risk,
                 knowledge_retrieval=knowledge_retrieval,
                 background_local=background_provider,
+                gemini=gemini,
+                nine_router=nine_router,
             )
             logger.info("ai-hub started on port %s", settings.app_port)
             yield
@@ -251,6 +277,32 @@ def create_app(
     app.include_router(predictions_routes.router)
     app.include_router(crew_routes.router)
     app.include_router(admin_routes.router)
+    app.include_router(mcp_tools_routes.router)
+    app.include_router(fb_webhook_routes.router)
+    # MCP server: expose all API endpoints as MCP tools
+    try:
+        from fastapi_mcp import FastApiMCP
+        mcp = FastApiMCP(
+            app,
+            name="AI Hub",
+            description="AI Hub: chat, knowledge RAG, admin, stock analysis tools via MCP",
+        )
+        mcp.mount_http()
+        logger.info("MCP server mounted at /mcp (HTTP transport)")
+    except Exception as exc:
+        logger.warning("MCP server failed to mount: %s", exc)
+    # Add no-cache middleware for admin static files
+    from starlette.middleware.base import BaseHTTPMiddleware
+    class NoCacheAdminMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request, call_next):
+            response = await call_next(request)
+            if request.url.path.startswith("/admin") or ".v2." in request.url.path:
+                response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+                response.headers["Pragma"] = "no-cache"
+                response.headers["Expires"] = "0"
+            return response
+    app.add_middleware(NoCacheAdminMiddleware)
+
     app.mount("/", StaticFiles(directory="static", html=True), name="static")
     return app
 

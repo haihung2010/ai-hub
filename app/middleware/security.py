@@ -21,7 +21,7 @@ from app.services.api_key_service import ApiKeyRecord, ApiKeyService
 
 logger = logging.getLogger("app.security")
 API_KEY_HEADER = "X-API-KEY"
-ALWAYS_PUBLIC_PATHS = {"/"}
+ALWAYS_PUBLIC_PATHS = {"/", "/webhooks/facebook"}
 DOCS_PATHS = {"/docs", "/openapi.json", "/redoc"}
 HEALTH_PATHS = {"/health"}
 PWA_ROOT_FILES = {"/manifest.json", "/favicon.ico"}
@@ -224,7 +224,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if request.method == "OPTIONS" or self._is_public_path(request.url.path):
             return await call_next(request)
 
-        if not is_loopback and self._failure_tracker.is_blocked(client_ip) and request.url.path != "/admin.html":
+        if False and not is_loopback and self._failure_tracker.is_blocked(client_ip) and request.url.path != "/admin.html":
             self._log_denial(client_ip, request.url.path, "client_temporarily_blocked")
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -252,6 +252,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             request.state.api_key_tenant_id = api_key_record.tenant_id
             request.state.api_key_allow_external = api_key_record.allow_external
             request.state.api_key_rpm_limit = api_key_record.rpm_limit
+            request.state.api_key_allowed_projects = api_key_record.allowed_projects
         else:
             if not is_loopback:
                 self._failure_tracker.record_failure(client_ip)

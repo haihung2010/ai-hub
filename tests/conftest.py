@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+import os
 from typing import Any
 
 import httpx
@@ -40,6 +41,11 @@ _TEST_TABLES = [
 @pytest.fixture(autouse=True)
 def isolated_db() -> None:
     """Truncate all tables before each test for isolation (PostgreSQL)."""
+    if os.getenv("AI_HUB_ALLOW_DB_TRUNCATE_FOR_TESTS") != "1":
+        pytest.fail(
+            "Refusing to truncate PostgreSQL without "
+            "AI_HUB_ALLOW_DB_TRUNCATE_FOR_TESTS=1. Point DATABASE_URL at a test DB."
+        )
     init_db()
     with get_db_connection() as conn:
         conn.execute(f"TRUNCATE TABLE {', '.join(_TEST_TABLES)} CASCADE")
@@ -61,6 +67,7 @@ def settings() -> Settings:
         API_KEY="test-api-key",
         RATE_LIMIT_PER_MINUTE=5,
         ALLOWED_HOSTS=["testserver", "localhost", "127.0.0.1", "api-aiserver.htechlabsvn.com"],
+        BACKGROUND_LLAMA_CPP_ENABLED="false",
     )
 
 

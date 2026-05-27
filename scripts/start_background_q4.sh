@@ -7,8 +7,8 @@ MMPROJ=${MMPROJ:-/home/hung/models/mmproj-gemma-4-E2B-it-F16.gguf}
 HOST=${HOST:-127.0.0.1}
 PORT=${PORT:-8081}
 CTX_SIZE=${CTX_SIZE:-32768}
-PARALLEL=${PARALLEL:-4}
-ALIAS=${ALIAS:-local-gemma4-e2b-q4}
+PARALLEL=${PARALLEL:-8}
+ALIAS=${ALIAS:-local-gemma4-e2b-q4-bg}
 LOG_FILE=${LOG_FILE:-/tmp/aihub-llama-background.log}
 PID_FILE=${PID_FILE:-/tmp/aihub-llama-background.pid}
 
@@ -24,7 +24,7 @@ fi
 pkill -f "llama-server .*--port ${PORT}" 2>/dev/null || true
 
 MMPROJ_ARGS=()
-if [[ "${ENABLE_MMPROJ:-0}" == "1" && -f "$MMPROJ" ]]; then
+if [[ "${ENABLE_MMPROJ:-1}" == "1" && -f "$MMPROJ" ]]; then
   MMPROJ_ARGS=(--mmproj "$MMPROJ")
   echo "Vision enabled: $MMPROJ"
 fi
@@ -39,6 +39,10 @@ nohup "$LLAMA_SERVER" \
   --n-gpu-layers 999 \
   --alias "$ALIAS" \
   --reasoning off \
+  --flash-attn on \
+  --cache-type-k q8_0 \
+  --cache-type-v q8_0 \
+  --cont-batching \
   >"$LOG_FILE" 2>&1 &
 
 pid=$!

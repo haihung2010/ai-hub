@@ -24,6 +24,7 @@ def test_defaults_available(monkeypatch: pytest.MonkeyPatch, tmp_path: pytest.Te
         "LLAMA_CPP_OPENAI_URL",
         "SUMMARY_CONCURRENCY",
         "SUMMARY_CONTEXT_TOKEN_THRESHOLD",
+        "LITE_MAX_HISTORY_MESSAGES",
     ]:
         monkeypatch.delenv(key, raising=False)
     with pytest.raises(ValidationError):
@@ -43,12 +44,12 @@ def test_defaults_available(monkeypatch: pytest.MonkeyPatch, tmp_path: pytest.Te
     assert s.summary_context_token_threshold == 4000
     assert s.summary_concurrency == 1
     assert s.rate_limit_per_minute == 5
-    assert s.hybrid_force_cloud_for_allowed is False
-    assert s.ai_max_tokens == 0
-    assert s.local_max_tokens == 0
-    assert s.openrouter_max_tokens == 0
+    assert s.hybrid_force_cloud_for_allowed is True
+    assert s.ai_max_tokens == 1000
+    assert s.local_max_tokens == 1000
+    assert s.openrouter_max_tokens == 1000
     assert s.ai_top_p == 0.0
-    assert s.provider_call_timeout_seconds == 0.0
+    assert s.provider_call_timeout_seconds == 20.0
     assert s.enable_failure_risk is True
     assert s.failure_risk_log_only is True
     assert s.failure_risk_enable_actions is False
