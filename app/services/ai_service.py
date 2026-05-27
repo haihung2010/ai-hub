@@ -697,7 +697,7 @@ class AIService:
         except Exception:
             return messages
 
-        if not req.user_id:
+        if not req.user_name:
             return messages
 
         try:
