@@ -125,20 +125,36 @@ def create_app(
                 _slots_urls = [f"{node}/slots" for node in settings.llama_cpp_nodes]
                 local_provider = LlamaCppLoadBalancer(client=client, providers=_providers, slots_urls=_slots_urls)
                 background_provider = None
+                ihi_provider = (
+                    LlamaCppProvider(client=client, openai_url=settings.ihi_llama_cpp_openai_url)
+                    if settings.ihi_llama_cpp_enabled
+                    else None
+                )
                 logger.info("load balancer active: %d nodes %s", len(_providers), settings.llama_cpp_nodes)
             elif settings.background_llama_cpp_enabled:
                 local_provider = LlamaCppProvider(client=client, openai_url=settings.llama_cpp_openai_url)
                 background_provider = LlamaCppProvider(
                     client=client, openai_url=settings.background_llama_cpp_openai_url
                 )
+                ihi_provider = (
+                    LlamaCppProvider(client=client, openai_url=settings.ihi_llama_cpp_openai_url)
+                    if settings.ihi_llama_cpp_enabled
+                    else None
+                )
                 logger.info(
-                    "background provider active: primary=%s background=%s",
+                    "background provider active: primary=%s background=%s ihi=%s",
                     settings.llama_cpp_openai_url,
                     settings.background_llama_cpp_openai_url,
+                    settings.ihi_llama_cpp_openai_url if settings.ihi_llama_cpp_enabled else "disabled",
                 )
             else:
                 local_provider = LlamaCppProvider(client=client, openai_url=settings.llama_cpp_openai_url)
                 background_provider = None
+                ihi_provider = (
+                    LlamaCppProvider(client=client, openai_url=settings.ihi_llama_cpp_openai_url)
+                    if settings.ihi_llama_cpp_enabled
+                    else None
+                )
             openrouter = (
                 OpenRouterProvider(
                     client=client,
@@ -255,6 +271,7 @@ def create_app(
                 background_local=background_provider,
                 gemini=gemini,
                 nine_router=nine_router,
+                ihi=ihi_provider,
             )
             app.state.ai_service_ref = weakref.ref(app.state.ai_service)
             logger.info("ai-hub started on port %s", settings.app_port)

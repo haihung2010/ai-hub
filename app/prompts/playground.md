@@ -1,5 +1,5 @@
 ---
-model: local-gemma4-e4b-q4
+model: local-gemma4-e4b-q8
 provider: local
 temperature: 0.7
 ---

@@ -36,6 +36,7 @@ nohup "$LLAMA_SERVER" \
   --parallel "$PARALLEL" \
   --n-gpu-layers 999 \
   --n-gpu-layers-draft 999 \
+  --fit off \
   --spec-draft-n-max "$DRAFT_N_MAX" \
   --spec-draft-p-min "$DRAFT_P_MIN" \
   --alias "$ALIAS" \

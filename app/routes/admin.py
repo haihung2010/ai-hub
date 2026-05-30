@@ -356,22 +356,42 @@ async def list_api_keys(request: Request):
 
 
 @router.get("/management/sessions")
-async def list_active_sessions(request: Request):
+async def list_active_sessions(
+    request: Request,
+    project_id: str | None = None,
+    limit: int = 200,
+):
     """List most active sessions across all users and projects."""
-    sql = """
-        SELECT
-            s.id, s.project_id, u.name as user_name,
-            COUNT(e.id) as message_count,
-            MAX(e.created_at) as last_active
-        FROM sessions s
-        JOIN users u ON s.user_id = u.id
-        LEFT JOIN usage_events e ON s.id = e.session_id
-        GROUP BY s.id, u.name
-        ORDER BY last_active DESC NULLS LAST
-        LIMIT 50
-    """
     with get_db_connection() as conn:
-        rows = conn.execute(sql).fetchall()
+        if project_id:
+            sql = """
+                SELECT
+                    s.id, s.project_id, u.name as user_name,
+                    COUNT(e.id) as message_count,
+                    MAX(e.created_at) as last_active
+                FROM sessions s
+                JOIN users u ON s.user_id = u.id
+                LEFT JOIN usage_events e ON s.id = e.session_id
+                WHERE s.project_id = %s
+                GROUP BY s.id, s.project_id, u.name
+                ORDER BY last_active DESC NULLS LAST
+                LIMIT %s
+            """
+            rows = conn.execute(sql, (project_id, limit)).fetchall()
+        else:
+            sql = """
+                SELECT
+                    s.id, s.project_id, u.name as user_name,
+                    COUNT(e.id) as message_count,
+                    MAX(e.created_at) as last_active
+                FROM sessions s
+                JOIN users u ON s.user_id = u.id
+                LEFT JOIN usage_events e ON s.id = e.session_id
+                GROUP BY s.id, s.project_id, u.name
+                ORDER BY last_active DESC NULLS LAST
+                LIMIT %s
+            """
+            rows = conn.execute(sql, (limit,)).fetchall()
         return [dict(row) for row in rows]
 
 

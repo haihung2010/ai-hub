@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
+# Chatbot primary: E4B Q8 on port 8080
+# Usage: PORT=8080 PARALLEL=8 ./start_lite_q8.sh
+
 set -euo pipefail
 
 LLAMA_SERVER=${LLAMA_SERVER:-/home/hung/llama.cpp/build-cuda13/bin/llama-server}
 MODEL=${MODEL:-/home/hung/models/gemma-4-E4B-it-obliterated-Q8_0.gguf}
-MMPROJ=${MMPROJ:-/home/hung/models/mmproj-gemma-4-E2B-it-F16.gguf}
 HOST=${HOST:-127.0.0.1}
 PORT=${PORT:-8080}
 CTX_SIZE=${CTX_SIZE:-65536}
@@ -23,17 +25,8 @@ fi
 
 pkill -f "llama-server .*--port ${PORT}" 2>/dev/null || true
 
-MMPROJ_ARGS=()
-if [[ "${ENABLE_MMPROJ:-0}" == "1" && -f "$MMPROJ" ]]; then
-  MMPROJ_ARGS=(--mmproj "$MMPROJ")
-  echo "Vision enabled: $MMPROJ"
-else
-  echo "Vision disabled (set ENABLE_MMPROJ=1 to enable)"
-fi
-
 nohup "$LLAMA_SERVER" \
   -m "$MODEL" \
-  "${MMPROJ_ARGS[@]}" \
   --host "$HOST" \
   --port "$PORT" \
   --ctx-size "$CTX_SIZE" \
@@ -58,4 +51,4 @@ until curl -fsS "http://${HOST}:${PORT}/v1/models" >/dev/null; do
   sleep 0.5
 done
 
-echo "Lite Q8 ready: alias=${ALIAS}, ctx_size=${CTX_SIZE}, parallel=${PARALLEL}, pid=${pid}, log=${LOG_FILE}"
+echo "Chatbot ready: alias=${ALIAS}, ctx_size=${CTX_SIZE}, parallel=${PARALLEL}, pid=${pid}"

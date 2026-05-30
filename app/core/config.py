@@ -129,6 +129,8 @@ class Settings(BaseSettings):
     background_llama_cpp_openai_url: str = Field(default="http://localhost:8081/v1", alias="BACKGROUND_LLAMA_CPP_OPENAI_URL")
     background_llama_cpp_enabled: bool = Field(default=False, alias="BACKGROUND_LLAMA_CPP_ENABLED")
     background_llama_cpp_parallel: int = Field(default=8, ge=1, alias="BACKGROUND_LLAMA_CPP_PARALLEL")
+    ihi_llama_cpp_openai_url: str = Field(default="http://localhost:8083/v1", alias="IHI_LLAMA_CPP_OPENAI_URL")
+    ihi_llama_cpp_enabled: bool = Field(default=True, alias="IHI_LLAMA_CPP_ENABLED")
     llama_cpp_nodes: list[str] = Field(default_factory=list, alias="LLAMA_CPP_NODES")
     web_search_max_results: int = Field(default=5, ge=1, le=10, alias="WEB_SEARCH_MAX_RESULTS")
     web_search_timeout_seconds: float = Field(default=8.0, gt=0, alias="WEB_SEARCH_TIMEOUT_SECONDS")

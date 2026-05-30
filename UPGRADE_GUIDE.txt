@@ -1,0 +1,123 @@
+# ============================================================
+#  AI HUB OPTIMIZATION — COMPLETE UPGRADE GUIDE
+#  Generated: 2026-05-22
+# ============================================================
+
+## STATUS: ALL CHANGES APPLIED (code-level)
+## NEEDS: Restart AI Hub + Hermes gateway
+
+# ──────────────────────────────────────────────────────────
+#  PHAN 1: DATABASE (DA XONG — khong can lam lai)
+# ──────────────────────────────────────────────────────────
+#  - pgvector 0.8.0 installed + extension enabled
+#  - embedding_vec vector(384) + HNSW index
+#  - content_tsv tsvector + GIN index + auto trigger
+#  - 46/46 chunks migrated
+
+# ──────────────────────────────────────────────────────────
+#  PHAN 2: RESTART AI HUB (lam mot lan)
+# ──────────────────────────────────────────────────────────
+
+cd ~/ai-hub && ./start.sh
+
+# Verify MCP endpoint:
+curl http://localhost:8000/mcp
+
+# Verify hybrid search:
+curl -H "X-API-KEY: <your-key>" \
+  "http://localhost:8000/v1/knowledge/search?project_id=test&query=pricing"
+
+# Verify llamacpp flags:
+grep "flash-attn" /tmp/aihub-llama-lite-q8.log
+
+# ──────────────────────────────────────────────────────────
+#  PHAN 3: ADD MCP SERVERS TO HERMES (CAN NHAP PASSWORD)
+# ──────────────────────────────────────────────────────────
+
+bash ~/ai-hub/scripts/03_add_mcp_servers.sh
+
+# Sau do restart hermes gateway:
+hermes gateway restart
+
+# Verify MCP servers:
+hermes mcp list
+
+# Test tung server:
+# arxiv — search papers
+hermes chat -q "Search arxiv for 'RAG knowledge graph' papers"
+
+# aihub — query AI Hub directly
+hermes chat -q "Use the aihub MCP to get system status"
+
+# anyquery — SQL queries
+hermes chat -q "Use anyquery to list available databases"
+
+# roundtable — multi-agent delegation
+hermes chat -q "Use roundtable to delegate a code review task"
+
+# ──────────────────────────────────────────────────────────
+#  PHAN 4: CUSTOM MCP TOOLS (da trong code)
+# ──────────────────────────────────────────────────────────
+#
+#  Khi AI Hub chay, /mcp endpoint se expose:
+#
+#  Tu FastAPI (auto-generated):
+#    - POST /v1/chat (send chat message)
+#    - GET  /v1/knowledge/cards (list knowledge cards)
+#    - POST /v1/knowledge/search (search knowledge)
+#    - POST /v1/admin/keys (create API key)
+#    - GET  /v1/admin/stats (usage stats)
+#    - ... tat ca FastAPI endpoints
+#
+#  Custom tools:
+#    - analyze_stock(symbol, timeframe) — stock analysis
+#    - search_knowledge(query, project_id, limit) — hybrid RAG search
+#    - get_system_status() — GPU, models, queue, DB status
+#    - query_database(sql, limit) — read-only SQL query
+#
+# ──────────────────────────────────────────────────────────
+#  PHAN 5: HIPPORAG (OPTIONAL — future enhancement)
+# ──────────────────────────────────────────────────────────
+#
+#  Skill da tao: mlops/hipporag-knowledge-graph
+#  De xuat: Dung khi can multi-hop reasoning tren knowledge graph
+#  Prerequisites: pip install hipporag [+ optional Neo4j]
+#  Xem skill de chi tiet cach integrate vao AI Hub.
+#
+# ──────────────────────────────────────────────────────────
+#  FILES CHANGED TONG HOP
+# ──────────────────────────────────────────────────────────
+#
+#  Modified:
+#    app/services/knowledge_embedding_service.py  (+pgvector methods)
+#    app/services/knowledge_retrieval_service.py  (hybrid search rewrite)
+#    app/services/knowledge_ingestion_service.py  (+embedding_vec, +overlap)
+#    app/core/config.py                          (+chunk_overlap setting)
+#    app/main.py                                 (MCP integration)
+#    scripts/start_lite_q8.sh                    (+flash-attn, KV cache)
+#    scripts/start_background_q4.sh              (+flash-attn, KV cache)
+#
+#  New:
+#    app/services/mcp_tools.py                   (custom MCP tools)
+#    scripts/01_install_pgvector.sh
+#    scripts/02_migrate_db.sh
+#    scripts/03_add_mcp_servers.sh
+#    scripts/migrate_pgvector.sql
+#    scripts/migrate_embeddings.py
+#    ~/.hermes/skills/mlops/hipporag-knowledge-graph/SKILL.md
+#
+# ──────────────────────────────────────────────────────────
+#  EXPECTED IMPROVEMENTS
+# ──────────────────────────────────────────────────────────
+#
+#  RAG Quality:    2-3x better (hybrid vector+FTS+RRF vs token-only)
+#  RAG Latency:    ~5ms (pgvector HNSW) vs ~50ms (Python scan 200 rows)
+#  VRAM Savings:   ~40% KV cache reduction (q8_0 quantization)
+#  Throughput:     +20-30% (flash-attention + continuous batching)
+#  New Capabilities:
+#    - MCP server (expose AI Hub to Claude/Cursor/etc)
+#    - arxiv paper search via MCP
+#    - anyquery SQL access to 40+ apps via MCP
+#    - roundtable multi-agent delegation via MCP
+#    - Custom tools: stock analysis, DB query, system status
+#    - Chunk overlap for better context continuity

@@ -551,7 +551,8 @@ async function refreshKeys() {
 async function refreshSessions() {
     DataTable.setLoading('sessions-table');
     try {
-        const data = await api('/v1/admin/management/sessions');
+        const url = '/v1/admin/management/sessions?limit=500' + (ADMIN.tenant.selectedTenant ? '&project_id=' + encodeURIComponent(ADMIN.tenant.selectedTenant) : '');
+        const data = await api(url);
         DataTable.mount('sessions-table', {
             columns: [
                 { key: 'user_name', label: 'User', search: true, format: v => `<span style="font-weight:600">${escapeHtml(v || '—')}</span>` },
