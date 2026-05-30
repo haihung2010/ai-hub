@@ -18,6 +18,7 @@ from app.core.errors import OllamaUnavailable, SessionAccessDenied, UpstreamErro
 from app.models.chat import ChatRequest, ChatResponse, Message
 from app.models.failure_risk import FailureRiskResult, RiskPolicyDecision
 from app.models.memory import MemoryConsolidationRecord, MemoryItemRecord, RetrievedMemoryBundle
+from app.services.ihi_warmup import get_ihi_warmup
 from app.prompts.loader import load_prompt
 from app.services.failure_risk_service import FailureRiskService
 from app.services.fact_extraction_service import FactExtractionService
@@ -155,12 +156,14 @@ class AIService:
         fact_extraction: FactExtractionService | None = None,
         gemini: ChatProvider | None = None,
         nine_router: ChatProvider | None = None,
+        ihi: ChatProvider | None = None,
     ) -> None:
         self._local = local
         self._background_local = background_local
         self._cloud = cloud
         self._gemini = gemini
         self._nine_router = nine_router
+        self._ihi = ihi
         self._history = history
         self._settings = settings
         self._users = users
@@ -504,6 +507,11 @@ class AIService:
             return self._settings.gemini_model, 0
         if req.model_mode == "external" or req.provider == "cloud":
             return self._settings.openrouter_model, 0
+        # iHi project: always use the prompt file model (E2B Q4 on port 8083), regardless of model_mode
+        if req.project_id == "ihi":
+            ctx = self._settings.project_context_sizes.get(req.project_id, self._settings.lite_num_ctx)
+            prompt = load_prompt(req.project_id)
+            return prompt.model, ctx
         if req.model_mode == "normal":
             ctx = self._settings.project_context_sizes.get(req.project_id, self._settings.default_num_ctx)
             return self._settings.default_model, ctx
@@ -522,6 +530,13 @@ class AIService:
     def _select_provider(self, req: ChatRequest) -> ChatProvider:
         if req.provider == "gemini" and self._gemini:
             return self._gemini
+        # iHi project: route to dedicated high-parallelism llama.cpp instance
+        if req.project_id == "ihi" and self._ihi is not None:
+            # Warmup if not warmed yet
+            warmup = get_ihi_warmup()
+            if not warmup.is_warmed():
+                asyncio.create_task(warmup.warmup())  # Fire and forget
+            return self._ihi
         wants_cloud = req.model_mode == "external" or req.provider == "cloud"
         if not wants_cloud:
             return self._local
@@ -557,6 +572,9 @@ class AIService:
     ) -> tuple[ChatProvider, str, str | None]:
         if req.provider == "gemini":
             return provider, model, route_reason
+        # iHi project: never fast-background, keep on dedicated high-parallelism instance
+        if req.project_id == "ihi":
+            return provider, model, route_reason
         if provider.name == self._local.name and self._should_use_fast_background_model(req):
             bg_provider = self._background_local
             if bg_provider is None:
@@ -567,7 +585,7 @@ class AIService:
 
     def _provider_options(self, req: ChatRequest, provider: ChatProvider, model_mode: str, num_ctx: int = 0, web_search: bool = False) -> dict:
         options: dict = {}
-        if provider.name == self._local.name:
+        if provider.name == self._local.name or provider is self._ihi:
             max_tokens = self._settings.local_max_tokens or self._settings.ai_max_tokens
             if max_tokens:
                 effective = self._adaptive_max_tokens(self._queue_depth())
