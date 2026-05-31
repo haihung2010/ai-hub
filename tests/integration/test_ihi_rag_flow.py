@@ -78,7 +78,7 @@ async def test_feedback_creates_rag():
     """Test that feedback creates new RAG entry."""
     async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.post(
-            f"{BASE_URL}/v1/ihi/rag",
+            f"{BASE_URL}/v1/ihi/feedback",
             headers={"X-API-KEY": API_KEY},
             json={
                 "case_id": "M-999",
