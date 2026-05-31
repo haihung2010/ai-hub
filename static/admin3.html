@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#020617">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AI Hub">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <title>AI Hub | Admin OS</title>
+    <link rel="stylesheet" href="/admin3.css?v=1">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <script src="/admin.v2.js?v=1" defer></script>
+</head>
+<body>
+    <div class="app-shell">
+
+    <!-- ===== Sidebar ===== -->
+    <aside class="sidebar-blur app-sidebar">
+        <div class="sidebar-brand">
+            <div style="width:38px; height:38px; border-radius:0.75rem; background:linear-gradient(135deg,var(--accent-1),var(--accent-2)); display:flex; align-items:center; justify-content:center; box-shadow:0 4px 18px rgba(99,102,241,0.35)">
+                <svg width="20" height="20" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <div>
+                <div style="font-size:1rem; font-weight:800; letter-spacing:-0.02em">AI HUB</div>
+                <div style="font-size:0.65rem; font-weight:700; color:var(--accent-1); letter-spacing:0.18em">ADMIN OS</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="tab-link" data-tab="dashboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+                Dashboard
+            </button>
+            <button class="tab-link" data-tab="gpu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+                GPU Command
+            </button>
+            <button class="tab-link" data-tab="management">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                Access Keys
+            </button>
+            <button class="tab-link" data-tab="knowledge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                RAG Knowledge
+            </button>
+            <button class="tab-link" data-tab="tenants">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                Tenants
+            </button>
+            <button class="tab-link" data-tab="audit">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+                Chat Audit
+            </button>
+            <button class="tab-link" data-tab="skills">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                Skills
+            </button>
+            <button class="tab-link" data-tab="database">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5"/><path d="M3 12a9 3 0 0018 0"/></svg>
+                Database
+            </button>
+            <button class="tab-link" data-tab="system">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                System
+            </button>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="glass-panel sidebar-gpu-card">
+                <div style="font-size:0.625rem; font-weight:800; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.18em; margin-bottom:0.5rem">GPU Health</div>
+                <div style="height:6px; width:100%; background:rgba(255,255,255,0.05); border-radius:999px; overflow:hidden">
+                    <div id="gpu-util-bar" style="height:100%; width:0%; background:var(--accent-1); transition:width 0.6s ease, background 0.3s ease"></div>
+                </div>
+                <div class="mono" style="display:flex; justify-content:space-between; font-size:0.625rem; color:var(--text-muted); margin-top:0.5rem">
+                    <span id="gpu-temp-text">0°C</span>
+                    <span id="gpu-mem-text">0/0 GB</span>
+                </div>
+            </div>
+            <button class="btn btn-ghost" id="api-key-btn" style="width:100%">Config Token</button>
+        </div>
+    </aside>
+
+    <!-- Mobile config token button -->
+<button id="mobile-token-btn" onclick="document.getElementById('api-key-btn').click()"
+    style="position:fixed;bottom:1rem;right:1rem;z-index:9999;background:#4338ca;color:#fff;border:none;border-radius:50%;width:48px;height:48px;font-size:1.25rem;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.4);display:none">
+    🔑
+</button>
+<style>@media(max-width:768px){#mobile-token-btn{display:block!important}}</style>
+
+<!-- ===== Main ===== -->
+    <main class="app-main">
+
+        <header class="app-header">
+            <div>
+                <h2 id="current-tab-title" style="font-size:1.625rem; font-weight:800; letter-spacing:-0.02em; margin:0">System Overview</h2>
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.4rem">
+                    <span class="status-dot" style="background:var(--status-ok); animation:pulse 2s infinite"></span>
+                    <span id="sync-status" class="mono" style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.15em">Idle</span>
+                </div>
+            </div>
+            <div class="header-tools">
+                <div class="model-switcher">
+                    <button id="switch-lite" class="btn-ghost" style="border:none; padding:0.4rem 0.85rem; font-size:0.65rem; font-weight:800; letter-spacing:0.1em; color:var(--accent-1); background:transparent; border-radius:0.375rem; cursor:pointer">LITE</button>
+                    <button id="switch-thinking" class="btn-ghost" style="border:none; padding:0.4rem 0.85rem; font-size:0.65rem; font-weight:800; letter-spacing:0.1em; color:var(--text-muted); background:transparent; border-radius:0.375rem; cursor:pointer">THINKING</button>
+                </div>
+                <button class="btn btn-ghost" id="cmd-palette-btn" title="Ctrl+K" style="font-size:0.65rem; padding:0.4rem 0.7rem">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <kbd style="font-size:0.6rem; background:rgba(255,255,255,0.06); padding:0.1rem 0.3rem; border-radius:3px; border:1px solid var(--border-subtle); color:var(--text-faint); font-family:'JetBrains Mono',monospace">⌘K</kbd>
+                </button>
+                <button class="theme-toggle" id="theme-toggle-btn" title="Toggle theme">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                </button>
+                <button class="btn btn-primary" id="auto-refresh-btn">⚪ LIVE: OFF</button>
+            </div>
+        </header>
+
+        <!-- ===== DASHBOARD TAB ===== -->
+        <section id="tab-dashboard" class="tab-content">
+            <div class="grid-stat-cards">
+                <div class="stat-card indigo">
+                    <div class="stat-icon">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    </div>
+                    <div class="stat-label">Total Pulse</div>
+                    <div id="total-requests" class="stat-value">0</div>
+                    <div id="success-error" class="stat-sub mono">0 OK · 0 ERR</div>
+                </div>
+                <div class="stat-card emerald">
+                    <div class="stat-icon">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <div class="stat-label">Latency p95</div>
+                    <div id="latency-p95" class="stat-value" style="color:#6ee7b7">0ms</div>
+                    <div id="latency-detail" class="stat-sub mono">avg 0ms · max 0ms</div>
+                </div>
+                <div class="stat-card amber">
+                    <div class="stat-icon">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
+                    </div>
+                    <div class="stat-label">GPU Slots</div>
+                    <div id="gpu-active" class="stat-value">0/0</div>
+                    <div id="gpu-queue-text" class="stat-sub mono">0 free</div>
+                </div>
+                <div class="stat-card violet">
+                    <div class="stat-icon">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                    </div>
+                    <div class="stat-label">Cost This Month</div>
+                    <div id="month-cost" class="stat-value">$0.00</div>
+                    <div id="total-cost" class="stat-sub mono">total $0.00</div>
+                </div>
+            </div>
+
+            <div class="grid-charts">
+                <div class="glass-panel panel-padded">
+                    <div class="section-title indigo">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                        REQUEST FREQUENCY
+                    </div>
+                    <div class="chart-wrap"><canvas id="requests-chart"></canvas></div>
+                </div>
+                <div class="glass-panel panel-padded">
+                    <div class="section-title emerald">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        LATENCY PERFORMANCE
+                    </div>
+                    <div class="chart-wrap"><canvas id="latency-chart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="glass-panel panel-padded">
+                <div class="section-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    REAL-TIME STREAM AUDIT
+                </div>
+                <div id="recent-table"></div>
+            </div>
+        </section>
+
+        <!-- ===== GPU TAB ===== -->
+        <section id="tab-gpu" class="tab-content">
+            <div id="gpu-detailed-cards" class="grid-gpu-cards"></div>
+            <div class="glass-panel panel-padded">
+                <div class="panel-header">
+                    <div class="section-title indigo" style="margin-bottom:0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                        LIVE GPU PULSE
+                        <span class="mono panel-header-sub">— 60-sample rolling</span>
+                    </div>
+                    <div class="panel-badges">
+                        <span class="badge badge-accent"><span class="badge-dot"></span>Util %</span>
+                        <span class="badge badge-ok"><span class="badge-dot"></span>Temp °C</span>
+                        <span class="badge badge-info"><span class="badge-dot"></span>VRAM %</span>
+                    </div>
+                </div>
+                <div class="chart-wrap chart-wrap-tall"><canvas id="gpu-sparkline"></canvas></div>
+            </div>
+        </section>
+
+        <!-- ===== MANAGEMENT TAB ===== -->
+        <section id="tab-management" class="tab-content">
+            <div class="grid-management">
+                <div class="glass-panel panel-padded">
+                    <div class="section-title indigo">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        PROVISION ACCESS
+                    </div>
+                    <div class="form-stack">
+                        <input id="key-name" type="text" class="input" placeholder="Key label (e.g. mobile-app-prod)">
+                        <input id="key-tenant" type="text" class="input" placeholder="Tenant ID" value="default">
+                        <div class="form-row-toggle">
+                            <input id="key-rpm" type="number" class="input mono form-flex" placeholder="RPM" value="60">
+                            <label class="toggle">
+                                <input id="key-admin" type="checkbox">
+                                <span class="toggle-track"></span>
+                            </label>
+                            <span class="form-toggle-label">Admin</span>
+                        </div>
+                        <button id="create-key-btn" class="btn btn-primary btn-block">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Mint New Token
+                        </button>
+                    </div>
+                </div>
+                <div class="glass-panel panel-padded">
+                    <div class="section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                        KEY INVENTORY
+                    </div>
+                    <div id="keys-table"></div>
+                </div>
+            </div>
+            <div class="glass-panel panel-padded">
+                <div class="section-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    ACTIVE SESSION PULSE
+                </div>
+                <div id="sessions-table"></div>
+            </div>
+        </section>
+
+        <!-- ===== KNOWLEDGE TAB ===== -->
+        <section id="tab-knowledge" class="tab-content">
+            <div class="grid-knowledge">
+                <div class="glass-panel panel-padded">
+                    <div class="section-title emerald">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13"/></svg>
+                        INGEST INTELLIGENCE
+                    </div>
+                    <div class="form-stack">
+                        <input id="rag-project" type="text" class="input" placeholder="Target project (e.g. medical)">
+                        <input id="rag-title" type="text" class="input" placeholder="Title">
+                        <select id="rag-domain" class="select">
+                            <option value="general">General</option>
+                            <option value="medical">Medical</option>
+                            <option value="legal">Legal</option>
+                            <option value="finance">Finance</option>
+                            <option value="tech">Tech</option>
+                            <option value="science">Science</option>
+                        </select>
+                        <div class="drop-zone" id="rag-drop-zone">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <div class="dz-title">Drop file here or click to upload</div>
+                            <div class="dz-hint">.txt, .md, .json, .csv — max 500KB</div>
+                            <div class="dz-filename" id="rag-filename"></div>
+                            <input type="file" id="rag-file-input" accept=".txt,.md,.json,.csv" style="display:none">
+                        </div>
+                        <textarea id="rag-content" class="textarea textarea-tall" placeholder="Knowledge content source... (or drop file above)"></textarea>
+                        <button id="upload-rag-btn" class="btn btn-success btn-block">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            Vectorize Content
+                        </button>
+                    </div>
+                </div>
+                <div class="glass-panel panel-padded">
+                    <div class="panel-header">
+                        <div class="section-title" style="margin-bottom:0">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                            GLOBAL INDEX CARDS
+                        </div>
+                        <button id="reindex-btn" class="btn btn-ghost">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                            Reindex Embeddings
+                        </button>
+                    </div>
+                    <div id="rag-table"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== TENANTS TAB ===== -->
+        <section id="tab-tenants" class="tab-content">
+            <div id="tenants-breadcrumb" class="crumbs tenants-crumbs"></div>
+
+            <div id="tenants-view-list">
+                <div id="tenants-grid"></div>
+            </div>
+
+            <div id="tenants-view-users" style="display:none">
+                <div class="glass-panel panel-padded">
+                    <div id="tenant-users-title" class="section-title">USERS</div>
+                    <div id="tenant-users-table"></div>
+                </div>
+            </div>
+
+            <div id="tenants-view-detail" style="display:none">
+                <div id="user-detail-content"></div>
+            </div>
+
+            <div id="tenants-view-chat" style="display:none; flex-direction:column; height:100%">
+                <div style="display:flex;flex-direction:column;height:100%;gap:1rem">
+                    <!-- Header -->
+                    <div class="glass-panel panel-padded">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <div>
+                                <div class="section-title indigo" style="margin-bottom:0.5rem">CHAT MESSAGES</div>
+                                <div id="chat-header-info" style="font-size:0.875rem;color:var(--text-secondary)"></div>
+                            </div>
+                            <button class="btn btn-primary" id="open-chat-viewer-btn" style="cursor:pointer">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                Open Full View
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Messages Container -->
+                    <div id="user-chat-content" style="flex:1; overflow-y:auto; padding:0.5rem"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== CHAT AUDIT TAB ===== -->
+        <section id="tab-audit" class="tab-content">
+            <div class="glass-panel panel-padded" style="margin-bottom:1.25rem">
+                <div class="panel-header">
+                    <div class="section-title indigo" style="margin-bottom:0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+                        REQUEST/RESPONSE AUDIT
+                    </div>
+                </div>
+                <div class="form-stack" style="margin-bottom:1rem">
+                    <div style="display:flex;gap:0.75rem">
+                        <input id="audit-user-id" type="text" class="input" placeholder="User ID (optional)">
+                        <input id="audit-project-id" type="text" class="input" placeholder="Project ID (optional)">
+                        <button id="audit-load-btn" class="btn btn-primary">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                            Load Messages
+                        </button>
+                    </div>
+                </div>
+                <div id="audit-messages-container" style="display:flex;flex-direction:column;gap:1rem;max-height:70vh;overflow-y:auto"></div>
+            </div>
+        </section>
+
+        <!-- ===== SKILLS TAB (MUSE-Autoskill) ===== -->
+        <section id="tab-skills" class="tab-content">
+            <div class="glass-panel panel-padded" style="margin-bottom:1.25rem">
+                <div class="panel-header">
+                    <div class="section-title amber" style="margin-bottom:0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        SKILL REGISTRY
+                    </div>
+                </div>
+                <div class="form-stack" style="margin-bottom:1rem">
+                    <div style="display:flex;gap:0.75rem">
+                        <input id="skills-project-id" type="text" class="input" placeholder="Project ID (e.g. fanpage, vehix)" value="fanpage">
+                        <input id="skills-filter" type="text" class="input" placeholder="Filter by name..." style="flex:1">
+                        <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.75rem;color:var(--text-faint)">
+                            <input type="checkbox" id="skills-show-inactive"> Show inactive
+                        </label>
+                        <button id="btn-load-skills" class="btn btn-primary">Load Skills</button>
+                        <button onclick="openSkillEdit('new', document.getElementById('skills-project-id').value)" class="btn btn-secondary">+ New Skill</button>
+                    </div>
+                </div>
+                <div id="skills-table-container"></div>
+            </div>
+
+            <!-- Create/Edit skill modal -->
+            <div id="skill-edit-modal" class="modal" style="display:none">
+                <div class="modal-content" style="max-width:640px">
+                    <div class="modal-header">
+                        <div class="section-title amber">SKILL EDITOR</div>
+                        <button class="modal-close" onclick="closeSkillModal()">&times;</button>
+                    </div>
+                    <div class="form-stack">
+                        <input type="hidden" id="skill-edit-id">
+                        <div class="form-group">
+                            <label class="input-label">Name</label>
+                            <input id="skill-edit-name" type="text" class="input" placeholder="e.g. order_status_check">
+                        </div>
+                        <div class="form-group">
+                            <label class="input-label">Description</label>
+                            <input id="skill-edit-desc" type="text" class="input" placeholder="Short description of this skill">
+                        </div>
+                        <div class="form-group">
+                            <label class="input-label">Trigger Patterns (JSON array of regex)</label>
+                            <textarea id="skill-edit-patterns" class="input" rows="3" placeholder='[".*order.*status.*", ".*tracking.*"]'></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="input-label">Prompt Template</label>
+                            <textarea id="skill-edit-template" class="input" rows="4" placeholder="System prompt to inject when this skill activates..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="input-label">Expected Behavior</label>
+                            <textarea id="skill-edit-expected" class="input" rows="2" placeholder="What the AI should do when this skill is active..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="input-label">Test Cases (JSON)</label>
+                            <textarea id="skill-edit-tests" class="input" rows="3" placeholder='[{"input": "where is my order", "expected_keywords": ["order id", "tracking"]}]'></textarea>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:0.75rem;margin-top:1rem;justify-content:flex-end">
+                        <button class="btn btn-secondary" onclick="closeSkillModal()">Cancel</button>
+                        <button class="btn btn-primary" onclick="saveSkill()">Save Skill</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== DATABASE TAB ===== -->
+        <section id="tab-database" class="tab-content">
+            <div class="glass-panel panel-padded" style="margin-bottom:1.25rem">
+                <div class="panel-header">
+                    <div class="section-title cyan" style="margin-bottom:0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5"/><path d="M3 12a9 3 0 0018 0"/></svg>
+                        DATABASE EXPLORER
+                    </div>
+                    <button class="btn btn-ghost" id="db-refresh-tables-btn">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                        Refresh
+                    </button>
+                </div>
+                <div style="display:grid; grid-template-columns:280px 1fr; gap:1rem; min-height:60vh">
+                    <div id="db-tables-list" style="background:rgba(255,255,255,0.02); border:1px solid var(--border-subtle); border-radius:0.5rem; padding:0.5rem; overflow-y:auto; max-height:75vh"></div>
+                    <div style="display:flex; flex-direction:column; gap:1rem">
+                        <div style="display:flex; gap:0.5rem; align-items:center">
+                            <span class="mono" id="db-current-table" style="font-size:0.85rem; color:var(--text-muted); flex:1">Select a table or run a custom query</span>
+                            <button class="btn btn-ghost" id="db-export-csv-btn" style="font-size:0.65rem" title="Export current result to CSV">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Export CSV
+                            </button>
+                            <button class="btn btn-ghost" id="db-toggle-sql-btn" style="font-size:0.65rem">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                                Custom SQL
+                            </button>
+                        </div>
+                        <div id="db-sql-panel" style="display:none; background:rgba(255,255,255,0.02); border:1px solid var(--border-subtle); border-radius:0.5rem; padding:0.75rem">
+                            <div style="display:flex; gap:0.5rem; margin-bottom:0.5rem; align-items:center; flex-wrap:wrap">
+                                <select id="db-saved-queries" class="input mono" style="font-size:0.7rem; max-width:240px"></select>
+                                <button id="db-save-query-btn" class="btn btn-ghost" style="font-size:0.65rem" title="Save current query">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                    Save
+                                </button>
+                                <button id="db-delete-query-btn" class="btn btn-ghost" style="font-size:0.65rem; color:var(--status-err)" title="Delete selected saved query">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                                </button>
+                            </div>
+                            <textarea id="db-sql-input" class="input mono" rows="4" placeholder="SELECT * FROM messages WHERE ... LIMIT 100" style="width:100%; font-size:0.8rem; resize:vertical; background:rgba(0,0,0,0.3)"></textarea>
+                            <div style="display:flex; gap:0.5rem; margin-top:0.5rem; align-items:center">
+                                <button id="db-run-sql-btn" class="btn btn-primary" style="font-size:0.65rem">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                    Run (Ctrl+Enter)
+                                </button>
+                                <span id="db-sql-status" class="mono" style="font-size:0.7rem; color:var(--text-muted)"></span>
+                            </div>
+                        </div>
+                        <div id="db-result-table"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== SYSTEM TAB ===== -->
+        <section id="tab-system" class="tab-content">
+            <div class="glass-panel panel-padded" style="margin-bottom:1.25rem">
+                <div class="panel-header">
+                    <div class="section-title emerald" style="margin-bottom:0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                        PROVIDER HEALTH
+                    </div>
+                    <button class="btn btn-ghost" id="refresh-health-btn">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                        Refresh
+                    </button>
+                </div>
+                <div id="health-grid" class="health-grid"></div>
+            </div>
+
+            <div class="grid-charts">
+                <div class="glass-panel panel-padded">
+                    <div class="section-title indigo">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                        COST BREAKDOWN (7D)
+                    </div>
+                    <div class="chart-wrap"><canvas id="cost-chart"></canvas></div>
+                </div>
+                <div class="glass-panel panel-padded">
+                    <div class="section-title violet">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
+                        MODEL USAGE SPLIT
+                    </div>
+                    <div class="chart-wrap"><canvas id="model-usage-chart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="glass-panel panel-padded" style="margin-bottom:1.25rem">
+                <div class="panel-header">
+                    <div class="section-title" style="margin-bottom:0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        RECENT SECURITY EVENTS
+                    </div>
+                    <button class="btn btn-ghost" id="refresh-logs-btn">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                        Refresh
+                    </button>
+                </div>
+                <div id="log-viewer" class="log-viewer">Loading logs...</div>
+            </div>
+        </section>
+
+    </main>
+    </div>
+
+    <style>@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } }</style>
+</body>
+</html>

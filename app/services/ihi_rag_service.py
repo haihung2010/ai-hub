@@ -127,6 +127,7 @@ class IHIragService:
         self._db_pool = db_pool
         self._case_cache = []
         self._case_map = {}
+        self.matcher = PatternMatcher()
 
     def load_cases(self) -> int:
         """
@@ -273,11 +274,15 @@ class IHIragService:
 
         with self._db_pool.connection() as conn:
             with conn.cursor() as cur:
+                # Classify symptom from pattern
+                symptom = self.matcher.classify_symptom(
+                    pattern.get("t_min"), pattern.get("v_min"), pattern.get("c_min")
+                )
                 cur.execute("""
-                    INSERT INTO ihi_rag_cases (device_id, severity, pattern, description, confirmed_by)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO ihi_rag_cases (device_id, severity, symptom, pattern, description, confirmed_by)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                     RETURNING id
-                """, (device_id, severity, json.dumps(pattern), description, confirmed_by))
+                """, (device_id, severity, symptom, json.dumps(pattern), description, confirmed_by))
                 case_id = cur.fetchone()["id"]
 
         return case_id
