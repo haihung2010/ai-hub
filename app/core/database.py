@@ -369,6 +369,33 @@ def init_db() -> None:
             )
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS ihi_rag_cases (
+                id SERIAL PRIMARY KEY,
+                device_id TEXT NOT NULL,
+                severity TEXT NOT NULL,
+                symptom TEXT NOT NULL DEFAULT '',
+                pattern JSONB NOT NULL DEFAULT '{}',
+                description TEXT NOT NULL DEFAULT '',
+                resolution TEXT,
+                confirmed_by TEXT,
+                match_count INTEGER NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT 'active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS ihi_feedback (
+                id SERIAL PRIMARY KEY,
+                case_id TEXT NOT NULL,
+                feedback TEXT NOT NULL,
+                rating INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         # Create indexes
         for stmt in [
             "CREATE INDEX IF NOT EXISTS idx_messages_tenant_session ON messages (tenant_id, session_id, id)",
@@ -396,6 +423,7 @@ def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_fanpage_facts_confidence ON fanpage_facts (project_id, confidence DESC)",
             "CREATE INDEX IF NOT EXISTS idx_skills_tenant_project_active ON skills (tenant_id, project_id, is_active)",
             "CREATE INDEX IF NOT EXISTS idx_skills_eval_score ON skills (eval_score DESC)",
+            "CREATE INDEX IF NOT EXISTS idx_ihi_rag_cases_severity ON ihi_rag_cases (severity DESC, match_count DESC)",
         ]:
             conn.execute(stmt)
 

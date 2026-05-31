@@ -38,6 +38,7 @@ from app.routes import skills as skills_routes
 from app.routes import users as users_routes
 from app.routes import mcp_tools as mcp_tools_routes
 from app.routes import facebook_webhook as fb_webhook_routes
+from app.routes import ihi as ihi_routes
 from app.agents.crew_service import CrewService
 from app.core.database import _get_database_url
 from app.services.ai_service import AIService
@@ -312,6 +313,7 @@ def create_app(
     app.include_router(mcp_tools_routes.router)
     app.include_router(fb_webhook_routes.router)
     app.include_router(skills_routes.router)
+    app.include_router(ihi_routes.router)
     # MCP server: expose all API endpoints as MCP tools
     try:
         from fastapi_mcp import FastApiMCP
