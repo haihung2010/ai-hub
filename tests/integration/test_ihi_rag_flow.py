@@ -75,16 +75,16 @@ async def test_rag_list():
 
 @pytest.mark.asyncio
 async def test_feedback_creates_rag():
-    """Test that feedback creates new RAG entry."""
+    """Test that manager feedback creates new RAG entry via /v1/ihi/rag."""
     async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.post(
-            f"{BASE_URL}/v1/ihi/feedback",
+            f"{BASE_URL}/v1/ihi/rag",
             headers={"X-API-KEY": API_KEY},
             json={
-                "case_id": "M-999",
+                "case_id": "RAG-TEST01",
                 "severity": "CRITICAL",
-                "symptom": "motor_noise_overheat",
-                "pattern": {"t_min": 90, "t_max": 100, "v_min": 5.0, "v_max": 10, "c_min": 75, "c_max": 100},
+                "symptom": "overheat_vibration",
+                "pattern": {"t_min": 90, "t_max": 100, "v_min": 5.0, "v_max": 8.0, "c_min": 70, "c_max": 85},
                 "description": "Motor mới bị kêu lạ + nhiệt tăng",
                 "resolution": "Đã kiểm tra, thay dầu bôi trơn"
             }
@@ -93,4 +93,3 @@ async def test_feedback_creates_rag():
         result = resp.json()
         assert "case_id" in result
         assert result["case_id"] is not None
-        # Status field may be present depending on how the route shapes the response
