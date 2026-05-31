@@ -4,6 +4,7 @@ IHI RAG Service - Industrial IoT RAG Case Management
 Provides pattern matching and case retrieval for industrial equipment monitoring.
 """
 
+import json
 from typing import Optional
 
 
@@ -141,7 +142,7 @@ class IHIragService:
             with self._db_pool.connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute("""
-                        SELECT id, device_id, severity, pattern, description,
+                        SELECT id, device_id, severity, symptom, pattern, description,
                                confirmed_by, match_count, created_at
                         FROM ihi_rag_cases
                         ORDER BY severity DESC, match_count DESC
@@ -153,17 +154,18 @@ class IHIragService:
 
             for row in rows:
                 case = {
-                    "id": row[0],
-                    "device_id": row[1],
-                    "severity": row[2],
-                    "pattern": row[3] if isinstance(row[3], dict) else {},
-                    "description": row[4],
-                    "confirmed_by": row[5],
-                    "match_count": row[6] or 0,
-                    "created_at": row[7]
+                    "id": row["id"],
+                    "device_id": row["device_id"],
+                    "severity": row["severity"],
+                    "symptom": row.get("symptom", ""),
+                    "pattern": row["pattern"] if isinstance(row["pattern"], dict) else {},
+                    "description": row["description"],
+                    "confirmed_by": row["confirmed_by"],
+                    "match_count": row["match_count"] or 0,
+                    "created_at": row["created_at"]
                 }
                 self._case_cache.append(case)
-                self._case_map[row[0]] = case
+                self._case_map[row["id"]] = case
 
             return len(self._case_cache)
         except Exception:
@@ -275,8 +277,8 @@ class IHIragService:
                     INSERT INTO ihi_rag_cases (device_id, severity, pattern, description, confirmed_by)
                     VALUES (%s, %s, %s, %s, %s)
                     RETURNING id
-                """, (device_id, severity, pattern, description, confirmed_by))
-                case_id = cur.fetchone()[0]
+                """, (device_id, severity, json.dumps(pattern), description, confirmed_by))
+                case_id = cur.fetchone()["id"]
 
         return case_id
 
@@ -292,7 +294,7 @@ class IHIragService:
             with self._db_pool.connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute("""
-                        SELECT id, device_id, severity, pattern, description,
+                        SELECT id, device_id, severity, symptom, pattern, description,
                                confirmed_by, match_count, created_at
                         FROM ihi_rag_cases
                         WHERE id = %s
@@ -301,14 +303,15 @@ class IHIragService:
 
             if row:
                 return {
-                    "id": row[0],
-                    "device_id": row[1],
-                    "severity": row[2],
-                    "pattern": row[3] if isinstance(row[3], dict) else {},
-                    "description": row[4],
-                    "confirmed_by": row[5],
-                    "match_count": row[6] or 0,
-                    "created_at": row[7]
+                    "id": row["id"],
+                    "device_id": row["device_id"],
+                    "severity": row["severity"],
+                    "symptom": row.get("symptom", ""),
+                    "pattern": row["pattern"] if isinstance(row["pattern"], dict) else {},
+                    "description": row["description"],
+                    "confirmed_by": row["confirmed_by"],
+                    "match_count": row["match_count"] or 0,
+                    "created_at": row["created_at"]
                 }
         except Exception:
             pass
@@ -339,7 +342,7 @@ class IHIragService:
                 with conn.cursor() as cur:
                     if severity:
                         cur.execute("""
-                            SELECT id, device_id, severity, pattern, description,
+                            SELECT id, device_id, severity, symptom, pattern, description,
                                    confirmed_by, match_count, created_at
                             FROM ihi_rag_cases
                             WHERE severity = %s
@@ -348,7 +351,7 @@ class IHIragService:
                         """, (severity, limit))
                     else:
                         cur.execute("""
-                            SELECT id, device_id, severity, pattern, description,
+                            SELECT id, device_id, severity, symptom, pattern, description,
                                    confirmed_by, match_count, created_at
                             FROM ihi_rag_cases
                             ORDER BY severity DESC, match_count DESC
@@ -360,14 +363,15 @@ class IHIragService:
             cases = []
             for row in rows:
                 case = {
-                    "id": row[0],
-                    "device_id": row[1],
-                    "severity": row[2],
-                    "pattern": row[3] if isinstance(row[3], dict) else {},
-                    "description": row[4],
-                    "confirmed_by": row[5],
-                    "match_count": row[6] or 0,
-                    "created_at": row[7]
+                    "id": row["id"],
+                    "device_id": row["device_id"],
+                    "severity": row["severity"],
+                    "symptom": row.get("symptom", ""),
+                    "pattern": row["pattern"] if isinstance(row["pattern"], dict) else {},
+                    "description": row["description"],
+                    "confirmed_by": row["confirmed_by"],
+                    "match_count": row["match_count"] or 0,
+                    "created_at": row["created_at"]
                 }
                 cases.append(case)
 
