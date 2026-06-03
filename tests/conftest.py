@@ -39,8 +39,15 @@ _TEST_TABLES = [
 
 
 @pytest.fixture(autouse=True)
-def isolated_db() -> None:
-    """Truncate all tables before each test for isolation (PostgreSQL)."""
+def isolated_db(request) -> None:
+    """Truncate all tables before each test for isolation (PostgreSQL).
+
+    Tests can opt-out of DB isolation by applying the ``no_isolated_db``
+    marker — e.g. when exercising a subprocess that talks to the real
+    schema and should not see a freshly-truncated DB.
+    """
+    if "no_isolated_db" in request.keywords:
+        return
     if os.getenv("AI_HUB_ALLOW_DB_TRUNCATE_FOR_TESTS") != "1":
         pytest.fail(
             "Refusing to truncate PostgreSQL without "

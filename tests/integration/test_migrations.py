@@ -39,10 +39,13 @@ def _pg_reachable() -> bool:
         return False
 
 
-pytestmark = pytest.mark.skipif(
-    not _pg_reachable(),
-    reason=f"PostgreSQL not reachable at {DATABASE_URL}",
-)
+pytestmark = [
+    pytest.mark.no_isolated_db,
+    pytest.mark.skipif(
+        not _pg_reachable(),
+        reason=f"PostgreSQL not reachable at {DATABASE_URL}",
+    ),
+]
 
 # This test runs as a subprocess and does not depend on the autouse
 # ``isolated_db`` fixture in tests/conftest.py. Run with
