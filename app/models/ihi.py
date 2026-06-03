@@ -87,12 +87,43 @@ class RAGResponse(BaseModel):
     pattern: PatternRange
 
 
+class ThresholdViolationModel(BaseModel):
+    """One threshold violation surfaced in analyze response."""
+    device_id: str
+    measurement: str
+    value: float
+    severity: str
+    threshold_source: str
+    threshold_severity: str
+    unit: str
+    note: str | None = None
+
+
+class AnalyzeRequest(BaseModel):
+    """Request to analyze IHI sensor data (extended with extra measurements)."""
+    ts: str = Field(..., description="Timestamp in DD/MM HH:MM format")
+    data: List[SensorReading] = Field(default_factory=list)
+    extra: dict[str, dict] = Field(
+        default_factory=dict,
+        description="Extra measurements per device: {device_id: {measurement: value}}",
+    )
+    override_thresholds: bool = Field(
+        default=False,
+        description="If true, treat submitted readings as new baseline overrides for the device",
+    )
+    note: str = Field(default="", description="Operator note (used when override_thresholds=true)")
+
+
 class AnalyzeResponse(BaseModel):
     alert: AlertLevel
     devices: List[str]
     case_id: Optional[str] = None
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     symptom: Optional[str] = None
+    # NEW (Layer 1+2+3 pipeline)
+    violations: list[ThresholdViolationModel] = Field(default_factory=list)
+    source_layer: str = "unknown"  # "rule_override" | "rule_default" | "rag" | "llm"
+    narrative: str = ""
 
 
 # === IHI evaluate (LLM-based, independent of IHI rule) ===

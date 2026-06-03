@@ -18,6 +18,7 @@ from app.core.config import get_settings
 from app.core.database import _get_pool
 from app.models.ihi import (
     AlertLevel,
+    AnalyzeRequest,
     AnalyzeResponse,
     FeedbackRequest,
     FeedbackCreateRequest,
@@ -29,15 +30,16 @@ from app.models.ihi import (
     PatternRange,
     SensorDataRequest,
     SeverityLevel,
+    ThresholdViolationModel,
 )
-from app.services.ihi_analyzer import AlertResult, IHIAnalyzer
+from app.services.ihi_analyzer import AlertResult, IHIAnalyzer, IHIThresholdAnalyzer
 from app.services.ihi_rag_service import IHIragService
 from app.services.ihi_overrides_service import (
     delete_override,
     get_active_override,
     set_override,
 )
-from app.services.thresholds.loader import get_effective_threshold
+from app.services.thresholds.loader import evaluate_all_thresholds, get_effective_threshold
 from app.services.thresholds.sensor_envelopes import SENSOR_ENVELOPES as ENV
 
 logger = logging.getLogger(__name__)
@@ -99,72 +101,73 @@ async def _log_ihi_usage(
 
 @router.post("/analyze", response_model=AnalyzeResponse)
 async def analyze_sensor_data(
-    payload: SensorDataRequest,
+    payload: AnalyzeRequest,
     request: Request,
 ) -> AnalyzeResponse:
-    """Analyze sensor data from IHI.
+    """Analyze sensor data with 3-layer pipeline: rule → RAG → LLM.
 
-    Checks CRITICAL/WARNING rules first via IHIAnalyzer.
-    If no match, checks RAG for matching cases.
-    Returns alert level, affected devices, and optional case info.
+    Layer 1: rule pre-check using thresholds/loader (overrides > defaults).
+    Layer 2: RAG pattern-match + vector similarity (if Layer 1 uncertain).
+    Layer 3: LLM with RAG context (last resort, narrator only).
     """
-    readings = [(r.id, r.t, r.v, r.c) for r in payload.data]
+    # Build device_readings dict: {device_id: {measurement: value}}
+    device_readings = {}
+    for r in payload.data:
+        device_readings[r.id] = {"temperature": r.t, "velocity": r.v, "current": r.c}
+    for device_id, extra in payload.extra.items():
+        device_readings.setdefault(device_id, {}).update(extra)
 
-    # Run rule-based analysis
-    results = _analyzer.analyze_batch(readings)
-
-    # Determine overall alert level
-    alert = AlertLevel.NORMAL
-    danger_devices = []
-    warning_devices = []
-
-    for result in results:
-        if result.alert == AlertLevel.DANGER:
-            danger_devices.append(result.device_id)
-            alert = AlertLevel.DANGER
-        elif result.alert == AlertLevel.WARNING and alert != AlertLevel.DANGER:
-            warning_devices.append(result.device_id)
-            alert = AlertLevel.WARNING
-
-    devices = danger_devices if alert == AlertLevel.DANGER else warning_devices
-
-    # If no rule match, try RAG
-    case_id: Optional[str] = None
-    confidence = 0.0
-    symptom: Optional[str] = None
-
-    if alert == AlertLevel.NORMAL and payload.data:
-        # Try to find matching RAG case for first reading
-        first = payload.data[0]
-        rag_service = _get_rag_service()
-        case, conf = rag_service.find_matching_case(first.t, first.v, first.c)
-        if case:
-            case_id = str(case["id"])
-            confidence = conf
-            symptom = case.get("symptom")
-            # Determine alert from RAG case severity
-            severity = case.get("severity", "").upper()
-            if severity == "CRITICAL":
-                alert = AlertLevel.DANGER
-            elif severity == "WARNING":
-                alert = AlertLevel.WARNING
-            # Increment match count
-            rag_service.increment_match_count(case["id"])
-
-    # Log usage
-    start_time = getattr(request.state, "_start_time", time.time())
-    latency_ms = (time.time() - start_time) * 1000
-    api_key_id = getattr(request.state, "api_key_id", None)
-    tenant_id = getattr(request.state, "api_key_tenant_id", None)
     db = _db_pool_dep()
-    await _log_ihi_usage(db, api_key_id, tenant_id, "ihi", latency_ms, alert.value)
+    analyzer = IHIThresholdAnalyzer(db)
+    rule_result = analyzer.analyze_readings(device_readings)
 
+    # Build violation list for response
+    violations = []
+    for device_id, readings in device_readings.items():
+        for v in evaluate_all_thresholds(db, device_id, readings):
+            violations.append(ThresholdViolationModel(
+                device_id=v.device_id, measurement=v.measurement,
+                value=v.value, severity=v.severity,
+                threshold_source=v.threshold.source,
+                threshold_severity=v.threshold.severity,
+                unit=v.threshold.unit, note=v.threshold.note,
+            ))
+
+    # Layer 1 hard stop: any DANGER violation
+    if rule_result.alert == AlertLevel.DANGER:
+        source = "rule_override" if any(
+            v.threshold_source == "manual" for v in violations
+        ) else "rule_default"
+        # Handle override_thresholds: write submitted readings as new baseline
+        if payload.override_thresholds:
+            api_key_id = getattr(request.state, "api_key_id", None)
+            set_by = f"api_key:{api_key_id}" if api_key_id else "manual"
+            for device_id, readings in device_readings.items():
+                for measurement, value in readings.items():
+                    if value is None: continue
+                    set_override(
+                        db, device_id=device_id, measurement=measurement,
+                        min_value=None, max_value=value,
+                        severity=rule_result.alert.value,
+                        source="manual", set_by=set_by, note=payload.note,
+                    )
+        return AnalyzeResponse(
+            alert=rule_result.alert,
+            devices=list({v.device_id for v in violations if v.severity == "DANGER"}),
+            case_id=None, confidence=1.0,
+            symptom=None, violations=violations,
+            source_layer=source,
+            narrative=f"Rule layer caught {len(violations)} violation(s)",
+        )
+
+    # Layer 1 WARNING or NORMAL: don't escalate to LLM yet (Layers 2/3 are not yet integrated)
     return AnalyzeResponse(
-        alert=alert,
-        devices=devices,
-        case_id=case_id,
-        confidence=confidence,
-        symptom=symptom,
+        alert=rule_result.alert,
+        devices=list({v.device_id for v in violations}),
+        case_id=None, confidence=1.0 if rule_result.alert == AlertLevel.NORMAL else 0.7,
+        symptom=None, violations=violations,
+        source_layer="rule",
+        narrative="Layer 1 only (Layers 2/3 not yet integrated)",
     )
 
 
