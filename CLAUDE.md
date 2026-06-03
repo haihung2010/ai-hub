@@ -12,7 +12,7 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 
 ### Core Chat
 - **Local inference**: llama.cpp Q8 backend (port 8080), OpenAI-compatible API
-- **Cloud fallback**: OpenRouter (`openai/gpt-oss-20b:free`), project allow/deny policy
+- **Cloud fallback**: MiniMax M3 (Anthropic-compatible, `api.minimax.io`, prompt caching) — primary when `MINIMAX_ENABLED=true`. Falls back to OpenRouter (`openai/gpt-oss-20b:free`) otherwise. Project allow/deny policy.
 - **Streaming**: SSE streaming with `[DONE]` sentinel
 - **Multimodal**: Image input (Base64 → OpenAI `image_url` content-parts format) — Lite mode only
 - **Model modes**: `lite` (Gemma4 E2B Q4, 8k ctx, default), `normal` (same model with default_num_ctx), `external` (cloud only)
@@ -95,6 +95,7 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 | `app/services/failure_risk_service.py` | Failure risk scoring and actions |
 | `app/services/providers/llama_cpp.py` | llama.cpp API integration (handles prompt formatting) |
 | `app/services/providers/openrouter.py` | Cloud fallback via OpenRouter |
+| `app/services/providers/minimax.py` | Cloud fallback via MiniMax M3 (Anthropic-compatible, prompt caching) |
 
 ### Security Layer
 - `app/middleware/security.py`: API key auth, Redis rate limiting, denial logging
@@ -177,6 +178,16 @@ Nâng cấp GPU để tăng throughput thực sự:
 - **Model hot-swap API**: `POST /v1/admin/model/switch` đã có, UI có button (cần test thực tế trên prod)
 - **Streaming memory extraction**: hiện tại chạy sau khi reply xong, có thể chạy parallel
 - **Multi-tenant isolation**: tenant_id đã có trong mọi bảng, cần enforce ở route layer
+
+## MiniMax Live Eval
+
+Live test against the real MiniMax M3 API requires a Subscription Key. Set:
+  `MINIMAX_API_KEY=<key> RUN_LIVE=1`
+then run:
+  `./venv/bin/pytest tests/integration/test_minimax_provider_live.py --no-cov -v`
+The first test confirms Vietnamese replies; the second test verifies that
+prompt caching actually creates an ephemeral cache block on the second
+consecutive request (token savings on repeated system prompts).
 
 ## Known Limitations (còn lại sau Phase 1)
 - Single llama.cpp instance — no horizontal scaling (Phase 3)
