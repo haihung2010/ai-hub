@@ -500,18 +500,28 @@ Thiết bị:
 - PLC-001 (digital): AI1 (V), DI1..DI4 (0/1)
 - Meter-001 (3-phase electric): V1N/V2N/V3N (V), I1/I2/I3 (A), kW/kW1/kW2/kW3, kVA, kVAr, kWh, PF/PF1/PF2/PF3, F (Hz)
 
-Trả lời ngắn gọn bằng tiếng Việt, format:
+Ngưỡng tham khảo (đã cập nhật theo NEMA MG-1, ISO 10816-3):
+- Temperature: >90°C DANGER, 80-90°C WARNING (NEMA Class B SF=1.15)
+- Velocity (Class II rigid, Sensor-001 default): >4.5 mm/s DANGER, 2.8-4.5 WARNING (ISO 10816-3)
+- Velocity (Class II flexible): >7.1 mm/s DANGER, 4.5-7.1 WARNING
+- Current: >75A DANGER, 65-75A WARNING
+- Voltage imbalance: >5% DANGER, 2-5% WARNING (NEMA MG-1 Part 14 — KHÔNG dùng 10% cũ)
+- Frequency: <49 Hz hoặc >51 Hz WARNING
+- Battery sensor: <10% DANGER, 10-20% WARNING (LoRaWAN convention)
+- PLC AI range: 0-10V (hoặc 4-20mA); ngoài range = DANGER (broken sensor)
+- Phase loss: 1 phase <0.5A trong khi 2 phase >5A = DANGER
+- All phases near 0A: DANGER (machine off hoặc mất toàn bộ pha)
+- Power factor: <0.7 WARNING
+- DI đột ngột đổi trạng thái: cảnh báo
+
+Lưu ý: Mỗi device có thể có manual override (set bởi operator). Override luôn ưu tiên cao nhất.
+
+{rag_context}
+
+Trả lời ngắn gọn bằng tiếng Việt, format BẮT BUỘC:
 **Verdict:** NORMAL / WARNING / DANGER
 **Giải thích:** (2-4 câu, nêu rõ chỉ số bất thường nếu có)
-**Khuyến nghị:** (1 câu, hoặc "Không cần" nếu NORMAL)
-
-Ngưỡng tham khảo:
-- Temperature: >90°C DANGER, 80-90°C WARNING
-- Velocity: >6 mm/s DANGER, 4.5-6 mm/s WARNING
-- Current: >75A DANGER, 65-75A WARNING
-- Voltage imbalance (>10% chênh 3 pha): WARNING
-- Power factor: <0.7 WARNING
-- DI đột ngột đổi trạng thái: cảnh báo"""
+**Khuyến nghị:** (1 câu, hoặc "Không cần" nếu NORMAL)"""
 
 
 @router.post("/evaluate", response_model=IHIEvaluateResponse)
