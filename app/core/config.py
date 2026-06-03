@@ -78,6 +78,15 @@ class Settings(BaseSettings):
     ai_max_tokens: int = Field(default=0, ge=0, alias="AI_MAX_TOKENS")
     local_max_tokens: int = Field(default=0, ge=0, alias="LOCAL_MAX_TOKENS")
     openrouter_max_tokens: int = Field(default=0, ge=0, alias="OPENROUTER_MAX_TOKENS")
+    # MiniMax M3 cloud fallback (Anthropic-compatible, supports cache_control)
+    minimax_enabled: bool = Field(default=False, alias="MINIMAX_ENABLED")
+    minimax_api_key: str = Field(default="", alias="MINIMAX_API_KEY")
+    minimax_base_url: str = Field(default="https://api.minimax.io/v1", alias="MINIMAX_BASE_URL")
+    minimax_model: str = Field(default="MiniMax-M3", alias="MINIMAX_MODEL")
+    minimax_timeout_seconds: float = Field(default=90.0, gt=0, alias="MINIMAX_TIMEOUT_SECONDS")
+    minimax_max_tokens: int = Field(default=0, ge=0, alias="MINIMAX_MAX_TOKENS")
+    minimax_allowed_projects: list[str] = Field(default_factory=list, alias="MINIMAX_ALLOWED_PROJECTS")
+    minimax_denied_projects: list[str] = Field(default_factory=list, alias="MINIMAX_DENIED_PROJECTS")
     adaptive_max_tokens_enabled: bool = Field(default=True, alias="ADAPTIVE_MAX_TOKENS_ENABLED")
     adaptive_max_tokens_threshold: int = Field(default=5, ge=1, alias="ADAPTIVE_MAX_TOKENS_THRESHOLD")
     adaptive_max_tokens_cutoff_pct: float = Field(default=0.75, ge=0.1, le=1.0, alias="ADAPTIVE_MAX_TOKENS_CUTOFF_PCT")
@@ -89,6 +98,13 @@ class Settings(BaseSettings):
     api_key: str = Field(alias="API_KEY")
     rate_limit_per_minute: int = Field(default=5, ge=1, alias="RATE_LIMIT_PER_MINUTE")
     security_log_file: str = Field(default="security.log", alias="SECURITY_LOG_FILE")
+    # Langfuse tracing — when LANGFUSE_PUBLIC_KEY is non-empty, every chat
+    # request is traced (latency, token usage, retrieval hits, model id).
+    # Leave empty to disable; ai-hub continues to use its own PG usage table
+    # for cost/latency accounting regardless of this setting.
+    langfuse_public_key: str = Field(default="", alias="LANGFUSE_PUBLIC_KEY")
+    langfuse_secret_key: str = Field(default="", alias="LANGFUSE_SECRET_KEY")
+    langfuse_host: str = Field(default="http://localhost:3000", alias="LANGFUSE_HOST")
     public_health_enabled: bool = Field(default=True, alias="PUBLIC_HEALTH_ENABLED")
     public_docs_enabled: bool = Field(default=True, alias="PUBLIC_DOCS_ENABLED")
     auth_failure_limit: int = Field(default=10, ge=1, alias="AUTH_FAILURE_LIMIT")
@@ -185,13 +201,16 @@ class Settings(BaseSettings):
     # Format: {"project_name": {"max_history_messages": 10, "model_mode": "lite", ...}}
     per_project_overrides: dict[str, dict] = Field(default_factory=dict, alias="PER_PROJECT_OVERRIDES")
 
-    @field_validator("allowed_origins", "allowed_hosts", "openrouter_allowed_projects", "openrouter_denied_projects", "llama_cpp_nodes", mode="before")
+    @field_validator("allowed_origins", "allowed_hosts", "openrouter_allowed_projects", "openrouter_denied_projects", "llama_cpp_nodes", "minimax_allowed_projects", "minimax_denied_projects", mode="before")
     @classmethod
     def _parse_string_list(cls, value: list[str] | str) -> list[str]:
         if isinstance(value, list):
             return value
         if isinstance(value, str):
-            parsed = json.loads(value)
+            stripped = value.strip()
+            if not stripped:
+                return []
+            parsed = json.loads(stripped)
             if isinstance(parsed, list) and all(isinstance(item, str) for item in parsed):
                 return parsed
         raise ValueError("value must be a list of strings")
