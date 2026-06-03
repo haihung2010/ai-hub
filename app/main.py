@@ -56,10 +56,13 @@ from app.services.prediction_service import PredictionService
 from app.services.providers.llama_cpp import LlamaCppProvider
 from app.services.providers.load_balancer import LlamaCppLoadBalancer
 from app.services.providers.openrouter import OpenRouterProvider
+from app.services.providers.minimax import MiniMaxProvider
 from app.services.providers.gemini import GeminiProvider
 from app.services.providers.nine_router import NineRouterProvider
 from app.services.structmem_service import StructMemService
 from app.services.summary_service import SummaryService
+from app.services.tracing_service import is_enabled as langfuse_enabled
+from app.services.tracing_service import shutdown as langfuse_shutdown
 from app.services.tools.web_search_service import WebSearchService
 from app.services.usage_service import UsageService
 from app.services.user_service import UserService
@@ -166,6 +169,18 @@ def create_app(
                 if settings.openrouter_enabled
                 else None
             )
+            minimax = (
+                MiniMaxProvider(
+                    client=client,
+                    api_key=settings.minimax_api_key,
+                    model=settings.minimax_model,
+                    base_url=settings.minimax_base_url,
+                    enable_caching=True,
+                    timeout_seconds=settings.minimax_timeout_seconds,
+                )
+                if settings.minimax_enabled
+                else None
+            )
             gemini = (
                 GeminiProvider(
                     client=client,
@@ -233,6 +248,24 @@ def create_app(
             app.state.start_time = app_start_time
             app.state.local_provider = local_provider
             app.state.openrouter_provider = openrouter
+            # Cloud fallback: prefer MiniMax (M3 + prompt caching) when
+            # enabled; fall back to OpenRouter otherwise.
+            if minimax is not None:
+                app.state.minimax_provider = minimax
+                app.state.cloud = minimax
+                logger.info(
+                    "cloud provider: MiniMax M3 (model=%s, caching=on)",
+                    settings.minimax_model,
+                )
+            elif openrouter is not None:
+                app.state.cloud = openrouter
+                logger.info(
+                    "cloud provider: OpenRouter (model=%s)",
+                    settings.openrouter_model,
+                )
+            else:
+                app.state.cloud = None
+                logger.info("cloud provider: disabled")
             app.state.gemini_provider = gemini
             app.state.history_service = history
             app.state.user_service = users
@@ -265,7 +298,7 @@ def create_app(
                 structmem=structmem,
                 predictions=predictions,
                 pinned_memory=pinned_memory,
-                cloud=openrouter,
+                cloud=app.state.cloud,
                 usage=usage,
                 failure_risk=failure_risk,
                 knowledge_retrieval=knowledge_retrieval,
@@ -280,7 +313,12 @@ def create_app(
             # Store module-level reference for get_ai_service() callers
             global _ai_service_instance
             _ai_service_instance = app.state.ai_service
+            if langfuse_enabled():
+                logger.info("Langfuse tracing active")
             yield
+            # Graceful shutdown — flush pending Langfuse spans so a clean
+            # exit does not drop the last few traces.
+            langfuse_shutdown()
 
     app = FastAPI(
         title="AI Hub",
