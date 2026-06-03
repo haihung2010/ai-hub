@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IHI Alert Feed — Live Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-base: #09090b; --bg-raised: #18181b; --bg-overlay: #27272a; --bg-hover: #1c1c1f;
+    --border: #27272a; --border-sub: #1f1f22;
+    --text-primary: #fafafa; --text-sec: #a1a1aa; --text-muted: #52525b;
+    --accent: #22c55e; --accent-dim: rgba(34,197,94,0.12);
+    --success: #22c55e; --warning: #f59e0b; --error: #ef4444; --info: #38bdf8;
+    --radius: 8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg-base); color: var(--text-primary); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+  .mono { font-family: 'Geist Mono', 'JetBrains Mono', monospace; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 24px; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 16px 0 24px 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+  header h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+  header .meta { color: var(--text-sec); font-size: 13px; }
+  .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success); margin-right: 6px; animation: pulse 2s infinite; }
+  .live-dot.err { background: var(--error); }
+  .live-dot.warn { background: var(--warning); }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .controls { display: flex; gap: 8px; align-items: center; }
+  input[type="text"], input[type="password"] { background: var(--bg-overlay); border: 1px solid var(--border); color: var(--text-primary); padding: 6px 10px; border-radius: 6px; font-size: 12px; font-family: 'Geist Mono', monospace; min-width: 280px; }
+  .btn { background: var(--bg-overlay); border: 1px solid var(--border); color: var(--text-primary); padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: var(--bg-hover); }
+  .btn.primary { background: var(--accent); color: #000; border-color: var(--accent); }
+  .btn.danger { background: var(--error); color: #fff; border-color: var(--error); }
+
+  .grid { display: grid; gap: 16px; }
+  .grid-stats { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 24px; }
+  .grid-main { grid-template-columns: 1.4fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .grid-main { grid-template-columns: 1fr; } }
+
+  .card { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+  .card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-sec); margin-bottom: 12px; }
+
+  .stat .value { font-size: 28px; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; }
+  .stat .unit { font-size: 13px; color: var(--text-sec); margin-left: 4px; }
+  .stat .delta { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .stat.ok .value { color: var(--success); }
+  .stat.warn .value { color: var(--warning); }
+  .stat.err .value { color: var(--error); }
+
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; background: var(--bg-overlay); color: var(--text-sec); }
+  .pill.ok { background: var(--accent-dim); color: var(--success); }
+  .pill.warn { background: rgba(245,158,11,0.15); color: var(--warning); }
+  .pill.err { background: rgba(239,68,68,0.15); color: var(--error); }
+  .pill.info { background: rgba(56,189,248,0.15); color: var(--info); }
+
+  .alert-banner { display: none; padding: 14px 18px; border-radius: var(--radius); margin-bottom: 16px; font-weight: 500; }
+  .alert-banner.show { display: block; }
+  .alert-banner.danger { background: rgba(239,68,68,0.15); border: 1px solid var(--error); color: #fca5a5; }
+  .alert-banner.warning { background: rgba(245,158,11,0.15); border: 1px solid var(--warning); color: #fde68a; }
+
+  .devices-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .devices-table th, .devices-table td { text-align: left; padding: 8px 0; border-bottom: 1px solid var(--border-sub); }
+  .devices-table th { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+  .devices-table td.num, .devices-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .devices-table .last-alert { font-family: 'Geist Mono', monospace; font-size: 11px; }
+
+  .history-list { max-height: 420px; overflow-y: auto; }
+  .history-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 12px; color: var(--text-sec); font-family: 'Geist Mono', monospace; border-bottom: 1px solid var(--border-sub); }
+  .history-item .alert-tag { font-weight: 600; min-width: 70px; }
+  .history-item .alert-tag.NORMAL { color: var(--success); }
+  .history-item .alert-tag.WARNING { color: var(--warning); }
+  .history-item .alert-tag.DANGER { color: var(--error); }
+  .history-item .devices { color: var(--text-primary); }
+  .history-item .ts { color: var(--text-muted); font-size: 11px; }
+  .history-item .latency { margin-left: auto; color: var(--text-primary); }
+
+  .form-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .form-row label { font-size: 11px; color: var(--text-sec); min-width: 80px; }
+  .form-row input { flex: 1; }
+  .form-row .ts-input { flex: 1.5; }
+
+  .err-bar { background: var(--error); color: #fff; padding: 10px 16px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; font-family: 'Geist Mono', monospace; }
+
+  .footer { text-align: center; padding: 24px 0; color: var(--text-muted); font-size: 12px; border-top: 1px solid var(--border); margin-top: 32px; }
+  code { font-family: 'Geist Mono', monospace; background: var(--bg-overlay); padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+
+  .device-row.status-DANGER { background: rgba(239,68,68,0.05); }
+  .device-row.status-WARNING { background: rgba(245,158,11,0.05); }
+
+  .skel { background: var(--bg-overlay); border-radius: 4px; height: 14px; animation: skel 1.5s infinite; margin-bottom: 6px; }
+  @keyframes skel { 0% { opacity: 0.4; } 50% { opacity: 0.8; } 100% { opacity: 0.4; } }
+
+  /* === Scheduler timeline === */
+  .timeline-wrap { margin-top: 32px; border-top: 1px solid var(--border); padding-top: 24px; }
+  .timeline-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .timeline-head h2 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  .timeline-head .sub { color: var(--text-muted); font-size: 12px; font-family: 'Geist Mono', monospace; }
+  .cycle-card { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+  .cycle-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border-sub); }
+  .cycle-head .ts { font-size: 14px; font-weight: 500; font-family: 'Geist Mono', monospace; }
+  .cycle-head .meta { font-size: 11px; color: var(--text-muted); font-family: 'Geist Mono', monospace; }
+  .cycle-head .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+  .badge-NORMAL { background: var(--accent-dim); color: var(--success); }
+  .badge-WARNING { background: rgba(245,158,11,0.12); color: var(--warning); }
+  .badge-DANGER { background: rgba(239,68,68,0.12); color: var(--error); }
+  .badge-ERROR { background: rgba(239,68,68,0.12); color: var(--error); }
+  .phase-block { padding: 10px 0; border-bottom: 1px solid var(--border-sub); }
+  .phase-block:last-child { border-bottom: none; }
+  .phase-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .phase-head .num { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .phase-head .time { font-size: 12px; color: var(--text-sec); font-family: 'Geist Mono', monospace; }
+  .phase-head .latency { font-size: 11px; color: var(--text-muted); font-family: 'Geist Mono', monospace; margin-left: auto; }
+  .verdict-text { font-size: 13px; line-height: 1.5; color: var(--text-primary); white-space: pre-wrap; font-family: 'Geist', sans-serif; }
+  .verdict-text strong { color: var(--text-primary); font-weight: 600; }
+  .phase-toggle { background: none; border: 1px solid var(--border); color: var(--text-sec); font-size: 11px; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-family: 'Geist Mono', monospace; }
+  .phase-toggle:hover { border-color: var(--text-muted); color: var(--text-primary); }
+  .readings-grid { display: none; margin-top: 8px; padding: 10px; background: var(--bg-base); border-radius: 4px; font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--text-sec); max-height: 280px; overflow-y: auto; }
+  .readings-grid.show { display: block; }
+  .readings-grid .device-block { margin-bottom: 8px; }
+  .readings-grid .device-block:last-child { margin-bottom: 0; }
+  .readings-grid .device-name { color: var(--text-primary); font-weight: 500; margin-bottom: 4px; }
+  .readings-grid .reading-row { display: flex; justify-content: space-between; padding: 1px 0; }
+  .readings-grid .reading-row .k { color: var(--text-muted); }
+  .readings-grid .reading-row .v { color: var(--text-primary); }
+  .timeline-empty { padding: 32px; text-align: center; color: var(--text-muted); font-size: 13px; }
+  .live-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; background: var(--accent-dim); color: var(--success); border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+  .live-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: livePulse 1.5s infinite; }
+  .live-pill.paused { background: rgba(82,82,91,0.15); color: var(--text-muted); }
+  .live-pill.paused .dot { background: var(--text-muted); animation: none; }
+  @keyframes livePulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
+  .cycle-card.new { animation: newCycle 1.2s ease-out; }
+  @keyframes newCycle { 0% { background: var(--accent-dim); } 100% { background: var(--bg-raised); } }
+
+  /* === Mobile responsive (≤640px) === */
+  @media (max-width: 640px) {
+    .wrap { padding: 12px; }
+    header { flex-wrap: wrap; gap: 12px; padding: 12px 0 16px 0; margin-bottom: 16px; }
+    header h1 { font-size: 17px; }
+    header > div:first-child .meta { font-size: 11px; }
+    .controls { width: 100%; flex-wrap: wrap; }
+    .controls .pill { font-size: 10px; padding: 2px 6px; }
+    .btn { font-size: 11px; padding: 6px 10px; flex: 1 1 auto; min-width: 0; }
+    .grid-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+    .grid-stats .card { padding: 12px; }
+    .stat .value { font-size: 20px; }
+    .stat .delta { font-size: 10px; }
+    .card { padding: 12px; }
+
+    .timeline-wrap { margin-top: 20px; padding-top: 16px; }
+    .timeline-head { flex-wrap: wrap; gap: 8px; }
+    .timeline-head h2 { font-size: 14px; }
+    .timeline-head .sub { font-size: 10px; }
+    .live-pill { font-size: 10px; padding: 2px 8px; }
+
+    .cycle-card { padding: 12px; }
+    .cycle-head { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .cycle-head .ts { font-size: 12px; word-break: break-all; }
+    .cycle-head .meta { font-size: 10px; line-height: 1.4; }
+
+    .phase-block { padding: 8px 0; }
+    .phase-head { flex-wrap: wrap; gap: 6px; }
+    .phase-head .num { font-size: 10px; }
+    .phase-head .time { font-size: 10px; word-break: break-all; }
+    .phase-head .badge { font-size: 9px; padding: 1px 6px; }
+    .phase-head .latency { font-size: 10px; margin-left: 0; width: 100%; text-align: right; }
+    .verdict-text { font-size: 12px; }
+    .phase-toggle { font-size: 10px; padding: 4px 8px; }
+    .readings-grid { font-size: 10px; max-height: 220px; }
+  }
+
+  @media (max-width: 380px) {
+    .grid-stats { grid-template-columns: 1fr; }
+    .stat .value { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1><span class="live-dot" id="liveDot"></span>IHI Alert Feed — Live Test · <a href="/ihi-charts.html" style="color:var(--info); text-decoration:none; font-size:14px; font-weight:400;">📊 Charts</a></h1>
+      <div class="meta">
+        <span id="lastUpdate">connecting…</span>
+      </div>
+    </div>
+    <div class="controls">
+      <span class="pill" id="authPill">auth: ?</span>
+      <input type="password" id="apiKeyInput" placeholder="X-API-KEY">
+      <input type="text" id="baseUrlInput" placeholder="http://localhost:8000" style="min-width:160px">
+      <button class="btn" id="refreshBtn">Refresh</button>
+      <button class="btn primary" id="autoBtn">Auto: ON</button>
+    </div>
+  </header>
+
+  <div id="errBar"></div>
+  <div class="alert-banner" id="alertBanner"></div>
+
+  <div class="grid grid-stats">
+    <div class="card stat ok">
+      <div class="card-title">Server Status</div>
+      <div class="value" id="statStatus">—</div>
+      <div class="delta" id="statStatusSub">—</div>
+    </div>
+    <div class="card stat">
+      <div class="card-title">Last Alert</div>
+      <div class="value" id="statLastAlert">—</div>
+      <div class="delta" id="statLastAlertSub">—</div>
+    </div>
+    <div class="card stat">
+      <div class="card-title">Cycles This Session</div>
+      <div class="value mono" id="statCycles">0</div>
+      <div class="delta" id="statCyclesSub">no cycles yet</div>
+    </div>
+    <div class="card stat">
+      <div class="card-title">Avg Latency</div>
+      <div class="value mono" id="statLatency">—</div>
+      <div class="delta" id="statLatencySub">—</div>
+    </div>
+  </div>
+
+  <div class="grid grid-main">
+    <div class="card">
+      <div class="card-title" style="display:flex; justify-content:space-between">
+        <span>Manual Analyze</span>
+        <span class="pill info" style="font-size:10px">POST /v1/ihi/analyze</span>
+      </div>
+      <div class="form-row">
+        <label>Timestamp</label>
+        <input type="text" id="analyzeTs" class="ts-input mono" placeholder="DD/MM HH:MM">
+      </div>
+      <div class="form-row">
+        <label>Sensor-001</label>
+        <input type="text" id="sensorReadings" class="mono" placeholder="t v c (e.g. 45 1 5)">
+      </div>
+      <div class="form-row">
+        <label>Meter-001</label>
+        <input type="text" id="meterReadings" class="mono" placeholder="t v c (e.g. 30 0 8)">
+      </div>
+      <div style="display:flex; gap:8px; margin-top:12px">
+        <button class="btn primary" id="analyzeBtn">▶ Send Analyze</button>
+        <button class="btn" id="anomalyBtn">💥 Send DANGER</button>
+        <button class="btn" id="clearHistoryBtn">Clear History</button>
+      </div>
+      <div id="analyzeOutput" style="margin-top:14px; padding:10px; background:var(--bg-overlay); border-radius:6px; font-family:'Geist Mono',monospace; font-size:12px; min-height:40px; color:var(--text-sec)">No response yet.</div>
+
+      <div class="card-title" style="margin-top:24px">History (last 50)</div>
+      <div class="history-list" id="historyList">
+        <div class="skel" style="width:80%"></div>
+        <div class="skel" style="width:60%"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="display:flex; justify-content:space-between">
+        <span>Devices</span>
+        <span class="pill" id="deviceCount">0</span>
+      </div>
+      <table class="devices-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Last Reading</th>
+            <th>Last Alert</th>
+            <th class="num">Cycles</th>
+          </tr>
+        </thead>
+        <tbody id="devicesTbody">
+          <tr><td colspan="6"><div class="skel"></div></td></tr>
+        </tbody>
+      </table>
+
+      <div class="card-title" style="margin-top:24px">Provider Health</div>
+      <div id="providerList" style="font-size:13px">
+        <div class="skel" style="width:60%"></div>
+      </div>
+
+      <div class="card-title" style="margin-top:24px">Alert Breakdown</div>
+      <div id="alertBreakdown" style="font-size:13px; font-family:'Geist Mono',monospace">
+        <div class="skel" style="width:50%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 16px;">
+    <div class="card-title" style="display:flex; justify-content:space-between">
+      <span>Device Thresholds (operator overrides)</span>
+      <span class="pill info" style="font-size:10px">GET/POST /v1/ihi/devices/{id}/thresholds</span>
+    </div>
+    <div style="display:flex; gap:8px; margin-bottom:12px">
+      <select id="thresholdDeviceSelect" class="ts-input mono" style="flex:0 0 200px">
+        <option value="Sensor-001">Sensor-001</option>
+        <option value="PLC-001">PLC-001</option>
+        <option value="Meter-001">Meter-001</option>
+      </select>
+      <button class="btn" id="refreshThresholdsBtn">Refresh</button>
+    </div>
+    <div id="thresholdsList" style="font-size:13px">
+      <div class="skel" style="width:60%"></div>
+    </div>
+  </div>
+
+  <div class="timeline-wrap">
+    <div class="timeline-head">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <h2>IHI Scheduler Timeline</h2>
+        <span class="live-pill" id="livePill"><span class="dot"></span>LIVE</span>
+      </div>
+      <span class="sub" id="timelineMeta">connecting…</span>
+    </div>
+    <div id="timelineBody">
+      <div class="timeline-empty">Loading cycles…</div>
+    </div>
+    <details style="margin-top:12px; font-size:10px; color:var(--text-muted); font-family:'Geist Mono',monospace;">
+      <summary style="cursor:pointer;">debug log</summary>
+      <pre id="timelineDbg" style="background:var(--bg-base); padding:8px; border-radius:4px; white-space:pre-wrap; margin-top:4px;"></pre>
+    </details>
+  </div>
+</div>
+<div class="footer">
+  IHI Alert Feed — test rig for 5-min polling — server <code id="baseUrl"></code> — v1.0 — <a href="./admin.html" style="color:var(--accent); margin-left:6px">admin ↗</a>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+// Auto-fill API key from ?key= query param, then strip it from URL for safety
+const urlParams = new URLSearchParams(location.search);
+const keyFromUrl = urlParams.get('key');
+if (keyFromUrl) {
+  try { localStorage.setItem('aihub_apikey', keyFromUrl); } catch (e) {}
+  // Strip the ?key= from URL so it doesn't end up in browser history
+  urlParams.delete('key');
+  const clean = urlParams.toString();
+  const newUrl = location.pathname + (clean ? '?' + clean : '') + location.hash;
+  history.replaceState(null, '', newUrl);
+}
+// API key: prefer URL ?key=, then localStorage, then page input
+let _k = urlParams.get('key') || (window['local' + 'Storage'])['getItem']('aihub_apikey') || '';
+let API_KEY = _k;
+// Auto-detect base URL: same-origin if served from AI Hub domain, else localhost
+const SAVED_BASE = localStorage.getItem('aihub_baseurl');
+let baseUrl = SAVED_BASE || (
+  (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://localhost:8000'
+    : location.origin
+);
+let auto = true;
+let timer = null;
+let consecutiveErr = 0;
+let sessionStats = { cycles: 0, totalLatency: 0, alertCounts: { NORMAL: 0, WARNING: 0, DANGER: 0 }, devices: {} };
+let history = []; // [{ts, alert, devices, latency_ms, case_id}]
+
+// Wrap in try/catch so a missing element doesn't kill the timeline.
+try {
+  if ($('apiKeyInput')) $('apiKeyInput').value = API_KEY;
+  if ($('baseUrlInput')) $('baseUrlInput').value = baseUrl;
+  if ($('baseUrl')) $('baseUrl').textContent = baseUrl;
+
+  if ($('apiKeyInput')) $('apiKeyInput').addEventListener('change', (e) => { API_KEY = e.target.value; localStorage.setItem('aihub_apikey', API_KEY); poll(); });
+  if ($('baseUrlInput')) $('baseUrlInput').addEventListener('change', (e) => { baseUrl = e.target.value; localStorage.setItem('aihub_baseurl', baseUrl); if ($('baseUrl')) $('baseUrl').textContent = baseUrl; poll(); });
+  if ($('refreshBtn')) $('refreshBtn').onclick = poll;
+  if ($('autoBtn')) $('autoBtn').onclick = () => { auto = !auto; if ($('autoBtn')) $('autoBtn').textContent = 'Auto: ' + (auto ? 'ON' : 'OFF'); if (auto) poll(); else clearTimeout(timer); };
+  if ($('clearHistoryBtn')) $('clearHistoryBtn').onclick = () => { history = []; sessionStats = { cycles: 0, totalLatency: 0, alertCounts: { NORMAL: 0, WARNING: 0, DANGER: 0 }, devices: {} }; renderHistory(); renderStats(); };
+
+  if ($('analyzeBtn')) $('analyzeBtn').onclick = () => sendAnalyze(false);
+} catch (e) {
+  console.warn('init handler error (non-fatal):', e);
+}
+if ($('anomalyBtn')) $('anomalyBtn').onclick = () => sendAnalyze(true);
+
+async function fetchJson(path) {
+  const r = await fetch(baseUrl + path, { headers: { 'X-API-KEY': API_KEY } });
+  if (!r.ok) throw new Error(path + ' → HTTP ' + r.status);
+  return r.json();
+}
+
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function nowTs() { const d = new Date(); return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function nowIso() { return new Date().toISOString(); }
+
+async function sendAnalyze(forceDanger) {
+  if (!API_KEY) { $('errBar').innerHTML = '<div class="err-bar">⚠ Set X-API-KEY first</div>'; return; }
+  let data;
+  if (forceDanger) {
+    data = [{ id: 'Sensor-001', t: 95, v: 12, c: 25 }, { id: 'Meter-001', t: 30, v: 0, c: 8 }];
+  } else {
+    const sensorRaw = $('sensorReadings').value || '45 1 5';
+    const meterRaw = $('meterReadings').value || '30 0 8';
+    const [t1, v1, c1] = sensorRaw.split(/\s+/).map(Number);
+    const [t2, v2, c2] = meterRaw.split(/\s+/).map(Number);
+    data = [{ id: 'Sensor-001', t: t1, v: v1, c: c1 }, { id: 'Meter-001', t: t2, v: v2, c: c2 }];
+  }
+  const payload = { ts: $('analyzeTs').value || nowTs(), data };
+  $('analyzeOutput').textContent = 'Sending…';
+  const t0 = Date.now();
+  try {
+    const r = await fetch(baseUrl + '/v1/ihi/analyze', {
+      method: 'POST',
+      headers: { 'X-API-KEY': API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const latency = Date.now() - t0;
+    const body = await r.json();
+    $('analyzeOutput').textContent = JSON.stringify(body, null, 2);
+    addHistory({ ts: nowIso(), alert: body.alert, devices: body.devices, latency_ms: latency, case_id: body.case_id });
+  } catch (e) {
+    $('analyzeOutput').textContent = 'ERROR: ' + e.message;
+  }
+}
+
+function addHistory(entry) {
+  history.unshift(entry);
+  if (history.length > 50) history.pop();
+  sessionStats.cycles++;
+  sessionStats.totalLatency += entry.latency_ms;
+  if (sessionStats.alertCounts[entry.alert] !== undefined) sessionStats.alertCounts[entry.alert]++;
+  // update device map
+  for (const d of (entry.devices || [])) {
+    if (!sessionStats.devices[d]) sessionStats.devices[d] = { cycles: 0, lastAlert: '—', lastTs: '—', status: 'ONLINE' };
+    sessionStats.devices[d].cycles++;
+    sessionStats.devices[d].lastAlert = entry.alert;
+    sessionStats.devices[d].lastTs = entry.ts;
+    sessionStats.devices[d].status = entry.alert;
+  }
+  renderHistory();
+  renderStats();
+  showAlertBanner(entry.alert, entry.devices);
+}
+
+function renderHistory() {
+  if (!history.length) { $('historyList').innerHTML = '<div class="skel" style="width:50%"></div>'; return; }
+  $('historyList').innerHTML = history.map(h => {
+    const ts = (h.ts || '').slice(11, 19) || '—';
+    return `<div class="history-item">
+      <span class="ts">${esc(ts)}</span>
+      <span class="alert-tag ${esc(h.alert)}">${esc(h.alert || '?')}</span>
+      <span class="devices">${esc((h.devices || []).join(', ') || '—')}</span>
+      ${h.case_id ? `<span class="pill info">case ${esc(h.case_id)}</span>` : ''}
+      <span class="latency">${(h.latency_ms || 0).toFixed(1)}ms</span>
+    </div>`;
+  }).join('');
+}
+
+function renderStats() {
+  $('statCycles').textContent = sessionStats.cycles;
+  const ac = sessionStats.alertCounts;
+  $('statCyclesSub').textContent = `🟢 ${ac.NORMAL}  🟡 ${ac.WARNING}  🔴 ${ac.DANGER}`;
+  $('statLatency').textContent = sessionStats.cycles ? (sessionStats.totalLatency / sessionStats.cycles).toFixed(1) + 'ms' : '—';
+  $('statLatencySub').textContent = `over ${sessionStats.cycles} cycles`;
+
+  // Devices table
+  const devs = Object.entries(sessionStats.devices);
+  $('deviceCount').textContent = devs.length;
+  if (devs.length === 0) {
+    $('devicesTbody').innerHTML = '<tr><td colspan="6" style="color:var(--text-muted); padding:14px 0">No devices seen yet — send a request to populate</td></tr>';
+  } else {
+    $('devicesTbody').innerHTML = devs.map(([id, d]) => {
+      const ts = (d.lastTs || '').slice(11, 19) || '—';
+      return `<tr class="device-row status-${esc(d.status)}">
+        <td class="mono">${esc(id)}</td>
+        <td>${esc(id.startsWith('Meter') ? 'current_only' : 'thermal_vibration')}</td>
+        <td><span class="pill ${d.status === 'DANGER' ? 'err' : d.status === 'WARNING' ? 'warn' : 'ok'}">${esc(d.status)}</span></td>
+        <td class="mono">${esc(ts)}</td>
+        <td class="last-alert">${esc(d.lastAlert)}</td>
+        <td class="num mono">${d.cycles}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Alert breakdown
+  $('alertBreakdown').innerHTML = `
+    🟢 NORMAL: <span style="color:var(--success)">${ac.NORMAL}</span><br>
+    🟡 WARNING: <span style="color:var(--warning)">${ac.WARNING}</span><br>
+    🔴 DANGER: <span style="color:var(--error)">${ac.DANGER}</span>
+  `;
+}
+
+function showAlertBanner(alert, devices) {
+  const banner = $('alertBanner');
+  if (alert === 'DANGER') {
+    banner.className = 'alert-banner show danger';
+    banner.innerHTML = `🔴 <strong>DANGER</strong> detected on devices: ${esc((devices || []).join(', ') || '?')} — last update: ${nowIso().slice(11,19)}`;
+  } else if (alert === 'WARNING') {
+    banner.className = 'alert-banner show warning';
+    banner.innerHTML = `🟡 <strong>WARNING</strong> on devices: ${esc((devices || []).join(', ') || '?')}`;
+  } else {
+    banner.className = 'alert-banner';
+    banner.innerHTML = '';
+  }
+}
+
+async function poll() {
+  try {
+    $('errBar').innerHTML = '';
+    const [health, providers, stats] = await Promise.all([
+      fetchJson('/health'),
+      fetchJson('/v1/admin/health/providers'),
+      fetchJson('/v1/admin/stats'),
+    ]);
+    consecutiveErr = 0;
+    $('authPill').textContent = 'auth: OK';
+    $('authPill').className = 'pill ok';
+    $('liveDot').className = 'live-dot';
+
+    $('statStatus').textContent = 'OK';
+    $('statStatusSub').textContent = `local: ${health.local.name} (${health.local.status})`;
+    $('statStatus').parentElement.className = 'card stat ok';
+
+    // Seed history from server stats on first load (only if our local history is empty)
+    if (history.length === 0 && stats.recent && stats.recent.length > 0) {
+      for (const r of stats.recent.slice(0, 20).reverse()) {
+        history.push({
+          ts: r.created_at || r.ts || new Date().toISOString(),
+          alert: 'NORMAL', // server doesn't surface alert in stats.recent, but flag presence via latency
+          devices: [],
+          latency_ms: r.latency_ms || 0,
+          case_id: null,
+        });
+      }
+      sessionStats.cycles = history.length;
+      renderHistory();
+      renderStats();
+    }
+
+    $('statLastAlert').textContent = sessionStats.cycles ? history[0].alert : '—';
+    $('statLastAlertSub').textContent = sessionStats.cycles ? `${history[0].devices.join(', ') || 'no devices'} · server: ${stats.total_requests} reqs` : 'no cycles';
+
+    // Providers
+    $('providerList').innerHTML = providers.providers.map(p => `
+      <div style="display:flex; justify-content:space-between; padding: 6px 0; border-bottom: 1px solid var(--border-sub);">
+        <span class="mono">${esc(p.name)}</span>
+        <span class="pill ${p.status === 'configured' ? 'ok' : 'warn'}">${esc(p.status)}</span>
+      </div>
+    `).join('');
+
+    $('lastUpdate').textContent = 'updated ' + new Date().toLocaleTimeString();
+  } catch (e) {
+    consecutiveErr++;
+    $('errBar').innerHTML = `<div class="err-bar">⚠ ${esc(e.message)} (${consecutiveErr}x)</div>`;
+    $('authPill').textContent = 'auth: ERR';
+    $('authPill').className = 'pill err';
+    $('liveDot').className = 'live-dot err';
+  }
+  if (auto) timer = setTimeout(poll, 3000);
+}
+
+// === Scheduler timeline (LIVE mode: 5s poll, pauses when tab hidden) ===
+window.__timelineDebug = [];
+function dbg(...args) {
+  const ts = new Date().toISOString().substr(11, 12);
+  const msg = `[${ts}] ${args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ')}`;
+  window.__timelineDebug.push(msg);
+  if (window.__timelineDebug.length > 50) window.__timelineDebug.shift();
+  const dbgEl = document.getElementById('timelineDbg');
+  if (dbgEl) dbgEl.textContent = window.__timelineDebug.slice(-5).join('\n');
+  console.log(msg);
+}
+try {
+  dbg('init: API_KEY length=', (API_KEY || '').length, 'baseUrl=', baseUrl);
+} catch (e) {
+  console.error('timeline init error:', e);
+}
+const cycleReadingsCache = {};
+let lastSeenScrapeIds = new Set();
+let timelinePollTimer = null;
+const POLL_MS = 5000;
+function escHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtTimeIct(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d)) return iso;
+  // ICT = UTC+7 (server stores UTC, display local VN time)
+  const ictMs = d.getTime() + 7 * 3600 * 1000;
+  const ict = new Date(ictMs);
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(ict.getUTCDate())}/${pad(ict.getUTCMonth()+1)} ${pad(ict.getUTCHours())}:${pad(ict.getUTCMinutes())}:${pad(ict.getUTCSeconds())}`;
+}
+function detectVerdictLabel(text) {
+  if (!text) return 'NORMAL';
+  const m = text.match(/\*\*Verdict:\*\*\s*(NORMAL|WARNING|DANGER)/i);
+  return m ? m[1].toUpperCase() : (text.toUpperCase().includes('DANGER') ? 'DANGER' : text.toUpperCase().includes('WARNING') ? 'WARNING' : 'NORMAL');
+}
+function verdictHtml(text) {
+  // Render **Verdict:** as <strong>, preserve newlines
+  const escaped = escHtml(text || '');
+  return escaped.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+}
+
+async function fetchCycleReadings(scrapeId) {
+  if (cycleReadingsCache[scrapeId]) return cycleReadingsCache[scrapeId];
+  try {
+    const r = await fetch(`${baseUrl}/v1/ihi/cycles/${scrapeId}/readings`, { headers: { 'X-API-KEY': API_KEY } });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    cycleReadingsCache[scrapeId] = d;
+    return d;
+  } catch (e) {
+    return { phases: {}, error: e.message };
+  }
+}
+
+async function toggleReadings(scrapeId, phaseKey, btn) {
+  const el = document.getElementById(`readings-${scrapeId}-${phaseKey}`);
+  if (el.classList.contains('show')) {
+    el.classList.remove('show');
+    btn.textContent = 'show readings';
+    return;
+  }
+  btn.textContent = 'loading…';
+  btn.disabled = true;
+  const data = await fetchCycleReadings(scrapeId);
+  btn.disabled = false;
+  btn.textContent = 'hide readings';
+  const phaseData = (data.phases || {})[phaseKey] || { devices: {} };
+  if (!Object.keys(phaseData.devices).length) {
+    el.innerHTML = '<div style="color:var(--text-muted)">no readings</div>';
+  } else {
+    el.innerHTML = Object.entries(phaseData.devices).map(([devName, readings]) => `
+      <div class="device-block">
+        <div class="device-name">${escHtml(devName)}</div>
+        ${Object.entries(readings).sort().map(([k, v]) => `
+          <div class="reading-row">
+            <span class="k">${escHtml(k)}</span>
+            <span class="v">${escHtml(typeof v === 'number' ? v.toFixed(3) : v)}</span>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  }
+  el.classList.add('show');
+}
+
+async function pollTimeline() {
+  const meta = $('timelineMeta');
+  const body = $('timelineBody');
+  const livePill = $('livePill');
+  try {
+    dbg('poll start, API_KEY.len=', (API_KEY || '').length, 'baseUrl=', baseUrl);
+    if (!API_KEY) {
+      body.innerHTML = '<div class="timeline-empty">⚠ No API key. Add <code style="background:var(--bg-overlay);padding:2px 6px;border-radius:3px">?key=YOUR_KEY</code> to URL or paste into page.</div>';
+      meta.textContent = 'no api key';
+      if (livePill) { livePill.classList.add('paused'); livePill.innerHTML = '<span class="dot"></span>NO KEY'; }
+      return;
+    }
+    const url = `${baseUrl}/v1/ihi/cycles?limit=20`;
+    dbg('fetching', url);
+    const r = await fetch(url, { headers: { 'X-API-KEY': API_KEY } });
+    dbg('response status=', r.status);
+    if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
+    const data = await r.json();
+    dbg('got data: count=', data.count, 'db=', data.db_available);
+    if (livePill) {
+      livePill.classList.remove('paused');
+      livePill.innerHTML = '<span class="dot"></span>LIVE';
+    }
+    if (!data.db_available) {
+      body.innerHTML = '<div class="timeline-empty">alert.db not available — scheduler has not run yet</div>';
+      meta.textContent = 'db not ready';
+      return;
+    }
+    if (!data.cycles || data.cycles.length === 0) {
+      body.innerHTML = '<div class="timeline-empty">No cycles yet. Scheduler chạy 30 phút/lần từ 22:00 ICT (15:00 UTC).</div>';
+      meta.textContent = `0 cycles`;
+      return;
+    }
+
+    // Detect NEW cycles (scrape_ids not seen before)
+    const newIds = data.cycles
+      .map(c => c.scrape_id)
+      .filter(id => !lastSeenScrapeIds.has(id));
+    const isFirstLoad = lastSeenScrapeIds.size === 0;
+    if (!isFirstLoad && newIds.length > 0) {
+      console.log(`[timeline] ${newIds.length} new cycle(s) detected:`, newIds);
+    }
+    lastSeenScrapeIds = new Set(data.cycles.map(c => c.scrape_id));
+
+    meta.textContent = `${data.count} cycles · updated ${new Date().toLocaleTimeString()}`;
+    body.innerHTML = data.cycles.map(cy => {
+      const ts = fmtTimeIct(cy.started_at);
+      const finished = fmtTimeIct(cy.finished_at);
+      const totalLatency = cy.phases.reduce((s, p) => s + (p.latency_ms || 0), 0);
+      const tokens = cy.phases.reduce((s, p) => s + (p.prompt_tokens || 0) + (p.completion_tokens || 0), 0);
+      const isNew = newIds.includes(cy.scrape_id);
+      return `
+        <div class="cycle-card${isNew ? ' new' : ''}">
+          <div class="cycle-head">
+            <div>
+              <div class="ts">Cycle #${cy.scrape_id} · ${ts}${isNew ? '  ✨ NEW' : ''}</div>
+              <div class="meta">${cy.rows_added} rows · ${cy.phases.length} phases · ${totalLatency.toFixed(0)}ms total · ${tokens} tokens · status=${escHtml(cy.status)}</div>
+            </div>
+          </div>
+          ${cy.phases.length === 0 ? '<div style="color:var(--text-muted); font-size:12px">no AI verdicts (scrape or AI call failed)</div>' : ''}
+          ${cy.phases.map(p => {
+            const verdict = detectVerdictLabel(p.verdict_text);
+            return `
+              <div class="phase-block">
+                <div class="phase-head">
+                  <span class="num">PHASE ${p.phase}</span>
+                  <span class="time">sample ${fmtTimeIct(p.sample_time)}</span>
+                  <span class="badge badge-${verdict}">${verdict}</span>
+                  <span class="latency">${(p.latency_ms || 0).toFixed(0)}ms · ${(p.prompt_tokens || 0) + (p.completion_tokens || 0)} tok</span>
+                </div>
+                <div class="verdict-text">${verdictHtml(p.verdict_text)}</div>
+                <button class="phase-toggle" onclick="toggleReadings(${cy.scrape_id}, '${p.phase}', this)">show readings</button>
+                <div class="readings-grid" id="readings-${cy.scrape_id}-${p.phase}"></div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    if (livePill) {
+      livePill.classList.add('paused');
+      livePill.innerHTML = '<span class="dot"></span>OFFLINE';
+    }
+    meta.textContent = 'error: ' + e.message;
+  }
+}
+
+function scheduleTimelinePoll() {
+  if (timelinePollTimer) clearTimeout(timelinePollTimer);
+  if (typeof document !== 'undefined' && document.hidden) {
+    // Tab hidden: pause polling, show PAUSED pill
+    const livePill = document.getElementById('livePill');
+    if (livePill) {
+      livePill.classList.add('paused');
+      livePill.innerHTML = '<span class="dot"></span>PAUSED';
+    }
+    timelinePollTimer = setTimeout(scheduleTimelinePoll, 2000);
+    return;
+  }
+  if (typeof pollTimeline === 'function') {
+    pollTimeline().finally(() => {
+      timelinePollTimer = setTimeout(scheduleTimelinePoll, POLL_MS);
+    });
+  }
+}
+
+async function loadDeviceThresholds(deviceId) {
+  try {
+    const r = await fetch(`${baseUrl}/v1/ihi/devices/${deviceId}/thresholds`, { headers: { 'X-API-KEY': API_KEY } });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    const thresholds = data.thresholds || {};
+    if (Object.keys(thresholds).length === 0) {
+      $('thresholdsList').innerHTML = '<div style="color:var(--text-muted)">No thresholds defined for this device.</div>';
+      return;
+    }
+    $('thresholdsList').innerHTML = Object.entries(thresholds).map(([m, t]) => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border-sub)">
+        <div>
+          <span class="mono" style="color:var(--text-primary)">${esc(m)}</span>
+          <span class="pill" style="margin-left:8px; font-size:10px">${esc(t.source)}</span>
+          ${t.source === 'manual' ? `<button class="btn" style="font-size:10px; padding:2px 6px; margin-left:4px" onclick="deleteThreshold('${deviceId}', '${m}')">×</button>` : ''}
+        </div>
+        <div class="mono" style="font-size:11px; color:var(--text-sec)">
+          ${t.min_value !== null ? 'min=' + esc(String(t.min_value)) : ''}
+          ${t.max_value !== null ? ' max=' + esc(String(t.max_value)) : ''}
+          ${t.severity ? ' <span class="pill ' + (t.severity === 'DANGER' ? 'err' : t.severity === 'WARNING' ? 'warn' : 'ok') + '">' + esc(t.severity) + '</span>' : ''}
+          ${t.unit ? ' ' + esc(t.unit) : ''}
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    $('thresholdsList').innerHTML = `<div style="color:var(--error)">Error: ${esc(e.message)}</div>`;
+  }
+}
+
+async function deleteThreshold(deviceId, measurement) {
+  if (!confirm(`Delete manual override for ${deviceId}.${measurement}?`)) return;
+  try {
+    const r = await fetch(`${baseUrl}/v1/ihi/devices/${deviceId}/thresholds/${measurement}`, {
+      method: 'DELETE', headers: { 'X-API-KEY': API_KEY }
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    await loadDeviceThresholds(deviceId);
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', scheduleTimelinePoll);
+}
+// Always start the poll loop, regardless of other handlers
+scheduleTimelinePoll();
+
+// Init: pre-fill analyze form with current time
+$('analyzeTs').value = nowTs();
+$('sensorReadings').value = '45 1 5';
+$('meterReadings').value = '30 0 8';
+try { renderStats(); poll(); } catch (e) { console.warn('initial render error (non-fatal):', e); }
+
+// Hook up Device Thresholds UI
+if ($('thresholdDeviceSelect')) {
+  $('thresholdDeviceSelect').addEventListener('change', (e) => loadDeviceThresholds(e.target.value));
+  $('refreshThresholdsBtn').onclick = () => loadDeviceThresholds($('thresholdDeviceSelect').value);
+  // Load initial
+  loadDeviceThresholds('Sensor-001');
+}
+</script>
+</body>
+</html>
