@@ -20,16 +20,7 @@ class PatternMatcher:
     """Pattern matching for IHI sensor readings."""
 
     def matches(self, pattern: dict, reading: dict) -> bool:
-        """
-        Check if reading matches pattern.
-
-        Args:
-            pattern: {t_min, t_max, v_min, v_max, c_min, c_max}
-            reading: {t, v, c} (values can be None)
-
-        Returns:
-            True if reading matches all non-None bounds in pattern
-        """
+        """Check if reading matches pattern (including extra thresholds)."""
         # Check temperature
         if reading.get("t") is not None:
             t = reading["t"]
@@ -37,7 +28,6 @@ class PatternMatcher:
                 return False
             if "t_max" in pattern and t > pattern["t_max"]:
                 return False
-
         # Check vibration
         if reading.get("v") is not None:
             v = reading["v"]
@@ -45,7 +35,6 @@ class PatternMatcher:
                 return False
             if "v_max" in pattern and v > pattern["v_max"]:
                 return False
-
         # Check current
         if reading.get("c") is not None:
             c = reading["c"]
@@ -53,7 +42,16 @@ class PatternMatcher:
                 return False
             if "c_max" in pattern and c > pattern["c_max"]:
                 return False
-
+        # Check extra thresholds (NEW)
+        extra = pattern.get("extra", {})
+        for measurement, bounds in extra.items():
+            value = reading.get(measurement)
+            if value is None:
+                continue  # missing measurement doesn't disqualify
+            if "min_value" in bounds and value < bounds["min_value"]:
+                return False
+            if "max_value" in bounds and value > bounds["max_value"]:
+                return False
         return True
 
     def classify_symptom(self, temp: Optional[float], vib: Optional[float], curr: Optional[float]) -> str:
