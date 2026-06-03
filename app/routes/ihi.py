@@ -554,10 +554,37 @@ async def evaluate_snapshot(
                 user_msg_parts.append(f"  {k}: {v}")
     user_msg = "\n".join(user_msg_parts)
 
+    # Inject RAG context: retrieve top-3 similar cases
+    rag_service = _get_rag_service()
+    rag_context = ""
+    try:
+        # Convert devices dict to flat readings format for RAG
+        flat_readings = {}
+        for dev_name, dev in payload.devices.items():
+            readings = dev.get("readings", {}) if isinstance(dev, dict) else {}
+            for k, v in readings.items():
+                flat_readings[k] = v
+        top_cases = rag_service.retrieve_top_k(flat_readings, k=3)
+        if top_cases:
+            parts = ["Các case tương tự từ knowledge base:"]
+            for i, (case, score) in enumerate(top_cases, 1):
+                parts.append(
+                    f"[{i}] case_id={case['id']} severity={case['severity']} "
+                    f"symptom={case.get('symptom', '?')} (match: {score:.2f})\n"
+                    f"    Pattern: {case.get('pattern', {})}\n"
+                    f"    Mô tả: {case.get('description', '')}"
+                )
+            rag_context = "\n".join(parts)
+        else:
+            rag_context = "Không có case tương tự trong knowledge base."
+    except Exception as e:
+        logger.warning("RAG context retrieval failed: %s", e)
+        rag_context = "RAG lookup skipped (error)."
+
     body = {
         "model": model,
         "messages": [
-            {"role": "system", "content": _IHI_LLM_SYSTEM},
+            {"role": "system", "content": _IHI_LLM_SYSTEM.format(rag_context=rag_context)},
             {"role": "user", "content": user_msg},
         ],
         "max_tokens": 800,
