@@ -5,7 +5,10 @@ Provides pattern matching and case retrieval for industrial equipment monitoring
 """
 
 import json
+import logging
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 SYMPTOM_TAXONOMY = {
@@ -125,15 +128,12 @@ class IHIragService:
         self._db_pool = db_pool
         self._case_cache = []
         self._case_map = {}
+        self._case_embeddings: dict[int, list[float]] = {}
+        self._vector_index = None
         self.matcher = PatternMatcher()
 
     def load_cases(self) -> int:
-        """
-        Load RAG cases from database into cache.
-
-        Returns:
-            Number of cases loaded
-        """
+        """Load RAG cases from database (and any cached embeddings)."""
         if self._db_pool is None:
             return 0
 
@@ -147,27 +147,38 @@ class IHIragService:
                         ORDER BY severity DESC, match_count DESC
                     """)
                     rows = cur.fetchall()
-
+                    # Also load embeddings
+                    try:
+                        cur.execute("SELECT case_id, embedding FROM ihi_case_embeddings")
+                        emb_rows = cur.fetchall()
+                    except Exception as e:
+                        logger.warning("Could not load embeddings: %s", e)
+                        emb_rows = []
             self._case_cache = []
             self._case_map = {}
-
             for row in rows:
                 case = {
-                    "id": row["id"],
-                    "device_id": row["device_id"],
-                    "severity": row["severity"],
-                    "symptom": row.get("symptom", ""),
+                    "id": row["id"], "device_id": row["device_id"],
+                    "severity": row["severity"], "symptom": row.get("symptom", ""),
                     "pattern": row["pattern"] if isinstance(row["pattern"], dict) else {},
                     "description": row["description"],
                     "confirmed_by": row["confirmed_by"],
                     "match_count": row["match_count"] or 0,
-                    "created_at": row["created_at"]
+                    "created_at": row["created_at"],
                 }
                 self._case_cache.append(case)
                 self._case_map[row["id"]] = case
-
+            # Load embeddings (parse string format "[1,2,3,...]" to list of float)
+            self._case_embeddings = {}
+            for case_id, emb_str in emb_rows:
+                try:
+                    emb_list = [float(x) for x in emb_str.strip("[]").split(",")]
+                    self._case_embeddings[case_id] = emb_list
+                except (ValueError, AttributeError):
+                    pass
             return len(self._case_cache)
-        except Exception:
+        except Exception as e:
+            logger.warning("load_cases failed: %s", e)
             return 0
 
     def find_matching_case(self, temp: Optional[float], vib: Optional[float],
@@ -208,6 +219,113 @@ class IHIragService:
         if best_case:
             return (best_case, best_score)
         return (None, 0)
+
+    @staticmethod
+    def _normalize_readings(readings: dict) -> dict:
+        """Translate full-name keys (temperature/velocity/current) to short (t/v/c).
+
+        PatternMatcher.matches() looks up t/v/c; preserve any extra measurements
+        (e.g. bearing_temp, rpm) as-is so the extra-threshold branch still works.
+        """
+        key_map = {"temperature": "t", "temp": "t", "t": "t",
+                   "velocity": "v", "vibration": "v", "vib": "v", "v": "v",
+                   "current": "c", "curr": "c", "c": "c"}
+        out = {}
+        for k, v in readings.items():
+            out[key_map.get(k, k)] = v
+        return out
+
+    def retrieve_top_k(self, readings: dict, k: int = 3) -> list[tuple[dict, float]]:
+        """Hybrid retrieval: pattern-match (exact) + vector similarity (semantic).
+
+        Returns list of (case, confidence_score) tuples, sorted by score desc.
+        """
+        candidates: dict[int, tuple[dict, float]] = {}
+        matcher_reading = self._normalize_readings(readings)
+
+        # 1. Pattern-match — high precision, weight 0.7
+        for case in self._case_cache:
+            if self.matcher.matches(case.get("pattern", {}), matcher_reading):
+                score = self._calculate_confidence(
+                    case.get("pattern", {}), matcher_reading, "auto", case
+                )
+                # Pattern match boosts score to at least 0.7
+                candidates[case["id"]] = (case, max(0.7, score))
+
+        # 2. Vector similarity — recall, weight 0.3 (only if embeddings exist)
+        if self._case_embeddings:
+            try:
+                if self._vector_index is None:
+                    from app.services.vector_index import IHIVectorIndex
+                    self._vector_index = IHIVectorIndex()
+                query_text = self._readings_to_text(readings)
+                query_emb = self._vector_index.embed(query_text)
+                for case_id, sim in self._top_k_similar(query_emb, k * 2):
+                    if case_id in candidates:
+                        old_case, old_score = candidates[case_id]
+                        candidates[case_id] = (old_case, min(1.0, old_score + 0.3 * sim))
+                    else:
+                        case = self._case_map.get(case_id)
+                        if case:
+                            candidates[case_id] = (case, 0.3 * sim)
+            except Exception as e:
+                logger.warning("Vector similarity failed: %s", e)
+
+        # 3. Return top-k by score
+        sorted_candidates = sorted(
+            candidates.values(), key=lambda x: x[1], reverse=True
+        )
+        return [(case, score) for case, score in sorted_candidates[:k]]
+
+    def _readings_to_text(self, readings: dict) -> str:
+        """Convert readings dict to searchable text description."""
+        parts = []
+        for k, v in readings.items():
+            if v is not None:
+                parts.append(f"{k}={v}")
+        return "sensor readings: " + " ".join(parts)
+
+    def _top_k_similar(self, query_emb: list[float], k: int) -> list[tuple[int, float]]:
+        """Return top-k (case_id, similarity) from in-memory embeddings."""
+        if self._vector_index is None:
+            return []
+        scored = []
+        for case_id, emb in self._case_embeddings.items():
+            sim = self._vector_index.cosine_similarity(query_emb, emb)
+            scored.append((case_id, sim))
+        scored.sort(key=lambda x: x[1], reverse=True)
+        return scored[:k]
+
+    def rebuild_vector_index(self) -> int:
+        """Re-embed all cases and store in ihi_case_embeddings. Returns count."""
+        if self._db_pool is None:
+            return 0
+        if self._vector_index is None:
+            from app.services.vector_index import IHIVectorIndex
+            self._vector_index = IHIVectorIndex()
+        descriptions = [c.get("description", "") for c in self._case_cache]
+        if not descriptions:
+            return 0
+        try:
+            embeddings = self._vector_index.embed_batch(descriptions)
+        except Exception as e:
+            logger.warning("Failed to embed case descriptions: %s", e)
+            return 0
+        with self._db_pool.connection() as conn:
+            with conn.cursor() as cur:
+                for case, emb in zip(self._case_cache, embeddings):
+                    cur.execute("""
+                        INSERT INTO ihi_case_embeddings (case_id, embedding)
+                        VALUES (%s, %s::vector)
+                        ON CONFLICT (case_id) DO UPDATE SET embedding = EXCLUDED.embedding
+                    """, (case["id"], str(emb)))
+            conn.commit()
+        # Cache in memory
+        self._case_embeddings = {
+            c["id"]: self._vector_index.embed(c.get("description", ""))
+            for c in self._case_cache
+        }
+        return len(self._case_cache)
 
     def _calculate_confidence(self, pattern: dict, reading: dict,
                                symptom: str, case: dict) -> float:
