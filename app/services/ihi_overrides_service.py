@@ -45,10 +45,10 @@ def get_active_override(db_pool, device_id: str, measurement: str) -> Optional[D
             if row is None:
                 return None
             return DeviceOverride(
-                device_id=row[0], measurement=row[1],
-                min_value=row[2], max_value=row[3],
-                severity=row[4], source=row[5],
-                set_by=row[6], note=row[7],
+                device_id=row["device_id"], measurement=row["measurement"],
+                min_value=row["min_value"], max_value=row["max_value"],
+                severity=row["severity"], source=row["source"],
+                set_by=row["set_by"], note=row["note"],
             )
 
 
@@ -74,7 +74,7 @@ def set_override(db_pool, device_id: str, measurement: str,
                     valid_to = NULL
                 RETURNING id
             """, (device_id, measurement, min_value, max_value, severity, source, set_by, note))
-            row_id = cur.fetchone()[0]
+            row_id = cur.fetchone()["id"]
         conn.commit()
         return row_id
 
