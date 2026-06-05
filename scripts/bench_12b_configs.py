@@ -17,7 +17,9 @@ REPO = Path(__file__).parent.parent
 REPORTS = REPO / "reports" / "bench_12b"
 ERRORS_LOG = REPORTS / "errors.log"
 
-# 3 Stage A configurations (config_name, primary_launch_script, extra_launch_scripts)
+# 4 Stage A configurations (config_name, primary_launch_script, extra_launch_scripts)
+# Note: Q8-standalone (with mmproj) excluded because gemma4uv projector not yet
+# supported by llama.cpp 8981. Q8-textonly is the text-only comparison.
 STAGE_A_CONFIGS = [
     {
         "name": "Q4-combo",
@@ -30,8 +32,8 @@ STAGE_A_CONFIGS = [
         "extras": ["start_e2b_q4_mmproj.sh"],
     },
     {
-        "name": "Q8-standalone",
-        "primary": "start_12b_q8_mmproj.sh",
+        "name": "Q8-textonly",
+        "primary": "start_12b_q8_text.sh",
         "extras": [],
     },
 ]
@@ -77,7 +79,8 @@ def run_config(config: dict, stage_b: bool = False) -> dict | None:
                 log(f"WARN: extra launch {extra} failed: {r.stderr} — continuing")
 
         # 4. Run benchmark
-        out_path = REPORTS / f"{name.lower().replace('-combo', '_combo').replace('-standalone', '_standalone')}_{'max_load' if stage_b else 'basic'}.json"
+        suffix = name.lower().replace("-combo", "_combo").replace("-standalone", "_standalone").replace("-textonly", "_textonly")
+        out_path = REPORTS / f"{suffix}_{'max_load' if stage_b else 'basic'}.json"
         cmd = [
             "./venv/bin/python", str(REPO / "scripts" / "bench_single_config.py"),
             "--config", name,

@@ -28,6 +28,7 @@ def get_model_name(config: str) -> str:
         "Q4-combo": "local-gemma4-12b-q4-text",
         "Q6-combo": "local-gemma4-12b-q6-text",
         "Q8-standalone": "local-gemma4-12b-q8-mmproj",
+        "Q8-textonly": "local-gemma4-12b-q8-text",
     }[config]
 
 
@@ -188,7 +189,7 @@ async def main(config: str, max_load: bool, output: str) -> int:
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("--config", required=True, choices=["Q4-combo", "Q6-combo", "Q8-standalone"])
+    p.add_argument("--config", required=True, choices=["Q4-combo", "Q6-combo", "Q8-standalone", "Q8-textonly"])
     p.add_argument("--max-load", action="store_true")
     p.add_argument("--output", required=True)
     args = p.parse_args()

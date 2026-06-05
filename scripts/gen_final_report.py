@@ -63,6 +63,11 @@ def write_final_report(reports_dir: Path, output_path: Path, stage_b_data: list[
     table = format_comparison_table(results)
     winner = max(results, key=lambda r: r.get("composite_score", 0))
 
+    has_q4 = any('Q4' in r['config'] for r in results)
+    has_q6 = any('Q6' in r['config'] for r in results)
+    has_q8_text = any('Q8-textonly' in r['config'] for r in results)
+    has_q8_standalone = any('Q8-standalone' in r['config'] for r in results)
+
     report = f"""# Gemma 4 12B Optimization — Final Report
 
 **Generated:** {datetime.now().isoformat(timespec='seconds')}
@@ -73,9 +78,10 @@ def write_final_report(reports_dir: Path, output_path: Path, stage_b_data: list[
 
 | Config | 12B variant | Strategy | VRAM | Status |
 |--------|-------------|----------|------|--------|
-| A: Q4 + E2B | Q4_K_M (7.4GB) | Split multimodal | ~10.3 GB | {'✅' if any('Q4' in r['config'] for r in results) else '❌'} |
-| B: Q6 + E2B | Q6_K (9.8GB) | Split multimodal | ~13.3 GB | {'✅' if any('Q6' in r['config'] for r in results) else '❌'} |
-| C: Q8 standalone | Q8_0 (12.7GB) | Standalone | ~13.0 GB | {'✅' if any('Q8' in r['config'] for r in results) else '❌'} |
+| A: Q4 + E2B | Q4_K_M (7.4GB) | Split multimodal (12B text + E2B vision) | ~10.3 GB | {'✅' if has_q4 else '❌'} |
+| B: Q6 + E2B | Q6_K (9.8GB) | Split multimodal (12B text + E2B vision) | ~13.3 GB | {'✅' if has_q6 else '❌'} |
+| C: Q8 standalone (multimodal) | Q8_0 (12.7GB) | Standalone w/ mmproj | ~13.0 GB | ⚠️ Skipped (gemma4uv projector not yet supported by llama.cpp 8981) |
+| D: Q8 text-only | Q8_0 (12.7GB) | Standalone text-only | ~13.0 GB | {'✅' if has_q8_text else '❌'} |
 
 ## Results (Stage A — basic benchmark)
 
@@ -85,7 +91,7 @@ def write_final_report(reports_dir: Path, output_path: Path, stage_b_data: list[
 
 {_format_stage_b(stage_b_data) if stage_b_data else "_Stage B not run yet._"}
 
-## Recomendación
+## Recommendation
 
 **Best config:** `{winner.get('config', 'N/A')}`
 - Aggregate score: {winner.get('composite_score', 0):.2f}
