@@ -3,8 +3,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-echo "[1/5] Starting Chatbot (E4B Q8, 8 slots) on port 8080..."
-./scripts/start_lite_q8.sh
+echo "[1/5] Starting Chatbot (12B Q4, 12 slots, q4_0 cache) on port 8080..."
+./scripts/start_lite_q8.sh   # start_lite_q8.sh is now updated to launch 12B Q4 (see Task 15)
 
 echo "[2/5] Starting Background Q4 on port 8081..."
 ./scripts/start_background_q4.sh
@@ -27,7 +27,7 @@ done
 
 echo ""
 echo "=== AI Hub 2-Mode Ready ==="
-echo "  Chatbot  (port 8080): E4B Q8, 8 slots, ctx=64K  → multi-user normal chat"
+echo "  Chatbot  (port 8080): 12B Q4, 12 slots, ctx=8K, q4_0 cache → multi-user normal chat"
 echo "  iHi      (port 8083): E2B Q4, 40 slots, ctx=8K   → sensor check every 30s"
 echo "  Reranker (port 8082): bge-reranker-v2-m3"
 echo "  API      (port 8000): http://localhost:8000"
