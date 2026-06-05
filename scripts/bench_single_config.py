@@ -36,11 +36,9 @@ def get_model_name(config: str) -> str:
         "Q4-A-p2": "local-gemma4-12b-q4-text-p2",
         "Q4-A-p3": "local-gemma4-12b-q4-text-p3",
         "Q4-A-p4": "local-gemma4-12b-q4-text-p4",
-        # Phase 2: scope variants (placeholders — actual launchers come in Task 5)
-        "Q4-B-p0": "local-gemma4-12b-q4-scope-b-chat",  # placeholder
-        "Q4-B-p1": "local-gemma4-12b-q4-scope-b-chat",  # placeholder
-        "Q4-C-p0": "local-gemma4-12b-q4-scope-c-single",  # placeholder
-        "Q4-C-p1": "local-gemma4-12b-q4-scope-c-single",  # placeholder
+        # Phase 2: scope variants (Scope B excluded — infeasible on 16GB)
+        "Q4-C-p0": "local-gemma4-12b-q4-scope-c-single",
+        "Q4-C-p1": "local-gemma4-12b-q4-scope-c-single",
         # Phase 3: speculative (placeholder — actual launcher comes in Task 9)
         "Q4-A-spec-on": "local-gemma4-12b-q4-text",  # alias matches spec launcher
         "Q4-A-spec-off": "local-gemma4-12b-q4-text",
@@ -210,7 +208,7 @@ if __name__ == "__main__":
         # Phase 1
         "Q4-A-p0", "Q4-A-p1", "Q4-A-p2", "Q4-A-p3", "Q4-A-p4",
         # Phase 2
-        "Q4-B-p0", "Q4-B-p1", "Q4-C-p0", "Q4-C-p1",
+        "Q4-C-p0", "Q4-C-p1",
         # Phase 3
         "Q4-A-spec-on", "Q4-A-spec-off",
     ])

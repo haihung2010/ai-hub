@@ -17,20 +17,16 @@ REPO = Path(__file__).parent.parent
 REPORTS = REPO / "reports" / "bench_12b"
 ERRORS_LOG = REPORTS / "errors.log"
 
-# STAGE_A_CONFIGS — updated per phase. Orchestrator runs --configs to filter.
-# Phase 1: param sweep on Scope A (5 configs).
-# (For Phase 2/3, replace this list before running orchestrator with new phase configs.)
+# STAGE_A_CONFIGS — Phase 2: 2 scopes × top 2 params (4 configs).
+# Scope B excluded (infeasible on 16GB: 2× 12B Q4 = ~20GB > 16GB VRAM).
+# Top 2 params from Phase 1: P4 (q4_0 cache, score 0.702) and P3 (ctx=12K, score 0.662).
 STAGE_A_CONFIGS = [
-    # Previous (2026-06-05) configs
-    {"name": "Q4-combo", "primary": "start_12b_q4_text.sh", "extras": ["start_e2b_q4_mmproj.sh"]},
-    {"name": "Q6-combo", "primary": "start_12b_q6_text.sh", "extras": ["start_e2b_q4_mmproj.sh"]},
-    {"name": "Q8-textonly", "primary": "start_12b_q8_text.sh", "extras": []},
-    # Phase 1: param variants on Scope A
-    {"name": "Q4-A-p0", "primary": "start_12b_q4_text.sh", "extras": ["start_e2b_q4_mmproj.sh"]},
-    {"name": "Q4-A-p1", "primary": "start_12b_q4_p1.sh",   "extras": ["start_e2b_q4_mmproj.sh"]},
-    {"name": "Q4-A-p2", "primary": "start_12b_q4_p2.sh",   "extras": ["start_e2b_q4_mmproj.sh"]},
-    {"name": "Q4-A-p3", "primary": "start_12b_q4_p3.sh",   "extras": ["start_e2b_q4_mmproj.sh"]},
-    {"name": "Q4-A-p4", "primary": "start_12b_q4_p4.sh",   "extras": ["start_e2b_q4_mmproj.sh"]},
+    # Scope A: 12B primary + E2B vision (top 2 params)
+    {"name": "Q4-A-p4", "primary": "start_12b_q4_p4.sh", "extras": ["start_e2b_q4_mmproj.sh"]},
+    {"name": "Q4-A-p3", "primary": "start_12b_q4_p3.sh", "extras": ["start_e2b_q4_mmproj.sh"]},
+    # Scope C: single 12B on 8080 (memory tasks route via config)
+    {"name": "Q4-C-p0", "primary": "start_12b_q4_scope_c.sh", "extras": ["start_e2b_q4_mmproj.sh"]},
+    {"name": "Q4-C-p1", "primary": "start_12b_q4_scope_c.sh", "extras": ["start_e2b_q4_mmproj.sh"]},
 ]
 
 
