@@ -17,16 +17,15 @@ REPO = Path(__file__).parent.parent
 REPORTS = REPO / "reports" / "bench_12b"
 ERRORS_LOG = REPORTS / "errors.log"
 
-# STAGE_A_CONFIGS — Phase 2: 2 scopes × top 2 params (4 configs).
-# Scope B excluded (infeasible on 16GB: 2× 12B Q4 = ~20GB > 16GB VRAM).
-# Top 2 params from Phase 1: P4 (q4_0 cache, score 0.702) and P3 (ctx=12K, score 0.662).
+# STAGE_A_CONFIGS — Phase 3: speculative decoding (with/without) on Phase 2 winner.
+# Phase 2 winner was Q4-A-p4 (Scope A + P4 q4_0 cache). Test if E2B draft model
+# gives ≥20% speedup.
+# Note: spec launcher has only 9/12 effective slots due to VRAM (draft model
+# loads 3GB extra). spec-off is P4 baseline at 12 slots — not perfectly fair,
+# but the data tells us whether the spec idea works in this constraint.
 STAGE_A_CONFIGS = [
-    # Scope A: 12B primary + E2B vision (top 2 params)
-    {"name": "Q4-A-p4", "primary": "start_12b_q4_p4.sh", "extras": ["start_e2b_q4_mmproj.sh"]},
-    {"name": "Q4-A-p3", "primary": "start_12b_q4_p3.sh", "extras": ["start_e2b_q4_mmproj.sh"]},
-    # Scope C: single 12B on 8080 (memory tasks route via config)
-    {"name": "Q4-C-p0", "primary": "start_12b_q4_scope_c.sh", "extras": ["start_e2b_q4_mmproj.sh"]},
-    {"name": "Q4-C-p1", "primary": "start_12b_q4_scope_c.sh", "extras": ["start_e2b_q4_mmproj.sh"]},
+    {"name": "Q4-A-spec-on",  "primary": "start_12b_q4_spec.sh", "extras": ["start_e2b_q4_mmproj.sh"]},
+    {"name": "Q4-A-spec-off", "primary": "start_12b_q4_p4.sh",   "extras": ["start_e2b_q4_mmproj.sh"]},
 ]
 
 

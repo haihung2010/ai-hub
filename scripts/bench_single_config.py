@@ -39,9 +39,9 @@ def get_model_name(config: str) -> str:
         # Phase 2: scope variants (Scope B excluded — infeasible on 16GB)
         "Q4-C-p0": "local-gemma4-12b-q4-scope-c-single",
         "Q4-C-p1": "local-gemma4-12b-q4-scope-c-single",
-        # Phase 3: speculative (placeholder — actual launcher comes in Task 9)
-        "Q4-A-spec-on": "local-gemma4-12b-q4-text",  # alias matches spec launcher
-        "Q4-A-spec-off": "local-gemma4-12b-q4-text",
+        # Phase 3: speculative decoding (on Q4-A-p4 winner)
+        "Q4-A-spec-on": "local-gemma4-12b-q4-spec",
+        "Q4-A-spec-off": "local-gemma4-12b-q4-text-p4",
     }[config]
 
 
