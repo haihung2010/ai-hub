@@ -48,15 +48,21 @@ def test_get_threshold_unknown_device_returns_none(monkeypatch):
 
 
 def test_evaluate_all_thresholds_detects_violations(monkeypatch):
-    """evaluate_all_thresholds returns list of ThresholdViolation for violations."""
+    """evaluate_all_thresholds returns list of ThresholdViolation for violations.
+
+    With the gradient design, a value in the DANGER band produces BOTH
+    a WARNING and a DANGER violation (e.g., temperature=95: WARNING at 80,
+    DANGER at 90 → 2 violations). Battery_pct=5: WARNING at 20, DANGER at 10
+    → 2 violations.
+    """
     monkeypatch.setattr(
         "app.services.thresholds.loader.get_active_override",
         lambda *args, **kwargs: None
     )
     readings = {
-        "temperature": 95,      # > 90 = DANGER
+        "temperature": 95,      # > 80 WARNING, > 90 DANGER
         "velocity_rms": 1.0,    # OK
-        "battery_pct": 5.0,     # < 10 = DANGER
+        "battery_pct": 5.0,     # < 20 WARNING, < 10 DANGER
         "humidity": 50,         # OK
     }
     violations = evaluate_all_thresholds(None, "Sensor-001", readings)
@@ -65,5 +71,7 @@ def test_evaluate_all_thresholds_detects_violations(monkeypatch):
     assert "battery_pct" in measurements
     assert "velocity_rms" not in measurements
     assert "humidity" not in measurements
-    # All Sensor-001 violations should be DANGER (battery, temp) — no warnings expected
-    assert all(v.severity == "DANGER" for v in violations)
+    # Should have at least 1 DANGER violation (severity matters most for IHIThresholdAnalyzer)
+    assert any(v.severity == "DANGER" for v in violations)
+    # And WARNING violations too (gradient design)
+    assert any(v.severity == "WARNING" for v in violations)

@@ -27,7 +27,7 @@ from app.middleware.security import AuthFailureTracker, InMemoryRateLimiter
 API_KEY = os.environ["API_KEY"]
 HEADERS = {"X-API-KEY": API_KEY, "Content-Type": "application/json"}
 
-GROUND_TRUTH_FILE = Path(__file__).parent / "ground_truth_v1.jsonl"
+GROUND_TRUTH_FILE = Path(__file__).parent / "ground_truth_v2.jsonl"
 MIN_ACCURACY = 0.85
 MAX_FALSE_NEGATIVE_RATE = 0.05
 
@@ -84,15 +84,40 @@ def test_ground_truth_accuracy(client, cases):
     false_negatives = 0
     false_positives = 0
     for c in cases:
-        # Build request
+        # Build request with correct field name routing.
+        # Raw alert.db readings use axis-component names (velocity_x/y/z) and
+        # 'battery' (raw 0-100 from sensor). The IHI threshold system expects
+        # 'velocity_rms' (computed) and 'battery_pct' (= soc %). Convert here.
         device_id = "Sensor-001"  # default; could infer from readings
+        r_dict = c["readings"]
+
+        # Compute velocity_rms from x/y/z if not already present
+        v_rms = r_dict.get("velocity_rms")
+        if v_rms is None and all(r_dict.get(f"velocity_{ax}") is not None
+                                 for ax in ("x", "y", "z")):
+            vx, vy, vz = r_dict["velocity_x"], r_dict["velocity_y"], r_dict["velocity_z"]
+            v_rms = ((vx**2 + vy**2 + vz**2) / 3) ** 0.5
+
+        # battery_pct from soc (or battery if not present)
+        battery_pct = r_dict.get("battery_pct")
+        if battery_pct is None:
+            battery_pct = r_dict.get("soc", r_dict.get("battery"))
+
         payload = {
             "ts": "03/06 12:00",
-            "data": [{"id": device_id, "t": c["readings"].get("temperature", 0),
-                      "v": c["readings"].get("velocity_rms", 0),
-                      "c": c["readings"].get("current", 0)}],
-            "extra": {device_id: {k: v for k, v in c["readings"].items()
-                                  if k not in ("temperature", "velocity_rms", "current")}},
+            "data": [{"id": device_id,
+                      "t": r_dict.get("temperature", 0),
+                      "v": v_rms or 0,
+                      "c": r_dict.get("current", 0)}],
+            "extra": {device_id: {
+                k: v for k, v in r_dict.items()
+                if k not in ("temperature", "velocity_rms", "current",
+                             "velocity_x", "velocity_y", "velocity_z",
+                             "battery", "soc")
+            } | {
+                "velocity_rms": v_rms,
+                "battery_pct": battery_pct,
+            } if v_rms is not None or battery_pct is not None else {}},
         }
         r = client.post("/v1/ihi/analyze", headers=HEADERS, json=payload)
         assert r.status_code == 200, f"Case {c['id']}: HTTP {r.status_code}"

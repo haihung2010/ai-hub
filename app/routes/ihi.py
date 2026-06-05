@@ -111,9 +111,16 @@ async def analyze_sensor_data(
     Layer 3: LLM with RAG context (last resort, narrator only).
     """
     # Build device_readings dict: {device_id: {measurement: value}}
+    # Map legacy (t, v, c) to BOTH the new envelope field names AND legacy aliases
+    # so unknown devices (via DEFAULT_ENVELOPE) and known devices both work.
     device_readings = {}
     for r in payload.data:
-        device_readings[r.id] = {"temperature": r.t, "velocity": r.v, "current": r.c}
+        device_readings[r.id] = {
+            "temperature": r.t,
+            "velocity_rms": r.v,  # for Sensor-001 (ISO 10816-3)
+            "velocity":     r.v,  # alias for default envelope
+            "current":      r.c,
+        }
     for device_id, extra in payload.extra.items():
         device_readings.setdefault(device_id, {}).update(extra)
 

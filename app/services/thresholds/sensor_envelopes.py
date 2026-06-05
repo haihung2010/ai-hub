@@ -52,3 +52,19 @@ SENSOR_ENVELOPES = {
         "source": "NEMA MG-1 Part 14, IEEE 1159, IEC 61000-2-4",
     },
 }
+
+# Default envelope for unknown device_ids (legacy compatibility).
+# Used by the loader when device_id is not in SENSOR_ENVELOPES.
+# Matches the legacy IHIAnalyzer.analyze_reading() thresholds so existing
+# t/v/c callers (e.g., M-001, M-002) get the same verdict as before.
+# Accepts both legacy (t/v/c) and new (temperature/velocity_rms/current) field names.
+DEFAULT_ENVELOPE = {
+    "type": "generic_legacy_fallback",
+    "thresholds": {
+        "temperature":  {"max_warning": 85, "max_danger": 90, "unit": "°C"},
+        "velocity_rms": {"max_warning": 4.5, "max_danger": 6.0, "unit": "mm/s"},
+        "velocity":     {"max_warning": 4.5, "max_danger": 6.0, "unit": "mm/s"},  # alias
+        "current":      {"max_warning": 65, "max_danger": 75, "unit": "A"},
+    },
+    "source": "generic_default_envelope_legacy_thresholds",
+}
