@@ -165,10 +165,12 @@ def main():
 
     # Generate final report
     log("Generating final report")
+    stage_b_files = sorted(REPORTS.glob("*_max_load.json"))
     subprocess.run([
         "./venv/bin/python", str(REPO / "scripts" / "gen_final_report.py"),
         "--reports-dir", str(REPORTS),
         "--output", str(REPORTS / "final_comparison.md"),
+        "--stage-b", *[str(p) for p in stage_b_files],
     ], cwd=REPO)
 
     log(f"Done. See {REPORTS / 'final_comparison.md'}")

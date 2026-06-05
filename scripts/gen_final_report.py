@@ -13,9 +13,21 @@ from bench_metrics import rank_configs
 
 
 def load_results(reports_dir: Path) -> list[dict]:
-    """Load all *.json files from reports dir as list of dicts."""
+    """Load all *_basic.json files (Stage A results) from reports dir."""
     results = []
-    for path in sorted(reports_dir.glob("*.json")):
+    for path in sorted(reports_dir.glob("*_basic.json")):
+        try:
+            data = json.loads(path.read_text())
+            results.append(data)
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"WARN: skipping {path}: {e}")
+    return results
+
+
+def load_stage_b_results(reports_dir: Path) -> list[dict]:
+    """Load all *_max_load.json files (Stage B results) from reports dir."""
+    results = []
+    for path in sorted(reports_dir.glob("*_max_load.json")):
         try:
             data = json.loads(path.read_text())
             results.append(data)
@@ -56,12 +68,20 @@ def format_comparison_table(results: list[dict]) -> str:
 def write_final_report(reports_dir: Path, output_path: Path, stage_b_data: list[dict] = None) -> None:
     """Generate the final markdown report from JSON results."""
     results = load_results(reports_dir)
+    stage_b_data = stage_b_data or load_stage_b_results(reports_dir)
     if not results:
         output_path.write_text("# No results found\n")
         return
 
     table = format_comparison_table(results)
-    winner = max(results, key=lambda r: r.get("composite_score", 0))
+    ranked_for_winner = rank_configs([{
+        "name": r["config"],
+        "peak_tok_s": r.get("aggregate", {}).get("peak_tok_s", 0),
+        "p95_latency_at_20": r.get("aggregate", {}).get("p95_latency_at_20", 0),
+        "quality": r.get("quality", 0),
+    } for r in results])
+    winner = ranked_for_winner[0] if ranked_for_winner else None
+    winner_name = winner["name"] if winner else "N/A"
 
     has_q4 = any('Q4' in r['config'] for r in results)
     has_q6 = any('Q6' in r['config'] for r in results)
@@ -93,10 +113,10 @@ def write_final_report(reports_dir: Path, output_path: Path, stage_b_data: list[
 
 ## Recommendation
 
-**Best config:** `{winner.get('config', 'N/A')}`
-- Aggregate score: {winner.get('composite_score', 0):.2f}
-- Peak tok/s: {winner.get('aggregate', {}).get('peak_tok_s', 0)}
-- p95 latency @20 users: {winner.get('aggregate', {}).get('p95_latency_at_20', 0)}ms
+**Best config:** `{winner_name}`
+- Composite score: {winner.get('composite_score', 0):.4f}
+- Peak tok/s: {winner.get('peak_tok_s', 0)}
+- p95 latency @20 users: {winner.get('p95_latency_at_20', 0)}ms
 - Vietnamese quality: {winner.get('quality', 0)}/10
 
 See `reports/bench_12b/` for full per-config details.
@@ -107,11 +127,22 @@ See `reports/bench_12b/` for full per-config details.
 def _format_stage_b(stage_b_data: list[dict]) -> str:
     if not stage_b_data:
         return ""
-    lines = ["| Config | Sustained tok/s | Spike tok/s | p95 @60 users |", "|---|---|---|---|"]
+    lines = [
+        "Sustained load test (10 minutes at concurrency 20, 120 prompts):",
+        "",
+        "| Config | Sustained tok/s | TTFT p50 (ms) | TTFT p95 (ms) | E2E p95 (ms) | Errors |",
+        "|---|---|---|---|---|---|",
+    ]
     for d in stage_b_data:
+        cfg = d.get("config", "?")
+        stage = d.get("stages", {}).get("concurrency_20", {})
+        tok_s = stage.get("tok_s_aggregate", 0)
+        ttft_p50 = stage.get("ttft_p50_ms", 0)
+        ttft_p95 = stage.get("ttft_p95_ms", 0)
+        e2e_p95 = stage.get("e2e_p95_ms", 0)
+        errors = stage.get("errors", 0)
         lines.append(
-            f"| {d.get('config', '?')} | {d.get('sustained_tok_s', 0)} | "
-            f"{d.get('spike_tok_s', 0)} | {d.get('p95_at_60', 0)}ms |"
+            f"| {cfg} | {tok_s} | {ttft_p50} | {ttft_p95} | {e2e_p95} | {errors} |"
         )
     return "\n".join(lines)
 
