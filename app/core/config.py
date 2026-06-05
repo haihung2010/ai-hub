@@ -55,11 +55,11 @@ class Settings(BaseSettings):
     nine_router_denied_projects: list[str] = Field(default_factory=list, alias="NINE_ROUTER_DENIED_PROJECTS")
 
     default_model: str = Field(
-        default="local-gemma4-e4b-q8",
+        default="local-gemma4-12b-q4-text",
         alias="DEFAULT_MODEL",
     )
     lite_model: str = Field(
-        default="local-gemma4-e4b-q4",
+        default="local-gemma4-12b-q4-text",
         alias="LITE_MODEL",
     )
     lite_num_ctx: int = Field(default=65536, alias="LITE_NUM_CTX")
