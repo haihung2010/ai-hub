@@ -11,11 +11,13 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 ## Implemented Features (current state)
 
 ### Core Chat
-- **Local inference**: llama.cpp Q8 backend (port 8080), OpenAI-compatible API
+- **Local inference**: llama.cpp 12B Q4 backend (port 8080), OpenAI-compatible API
+- **Primary model**: **Gemma 4 12B Q4_K_M** (parallel=12, ctx=8K, --cache-type-k/v q4_0, ~7.4GB VRAM)
+- **Background models**: E4B Q4 for memory extraction (summary, structmem, crew) on port 8081
+- **Multimodal**: E2B Q4 + mmproj on port 8083 (image input, 40 parallel slots)
 - **Cloud fallback**: MiniMax M3 (Anthropic-compatible, `api.minimax.io`, prompt caching) — primary when `MINIMAX_ENABLED=true`. Falls back to OpenRouter (`openai/gpt-oss-20b:free`) otherwise. Project allow/deny policy.
 - **Streaming**: SSE streaming with `[DONE]` sentinel
-- **Multimodal**: Image input (Base64 → OpenAI `image_url` content-parts format) — Lite mode only
-- **Model modes**: `lite` (Gemma4 E2B Q4, 8k ctx, default), `normal` (same model with default_num_ctx), `external` (cloud only)
+- **Model modes**: `lite` (Gemma4 12B Q4, 8k ctx, default), `normal` (same model with default_num_ctx), `external` (cloud only)
 
 ### Memory System
 - **Rolling summaries** (`SummaryService`): async, threshold-triggered (default 20 msgs), marks `is_summarized=1`
@@ -115,7 +117,7 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 # Start server (PostgreSQL + Redis phải đang chạy)
 ./venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-# Full stack (llama.cpp Q8 + Q4 background + reranker + API server)
+# Full stack (12B Q4 primary + E4B Q4 background + E2B Q4 vision + reranker + API server)
 ./start.sh
 
 # Run tests
@@ -138,14 +140,17 @@ docker compose logs -f app
 curl http://localhost:8000/health
 ```
 
-## Multi-Model GPU Architecture (16GB VRAM)
+## Multi-Model GPU Architecture (16GB VRAM, 2026-06-06 config)
 
-*   **Primary Chat (Port 8080)**: `E2B Q4` (Context: 8K/slot × 16 slots = 131K total). Handles 100% of user chat queries. ~4GB VRAM.
-*   **Search Reranker (Port 8082)**: `bge-reranker-v2-m3` (Context: 4K). Re-scores knowledge RAG.
+*   **Primary Chat (Port 8080)**: `Gemma 4 12B Q4_K_M` (parallel=12, ctx=8K, --cache-type-k/v q4_0). Peak 259 tok/s, p95 @20 users 7.4s, quality 7.6/10. Sustained 158 tok/s over 10 min @ 20 concurrent.
+*   **Background Memory (Port 8081)**: `E4B Q4` (parallel=8). Handles memory extraction (summary, structmem, crew) — latency-tolerant.
+*   **Multimodal (Port 8083)**: `E2B Q4` + mmproj (parallel=40, ctx=8K). Handles image input. ~2.5GB VRAM.
+*   **Reranker (Port 8082)**: `bge-reranker-v2-m3`. Re-scores RAG results.
+* **Speculative decoding (E2B→12B) tested but NOT adopted** (-73% throughput regression at multi-user due to only 9/12 effective slots fitting in VRAM with draft model).
 *   **FastEmbed**: Runs CPU inside API server (GPU has higher overhead than gain for small queries).
 *   **Whisper**: Lazy-loaded `large-v3-turbo` model in float16.
 *   **Benchmark**: 50 user × 5 turn × 4 tenant (900 requests) processed with 0 errors in 118.8s ≈ 456 RPM. 5 user/tenant burst keeps p95 < 4s.
-*   **Notes**: Single-instance E2B Q4 outperforms multi-node load balancer on 1 GPU. Speculative decoding (E4B target + E2B draft) makes things worse due to GPU contention. E4B Q8 single instance is 14% slower than E2B Q4 with comparable Vietnamese chatbot quality.
+*   **Notes**: Single-instance 12B Q4 replaces E2B Q4 as primary. Speculative decoding tested but regression confirmed.
 
 ## Phase Roadmap
 
@@ -215,7 +220,7 @@ app/
 ├── services/tools/
 │   └── web_search_service.py   # Multi-backend search
 scripts/
-├── start_lite_q8.sh            # Launch llama.cpp Q8 (port 8080)
+├── start_lite_q8.sh            # Launch llama.cpp 12B Q4 (port 8080) — primary chatbot (P4 winner)
 ├── start_background_q4.sh      # Launch llama.cpp Q4 background (port 8081)
 ├── start_reranker.sh           # Launch reranker (port 8082)
 ├── migrate_sqlite_to_pg.py     # One-shot data migration SQLite → PostgreSQL
