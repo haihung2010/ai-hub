@@ -25,10 +25,25 @@ import httpx
 
 def get_model_name(config: str) -> str:
     return {
+        # Previous (2026-06-05) — Q4-combo winner
         "Q4-combo": "local-gemma4-12b-q4-text",
         "Q6-combo": "local-gemma4-12b-q6-text",
         "Q8-standalone": "local-gemma4-12b-q8-mmproj",
         "Q8-textonly": "local-gemma4-12b-q8-text",
+        # Phase 1: param sweep on Scope A (5 variants)
+        "Q4-A-p0": "local-gemma4-12b-q4-text",
+        "Q4-A-p1": "local-gemma4-12b-q4-text-p1",
+        "Q4-A-p2": "local-gemma4-12b-q4-text-p2",
+        "Q4-A-p3": "local-gemma4-12b-q4-text-p3",
+        "Q4-A-p4": "local-gemma4-12b-q4-text-p4",
+        # Phase 2: scope variants (placeholders — actual launchers come in Task 5)
+        "Q4-B-p0": "local-gemma4-12b-q4-scope-b-chat",  # placeholder
+        "Q4-B-p1": "local-gemma4-12b-q4-scope-b-chat",  # placeholder
+        "Q4-C-p0": "local-gemma4-12b-q4-scope-c-single",  # placeholder
+        "Q4-C-p1": "local-gemma4-12b-q4-scope-c-single",  # placeholder
+        # Phase 3: speculative (placeholder — actual launcher comes in Task 9)
+        "Q4-A-spec-on": "local-gemma4-12b-q4-text",  # alias matches spec launcher
+        "Q4-A-spec-off": "local-gemma4-12b-q4-text",
     }[config]
 
 
@@ -189,7 +204,16 @@ async def main(config: str, max_load: bool, output: str) -> int:
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("--config", required=True, choices=["Q4-combo", "Q6-combo", "Q8-standalone", "Q8-textonly"])
+    p.add_argument("--config", required=True, choices=[
+        # Previous
+        "Q4-combo", "Q6-combo", "Q8-standalone", "Q8-textonly",
+        # Phase 1
+        "Q4-A-p0", "Q4-A-p1", "Q4-A-p2", "Q4-A-p3", "Q4-A-p4",
+        # Phase 2
+        "Q4-B-p0", "Q4-B-p1", "Q4-C-p0", "Q4-C-p1",
+        # Phase 3
+        "Q4-A-spec-on", "Q4-A-spec-off",
+    ])
     p.add_argument("--max-load", action="store_true")
     p.add_argument("--output", required=True)
     args = p.parse_args()

@@ -17,25 +17,20 @@ REPO = Path(__file__).parent.parent
 REPORTS = REPO / "reports" / "bench_12b"
 ERRORS_LOG = REPORTS / "errors.log"
 
-# 4 Stage A configurations (config_name, primary_launch_script, extra_launch_scripts)
-# Note: Q8-standalone (with mmproj) excluded because gemma4uv projector not yet
-# supported by llama.cpp 8981. Q8-textonly is the text-only comparison.
+# STAGE_A_CONFIGS — updated per phase. Orchestrator runs --configs to filter.
+# Phase 1: param sweep on Scope A (5 configs).
+# (For Phase 2/3, replace this list before running orchestrator with new phase configs.)
 STAGE_A_CONFIGS = [
-    {
-        "name": "Q4-combo",
-        "primary": "start_12b_q4_text.sh",
-        "extras": ["start_e2b_q4_mmproj.sh"],
-    },
-    {
-        "name": "Q6-combo",
-        "primary": "start_12b_q6_text.sh",
-        "extras": ["start_e2b_q4_mmproj.sh"],
-    },
-    {
-        "name": "Q8-textonly",
-        "primary": "start_12b_q8_text.sh",
-        "extras": [],
-    },
+    # Previous (2026-06-05) configs
+    {"name": "Q4-combo", "primary": "start_12b_q4_text.sh", "extras": ["start_e2b_q4_mmproj.sh"]},
+    {"name": "Q6-combo", "primary": "start_12b_q6_text.sh", "extras": ["start_e2b_q4_mmproj.sh"]},
+    {"name": "Q8-textonly", "primary": "start_12b_q8_text.sh", "extras": []},
+    # Phase 1: param variants on Scope A
+    {"name": "Q4-A-p0", "primary": "start_12b_q4_text.sh", "extras": ["start_e2b_q4_mmproj.sh"]},
+    {"name": "Q4-A-p1", "primary": "start_12b_q4_p1.sh",   "extras": ["start_e2b_q4_mmproj.sh"]},
+    {"name": "Q4-A-p2", "primary": "start_12b_q4_p2.sh",   "extras": ["start_e2b_q4_mmproj.sh"]},
+    {"name": "Q4-A-p3", "primary": "start_12b_q4_p3.sh",   "extras": ["start_e2b_q4_mmproj.sh"]},
+    {"name": "Q4-A-p4", "primary": "start_12b_q4_p4.sh",   "extras": ["start_e2b_q4_mmproj.sh"]},
 ]
 
 
