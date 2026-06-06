@@ -17,6 +17,8 @@ import asyncio
 import json
 import logging
 import os
+import shutil
+import subprocess
 import time
 from typing import Any
 
@@ -25,6 +27,36 @@ logger = logging.getLogger(__name__)
 # Circuit breaker constants
 CIRCUIT_FAILURE_THRESHOLD = 3
 CIRCUIT_OPEN_DURATION_SECONDS = 300  # 5 min
+
+UVX_INSTALL_SCRIPT = "https://astral.sh/uv/install.sh"
+
+
+def ensure_uvx_installed() -> str:
+    """Return path to `uvx`, installing via the official script if missing.
+
+    Returns:
+        Absolute path to the uvx binary.
+
+    Raises:
+        MCPError: if uvx is still not available after the install attempt.
+    """
+    path = shutil.which("uvx")
+    if path:
+        return path
+    logger.info("uvx not found in PATH; installing via %s", UVX_INSTALL_SCRIPT)
+    install_cmd = "curl -LsSf " + UVX_INSTALL_SCRIPT + " | sh"
+    result = subprocess.run(install_cmd, shell=True, check=False, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise MCPError(f"Failed to install uvx: {result.stderr or result.stdout}")
+    # Re-check; ensure ~/.local/bin is on PATH for the current process
+    home = os.path.expanduser("~")
+    local_bin = os.path.join(home, ".local", "bin")
+    if local_bin not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = local_bin + os.pathsep + os.environ.get("PATH", "")
+    path = shutil.which("uvx")
+    if not path:
+        raise MCPError("uvx still not in PATH after install. Try: export PATH=$HOME/.local/bin:$PATH")
+    return path
 
 
 class MCPError(Exception):

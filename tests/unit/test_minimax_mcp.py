@@ -5,9 +5,17 @@ The MCP protocol uses newline-delimited JSON over stdio:
 - Server → Client: one JSON object per line on stdout
 """
 
+import os
+import shutil
+from unittest.mock import MagicMock
+
 import pytest
 
-from app.services.mcp.minimax_websearch import JsonRpcFramer, MCPError
+from app.services.mcp.minimax_websearch import (
+    JsonRpcFramer,
+    MCPError,
+    ensure_uvx_installed,
+)
 
 # These tests are pure-Python (no DB), so opt out of the autouse
 # `isolated_db` fixture which requires a writable test PostgreSQL.
@@ -286,3 +294,52 @@ async def test_mcp_client_circuit_breaker_opens_after_3_failures():
         # 4th call should short-circuit on circuit breaker
         with pytest.raises(MCPCircuitOpen):
             await client.search("x", max_results=1)
+
+
+# ---------------------------------------------------------------------------
+# ensure_uvx_installed tests (Task 4)
+# ---------------------------------------------------------------------------
+
+
+def test_ensure_uvx_installed_skips_when_present(monkeypatch, tmp_path):
+    """If uvx is already in PATH, no install is performed."""
+    # Create a fake uvx in tmp_path
+    fake_uvx = tmp_path / "uvx"
+    fake_uvx.write_text("#!/bin/sh\n")
+    fake_uvx.chmod(0o755)
+    monkeypatch.setattr("app.services.mcp.minimax_websearch.shutil.which", lambda x: str(fake_uvx))
+    called = {"n": 0}
+    monkeypatch.setattr("app.services.mcp.minimax_websearch.subprocess.run", lambda *a, **k: called.update(n=called["n"] + 1))
+    path = ensure_uvx_installed()
+    assert path == str(fake_uvx)
+    assert called["n"] == 0  # no install attempted
+
+
+def test_ensure_uvx_installed_runs_install_script_when_missing(monkeypatch, tmp_path):
+    """If uvx is missing, run the install script and re-check."""
+    which_calls = {"n": 0}
+    install_calls = {"n": 0}
+
+    def fake_which(x):
+        which_calls["n"] += 1
+        if which_calls["n"] == 1:
+            return None  # first call: not found
+        # second call (after install): found in tmp_path
+        return str(tmp_path / "uvx")
+
+    monkeypatch.setattr("app.services.mcp.minimax_websearch.shutil.which", fake_which)
+
+    def fake_run(cmd, **kwargs):
+        install_calls["n"] += 1
+        # Make a fake binary so the second shutil.which returns a path
+        fake_uvx = tmp_path / "uvx"
+        fake_uvx.write_text("#!/bin/sh\n")
+        fake_uvx.chmod(0o755)
+        m = MagicMock()
+        m.returncode = 0
+        return m
+
+    monkeypatch.setattr("app.services.mcp.minimax_websearch.subprocess.run", fake_run)
+    path = ensure_uvx_installed()
+    assert path == str(tmp_path / "uvx")
+    assert install_calls["n"] == 1
