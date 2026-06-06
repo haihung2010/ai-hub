@@ -22,6 +22,18 @@ def _msg(role: str, content: str) -> Message:
     return Message(role=role, content=content)
 
 
+def _captured_body(client: AsyncMock) -> dict[str, Any]:
+    """Return the request body from the most recent .post() call.
+
+    Tolerates both the mock case (dict passed as ``json=...``) and the
+    real httpx case (dict already serialized to a JSON string).
+    """
+    payload = client.post.call_args.kwargs["json"]
+    if isinstance(payload, (str, bytes, bytearray)):
+        return json.loads(payload)
+    return payload
+
+
 def _mock_client(response: httpx.Response) -> AsyncMock:
     """Build an async httpx.AsyncClient whose .post() returns the given response."""
     client = AsyncMock(spec=httpx.AsyncClient)
@@ -93,7 +105,7 @@ class TestPayloadShape:
         await provider.complete(
             [_msg("user", "hi")], "MiniMax-M3", 0.3, options={"max_tokens": 256}
         )
-        body = json.loads(client.post.call_args.kwargs["json"])
+        body = _captured_body(client)
         assert body["model"] == "MiniMax-M3"
         assert body["max_tokens"] == 256
         assert body["temperature"] == 0.3
@@ -103,14 +115,14 @@ class TestPayloadShape:
         """Anthropic Messages API uses top-level 'system', not a system message."""
         client = _mock_client(_ok_response({"content": [{"text": "ok"}]}))
         provider = MiniMaxProvider(
-            client=client, api_key="sk-x", model="MiniMax-M3"
+            client=client, api_key="sk-x", model="MiniMax-M3", enable_caching=False
         )
         await provider.complete(
             [_msg("system", "You are a helpful bot."), _msg("user", "hi")],
             "MiniMax-M3",
             0.3,
         )
-        body = json.loads(client.post.call_args.kwargs["json"])
+        body = _captured_body(client)
         assert body["system"] == "You are a helpful bot."
         # System message should NOT also appear in messages list
         roles = [m["role"] for m in body["messages"]]
@@ -131,7 +143,7 @@ class TestPromptCaching:
         await provider.complete(
             [_msg("system", "sys"), _msg("user", "hi")], "MiniMax-M3", 0.3
         )
-        body = json.loads(client.post.call_args.kwargs["json"])
+        body = _captured_body(client)
         assert "cache_control" not in json.dumps(body)
 
     @pytest.mark.unit
@@ -145,7 +157,7 @@ class TestPromptCaching:
             "MiniMax-M3",
             0.3,
         )
-        body = json.loads(client.post.call_args.kwargs["json"])
+        body = _captured_body(client)
         # System becomes a list-of-blocks with cache_control on the first
         assert isinstance(body["system"], list)
         assert body["system"][0]["cache_control"] == {"type": "ephemeral"}
@@ -162,7 +174,7 @@ class TestPromptCaching:
             "MiniMax-M3",
             0.3,
         )
-        body = json.loads(client.post.call_args.kwargs["json"])
+        body = _captured_body(client)
         messages = body["messages"]
         assert "cache_control" not in messages[0]
         assert "cache_control" not in messages[1]
@@ -176,7 +188,7 @@ class TestPromptCaching:
             client=client, api_key="sk-x", model="MiniMax-M3", enable_caching=True
         )
         await provider.complete([_msg("user", "hi")], "MiniMax-M3", 0.3)
-        body = json.loads(client.post.call_args.kwargs["json"])
+        body = _captured_body(client)
         # 'system' field is absent or empty when no system message present
         assert body.get("system") in (None, "")
         # Last message marked
