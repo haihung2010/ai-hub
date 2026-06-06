@@ -63,7 +63,11 @@ from app.services.structmem_service import StructMemService
 from app.services.summary_service import SummaryService
 from app.services.tracing_service import is_enabled as langfuse_enabled
 from app.services.tracing_service import shutdown as langfuse_shutdown
-from app.services.tools.web_search_service import WebSearchService
+from app.services.mcp.minimax_websearch import (
+    MCPError,
+    MiniMaxMCPClient,
+    ensure_uvx_installed,
+)
 from app.services.usage_service import UsageService
 from app.services.user_service import UserService
 
@@ -238,12 +242,37 @@ def create_app(
                 extraction=memory_extraction,
                 consolidation=memory_consolidation,
             )
-            web_search = WebSearchService(
-                timeout_seconds=settings.web_search_timeout_seconds,
-                google_api_key=settings.google_api_key,
-                google_search_cx=settings.google_search_cx,
-                searxng_base_url=settings.searxng_base_url,
-            )
+            # MiniMax WebSearch MCP client (replaces local WebSearchService)
+            minimax_mcp_client: MiniMaxMCPClient | None = None
+            if (
+                settings.minimax_enabled
+                and settings.minimax_mcp_enabled
+                and settings.minimax_api_key
+            ):
+                try:
+                    uvx_path = ensure_uvx_installed()
+                    logger.info("Using uvx at %s", uvx_path)
+                    minimax_mcp_client = MiniMaxMCPClient(
+                        api_key=settings.minimax_api_key,
+                        base_url=settings.minimax_base_url,
+                        command=settings.minimax_mcp_command,
+                        args=settings.minimax_mcp_args,
+                        timeout=settings.minimax_mcp_timeout_seconds,
+                    )
+                    await minimax_mcp_client.start()
+                    app.state.minimax_mcp = minimax_mcp_client
+                    logger.info("MiniMax MCP client started: %d tools available", 1)
+                except Exception as exc:
+                    logger.warning("MiniMax MCP disabled (failed to start): %s", exc)
+                    app.state.minimax_mcp = None
+            else:
+                app.state.minimax_mcp = None
+                if not settings.minimax_enabled:
+                    logger.info("MiniMax cloud disabled; MCP search unavailable")
+                elif not settings.minimax_api_key:
+                    logger.info("MINIMAX_API_KEY not set; MCP search unavailable")
+                else:
+                    logger.info("MINIMAX_MCP_ENABLED=false; MCP search unavailable")
             app.state.settings = settings
             app.state.start_time = app_start_time
             app.state.local_provider = local_provider
@@ -281,7 +310,6 @@ def create_app(
             app.state.usage_service = usage
             app.state.failure_risk_service = failure_risk
             app.state.structmem_service = structmem
-            app.state.web_search_service = web_search
             app.state.crew_service = (
                 CrewService(settings, _get_database_url())
                 if settings.enable_crew_agents
@@ -293,7 +321,7 @@ def create_app(
                 settings=settings,
                 users=users,
                 summaries=summaries,
-                web_search=web_search,
+                web_search=app.state.minimax_mcp,
                 memory_retrieval=memory_retrieval,
                 structmem=structmem,
                 predictions=predictions,
@@ -316,6 +344,13 @@ def create_app(
             if langfuse_enabled():
                 logger.info("Langfuse tracing active")
             yield
+            # Stop MiniMax MCP subprocess on shutdown
+            if hasattr(app.state, "minimax_mcp") and app.state.minimax_mcp is not None:
+                try:
+                    await app.state.minimax_mcp.stop()
+                    logger.info("MiniMax MCP client stopped")
+                except Exception as exc:
+                    logger.warning("MiniMax MCP stop failed: %s", exc)
             # Graceful shutdown — flush pending Langfuse spans so a clean
             # exit does not drop the last few traces.
             langfuse_shutdown()
