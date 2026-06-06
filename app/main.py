@@ -321,7 +321,7 @@ def create_app(
                 settings=settings,
                 users=users,
                 summaries=summaries,
-                web_search=app.state.minimax_mcp,
+                minimax_mcp=app.state.minimax_mcp,
                 memory_retrieval=memory_retrieval,
                 structmem=structmem,
                 predictions=predictions,

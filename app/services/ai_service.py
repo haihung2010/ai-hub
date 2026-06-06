@@ -30,7 +30,7 @@ from app.services.prediction_service import PredictionService
 from app.services.providers.base import ChatProvider
 from app.services.structmem_service import StructMemService
 from app.services.summary_service import SummaryService
-from app.services.tools.web_search_service import WebSearchService
+from app.services.mcp.minimax_websearch import MiniMaxMCPClient
 from app.services.usage_service import UsageEvent, UsageService
 from app.services.user_service import UserService
 
@@ -143,7 +143,7 @@ class AIService:
         settings: Settings,
         users: UserService,
         summaries: SummaryService | None = None,
-        web_search: WebSearchService | None = None,
+        minimax_mcp: MiniMaxMCPClient | None = None,
         memory_retrieval: MemoryRetrievalService | None = None,
         structmem: StructMemService | None = None,
         predictions: PredictionService | None = None,
@@ -168,7 +168,7 @@ class AIService:
         self._settings = settings
         self._users = users
         self._summaries = summaries
-        self._web_search = web_search
+        self._minimax_mcp = minimax_mcp
         self._memory_retrieval = memory_retrieval
         self._structmem = structmem
         self._predictions = predictions
@@ -431,15 +431,15 @@ class AIService:
             return self._cloud
         return self._local
 
-    def _build_search_context(self, query: str) -> tuple[str | None, list[str]]:
-        if not self._web_search or not self._settings.enable_web_search_tool:
+    async def _build_search_context(self, query: str) -> tuple[str | None, list[str]]:
+        if not self._minimax_mcp or not self._settings.minimax_mcp_enabled:
             return None, []
 
         safe_query = query.strip()[:300]
         try:
-            results = self._web_search.search(
+            results = await self._minimax_mcp.search(
                 safe_query,
-                max_results=self._settings.web_search_max_results,
+                max_results=self._settings.minimax_mcp_max_results,
             )
         except Exception:
             logger.exception("Web search failed query=%s", safe_query)
@@ -770,7 +770,7 @@ class AIService:
         )
         return risk, decision
 
-    def _apply_failure_risk_decision(
+    async def _apply_failure_risk_decision(
         self,
         *,
         decision: RiskPolicyDecision,
@@ -795,7 +795,7 @@ class AIService:
             return [*messages[:-1], guard, messages[-1]], source_urls, route_reason
         search_query = self._explicit_search_query(req)
         if decision.action == "enable_search" and search_query:
-            search_context, urls = self._build_search_context(search_query)
+            search_context, urls = await self._build_search_context(search_query)
             if search_context:
                 return self._inject_search_context(messages, search_context), urls, route_reason
         return messages, source_urls, route_reason
@@ -1357,7 +1357,7 @@ class AIService:
                 sources=[],
                 usage=None,
             )
-        messages, source_urls, route_reason = self._apply_failure_risk_decision(
+        messages, source_urls, route_reason = await self._apply_failure_risk_decision(
             decision=risk_decision,
             req=req,
             messages=messages,
