@@ -224,7 +224,14 @@ class MiniMaxMCPClient:
             raise
 
     def _parse_search_response(self, resp: dict, max_results: int) -> list[dict]:
-        """Parse the JSON-RPC result into a list of {url, title, snippet} dicts."""
+        """Parse the JSON-RPC result into a list of {url, title, snippet} dicts.
+
+        The MCP server returns content[0].text as a JSON payload. The shape
+        may be either a bare JSON array OR a dict like {"organic": [...]}.
+        Items inside the list may use varying key names; we normalize to
+        the canonical {url, title, snippet} shape used by ai-hub's prompt
+        template.
+        """
         result = resp.get("result", {})
         if result.get("isError"):
             err = result.get("errorMessage") or "unknown MCP error"
@@ -237,9 +244,39 @@ class MiniMaxMCPClient:
             parsed = json.loads(text)
         except (json.JSONDecodeError, TypeError) as exc:
             raise MCPError(f"MCP web_search returned non-JSON content: {text[:200]!r}") from exc
-        if not isinstance(parsed, list):
-            raise MCPError(f"MCP web_search expected JSON array, got: {type(parsed).__name__}")
-        return parsed[:max_results]
+
+        # Normalize to list of dicts
+        items: list[dict] = []
+        if isinstance(parsed, list):
+            items = parsed
+        elif isinstance(parsed, dict):
+            for key in ("organic", "results", "items", "data", "web_search_results", "sources"):
+                if key in parsed and isinstance(parsed[key], list):
+                    items = parsed[key]
+                    break
+            else:
+                logger.warning("MCP web_search returned dict without known results key. Keys: %s", list(parsed.keys())[:10])
+                return []
+        else:
+            raise MCPError(f"MCP web_search expected JSON array or dict, got: {type(parsed).__name__}")
+
+        # Normalize each item to canonical {url, title, snippet}
+        normalized = []
+        for raw in items[:max_results]:
+            if not isinstance(raw, dict):
+                continue
+            # url key variants
+            url = raw.get("url") or raw.get("link") or raw.get("href") or raw.get("source") or ""
+            # title key variants
+            title = raw.get("title") or raw.get("name") or raw.get("heading") or ""
+            # snippet key variants
+            snippet = (
+                raw.get("snippet") or raw.get("description") or raw.get("abstract")
+                or raw.get("content") or raw.get("text") or ""
+            )
+            if url or title or snippet:
+                normalized.append({"url": url, "title": title, "snippet": snippet})
+        return normalized
 
     async def _send_request(self, method: str, params: dict) -> dict:
         """Send a request frame and read the response (matched by id)."""

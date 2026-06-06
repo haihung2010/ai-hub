@@ -252,9 +252,15 @@ def create_app(
                 try:
                     uvx_path = ensure_uvx_installed()
                     logger.info("Using uvx at %s", uvx_path)
+                    # MCP subprocess expects base URL without /v1 (it appends
+                    # the API path internally). The chat provider uses
+                    # MINIMAX_BASE_URL with /v1, so strip it for MCP.
+                    mcp_base_url = settings.minimax_base_url.rstrip("/")
+                    if mcp_base_url.endswith("/v1"):
+                        mcp_base_url = mcp_base_url[:-3]
                     minimax_mcp_client = MiniMaxMCPClient(
                         api_key=settings.minimax_api_key,
-                        base_url=settings.minimax_base_url,
+                        base_url=mcp_base_url,
                         command=settings.minimax_mcp_command,
                         args=settings.minimax_mcp_args,
                         timeout=settings.minimax_mcp_timeout_seconds,

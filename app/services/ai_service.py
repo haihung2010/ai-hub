@@ -779,6 +779,18 @@ class AIService:
         source_urls: list[str],
         route_reason: str,
     ) -> tuple[list[Message], list[str], str]:
+        # Always run MCP search when there's an explicit /search: prefix,
+        # regardless of whether the risk decision is applied. Explicit user
+        # intent wins. (The MCP client replaces the old local WebSearchService.)
+        explicit_query = self._explicit_search_query(req)
+        if explicit_query:
+            logger.info("MCP search trigger (explicit /search:) query=%r", explicit_query[:80])
+            search_context, urls = await self._build_search_context(explicit_query)
+            logger.info("MCP search returned context=%s urls=%d",
+                       "yes" if search_context else "no", len(urls))
+            if search_context:
+                return self._inject_search_context(messages, search_context), urls, route_reason
+
         if not decision.applied:
             return messages, source_urls, route_reason
         if decision.route_reason_suffix:
@@ -793,9 +805,13 @@ class AIService:
                 ),
             )
             return [*messages[:-1], guard, messages[-1]], source_urls, route_reason
-        search_query = self._explicit_search_query(req)
-        if decision.action == "enable_search" and search_query:
-            search_context, urls = await self._build_search_context(search_query)
+        # Failure-risk classifier also enables search (for non-/search: messages with ?)
+        if decision.action == "enable_search":
+            search_query_for_mcp = req.user_message.strip()
+            logger.info("MCP search trigger (risk action=enable_search) query=%r", search_query_for_mcp[:80])
+            search_context, urls = await self._build_search_context(search_query_for_mcp)
+            logger.info("MCP search returned context=%s urls=%d",
+                       "yes" if search_context else "no", len(urls))
             if search_context:
                 return self._inject_search_context(messages, search_context), urls, route_reason
         return messages, source_urls, route_reason
