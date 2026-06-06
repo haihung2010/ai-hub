@@ -34,9 +34,12 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 - **Admin Reindex**: `POST /v1/admin/knowledge/reindex` to backfill embeddings
 
 ### Web Search
-- Multi-backend: Google Custom Search → DDGS → DuckDuckGo HTML → Bing HTML
-- Vietnamese domain quality scoring, tracking param removal
-- Triggered by `/search:` prefix or `enable_search=true` with `?` in message
+- Backend: **MiniMax WebSearch MCP** (`minimax-coding-plan-mcp` package, runs locally via `uvx`)
+- Communicates with MCP server via JSON-RPC 2.0 over stdio (newline-delimited JSON)
+- Vietnamese + multi-language: MiniMax handles quality scoring + tracking-param removal server-side
+- Triggered by `/search: <query>` prefix OR `?` in message (auto-detect)
+- Auto-installs `uvx` on first startup if missing; spawns subprocess; circuit breaker after 3 consecutive failures
+- See `app/services/mcp/minimax_websearch.py` for client + `ensure_uvx_installed()` for setup
 
 ### User & Session Management
 - User lookup/creation by name, tenant-scoped
@@ -93,7 +96,7 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 | `app/services/knowledge_retrieval_service.py` | Hybrid search (vector + token) |
 | `app/services/rerank_service.py` | Re-scores search results using cross-encoder |
 | `app/services/whisper_service.py` | GPU-accelerated voice transcription |
-| `app/services/tools/web_search_service.py` | Multi-backend web search |
+| `app/services/mcp/minimax_websearch.py` | MiniMax WebSearch MCP client (JSON-RPC over stdio) |
 | `app/services/failure_risk_service.py` | Failure risk scoring and actions |
 | `app/services/providers/llama_cpp.py` | llama.cpp API integration (handles prompt formatting) |
 | `app/services/providers/openrouter.py` | Cloud fallback via OpenRouter |
@@ -217,8 +220,8 @@ app/
 │   ├── llama_cpp.py            # Local provider (num_ctx in _ALLOWED_OPTIONS)
 │   ├── openrouter.py           # Cloud provider
 │   └── load_balancer.py        # Multi-node load balancer (ready, not wired yet)
-├── services/tools/
-│   └── web_search_service.py   # Multi-backend search
+├── services/mcp/
+│   └── minimax_websearch.py    # MiniMax WebSearch MCP client (stdio JSON-RPC)
 scripts/
 ├── start_lite_q8.sh            # Launch llama.cpp 12B Q4 (port 8080) — primary chatbot (P4 winner)
 ├── start_background_q4.sh      # Launch llama.cpp Q4 background (port 8081)
