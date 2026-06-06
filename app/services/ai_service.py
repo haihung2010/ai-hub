@@ -32,6 +32,8 @@ from app.services.structmem_service import StructMemService
 from app.services.summary_service import SummaryService
 from app.services.tools.web_search_service import WebSearchService
 from app.services.usage_service import UsageEvent, UsageService
+from app.utils.cost_calculator import calculate_cost_usd
+from app.utils.token_counter import count_messages_tokens, count_text_tokens
 from app.services.user_service import UserService
 
 logger = logging.getLogger(__name__)
@@ -1115,6 +1117,29 @@ class AIService:
         finally:
             self._active_requests -= 1
 
+    @staticmethod
+    def _compute_usage_metrics(
+        messages: list[Message] | None,
+        completion: str | None,
+        provider: str,
+        model: str,
+    ) -> tuple[int, int, int, float]:
+        """Return (prompt_tokens, completion_tokens, total_tokens, cost_usd).
+
+        ``messages`` is the full prompt that was sent (may be ``None`` for
+        synthetic paths like memory-recall). ``completion`` is the assistant
+        text actually returned (may be empty for non-LLM paths).
+
+        Estimates use tiktoken cl100k_base (see ``app.utils.token_counter``).
+        Cost is looked up in ``app.utils.cost_calculator``. Local/self-hosted
+        providers return cost=0.0.
+        """
+        prompt_tokens = count_messages_tokens(messages) if messages else 0
+        completion_tokens = count_text_tokens(completion)
+        total_tokens = prompt_tokens + completion_tokens
+        cost_usd = calculate_cost_usd(provider, model, prompt_tokens, completion_tokens)
+        return prompt_tokens, completion_tokens, total_tokens, cost_usd
+
     async def chat_stream(
         self, req: ChatRequest, api_key_id: str | None = None
     ) -> AsyncIterator[dict]:
@@ -1196,6 +1221,9 @@ class AIService:
             self._save_prediction_record, req, session_id, user_id, full_content, model, provider
         )
         self._schedule_memory_jobs(user_id, req.tenant_id, req.project_id, session_id, self._local)
+        prompt_tokens, completion_tokens, total_tokens, cost_usd = self._compute_usage_metrics(
+            messages, full_content, provider.name, model,
+        )
         self._usage.record(
             UsageEvent(
                 tenant_id=req.tenant_id,
@@ -1209,6 +1237,10 @@ class AIService:
                 latency_ms=latency_ms,
                 status_code=200,
                 fallback_used=False,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                cost_usd=cost_usd,
             )
         )
 
@@ -1265,6 +1297,10 @@ class AIService:
                     latency_ms=latency_ms,
                     status_code=200,
                     fallback_used=False,
+                    prompt_tokens=0,
+                    completion_tokens=count_text_tokens(content),
+                    total_tokens=count_text_tokens(content),
+                    cost_usd=0.0,
                 )
             )
             return ChatResponse(
@@ -1325,6 +1361,9 @@ class AIService:
                 model_after=model,
             )
             latency_ms = round((time.perf_counter() - started) * 1000, 3)
+            prompt_tokens, completion_tokens, total_tokens, cost_usd = self._compute_usage_metrics(
+                messages, content, "risk_policy", "clarification",
+            )
             self._usage.record(
                 UsageEvent(
                     tenant_id=req.tenant_id,
@@ -1340,6 +1379,10 @@ class AIService:
                     fallback_used=False,
                     queue_wait_ms=0.0,
                     route_reason="risk_clarification",
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    total_tokens=total_tokens,
+                    cost_usd=cost_usd,
                 )
             )
             return ChatResponse(
@@ -1508,6 +1551,9 @@ class AIService:
             queue_wait_ms,
             route_reason,
         )
+        prompt_tokens, completion_tokens, total_tokens, cost_usd = self._compute_usage_metrics(
+            messages, content, provider.name, model,
+        )
         self._usage.record(
             UsageEvent(
                 tenant_id=req.tenant_id,
@@ -1523,6 +1569,10 @@ class AIService:
                 fallback_used=fallback_used,
                 queue_wait_ms=queue_wait_ms,
                 route_reason=route_reason,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                cost_usd=cost_usd,
             )
         )
         return ChatResponse(
