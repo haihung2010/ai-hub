@@ -1149,7 +1149,12 @@ class AIService:
         search_query = self._explicit_search_query(req)
         if search_query:
             provider = self._select_explicit_search_provider(req)
-            model, num_ctx = self._settings.openrouter_model, 0
+            # Pick model name matching the actual provider (cloud uses
+            # OpenRouter model ID; local uses the local default_model).
+            if provider is self._cloud:
+                model, num_ctx = self._settings.openrouter_model, 0
+            else:
+                model, num_ctx = self._settings.default_model, self._settings.default_num_ctx
         else:
             model, num_ctx = self._select_model(req, prompt.model)
             provider = self._select_provider(req)
@@ -1244,7 +1249,12 @@ class AIService:
         search_query = self._explicit_search_query(req)
         if search_query:
             provider = self._select_explicit_search_provider(req)
-            model, num_ctx = self._settings.openrouter_model, 0
+            # Pick model name matching the actual provider (cloud uses
+            # OpenRouter model ID; local uses the local default_model).
+            if provider is self._cloud:
+                model, num_ctx = self._settings.openrouter_model, 0
+            else:
+                model, num_ctx = self._settings.default_model, self._settings.default_num_ctx
         else:
             model, num_ctx = self._select_model(req, prompt.model)
             provider = self._select_provider(req)

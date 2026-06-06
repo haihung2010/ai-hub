@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Chatbot primary: 12B Q4_K_M (P4 winner config) on port 8080.
-# Config: parallel=12, ctx=8192, --cache-type-k/v q4_0 (KV cache half-size for better throughput)
-# Renamed functionally — still called start_lite_q8.sh for backward compat with start.sh.
-# Usage: PORT=8080 PARALLEL=12 ./start_lite_q8.sh
+# Config: parallel=8, ctx=16384, --cache-type-k/v q4_0 (KV cache half-size).
+# Per-slot ctx = 16384/8 = 2048 (enough for ~1500-token prompts + 500-token
+# completions including search context). Renamed functionally — still
+# called start_lite_q8.sh for backward compat with start.sh.
+# Usage: PORT=8080 PARALLEL=8 CTX_SIZE=16384 ./start_lite_q8.sh
 
 set -euo pipefail
 
@@ -10,8 +12,8 @@ LLAMA_SERVER=${LLAMA_SERVER:-/home/hung/llama.cpp/build-cuda13/bin/llama-server}
 MODEL=${MODEL:-/home/hung/models/gemma-4-12b-it-Q4_K_M.gguf}
 HOST=${HOST:-127.0.0.1}
 PORT=${PORT:-8080}
-CTX_SIZE=${CTX_SIZE:-8192}
-PARALLEL=${PARALLEL:-12}
+CTX_SIZE=${CTX_SIZE:-16384}
+PARALLEL=${PARALLEL:-8}
 ALIAS=${ALIAS:-local-gemma4-12b-q4-text}
 LOG_FILE=${LOG_FILE:-/tmp/aihub-llama-lite-q8.log}
 PID_FILE=${PID_FILE:-/tmp/aihub-llama-server.pid}
