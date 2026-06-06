@@ -1109,6 +1109,22 @@ function toggleLive() {
     document.getElementById('auto-refresh-btn')?.click();
 }
 
+function startAutoRefresh(intervalMs = 3000) {
+    if (ADMIN.autoTimer) clearInterval(ADMIN.autoTimer);
+    ADMIN.autoTimer = setInterval(refreshDashboard, intervalMs);
+    const btn = document.getElementById('auto-refresh-btn');
+    if (btn) btn.innerHTML = '🟢 LIVE: 3s';
+}
+
+function stopAutoRefresh() {
+    if (ADMIN.autoTimer) {
+        clearInterval(ADMIN.autoTimer);
+        ADMIN.autoTimer = null;
+    }
+    const btn = document.getElementById('auto-refresh-btn');
+    if (btn) btn.innerHTML = '⚪ LIVE: OFF';
+}
+
 /* ====== Theme Toggle ====== */
 function applyTheme(theme) {
     ADMIN.theme = theme;
@@ -1979,6 +1995,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initSystemTab();
     applyTheme(ADMIN.theme);
     showTab('dashboard');
+    // Start auto-refresh by default so dashboard shows live data without
+    // requiring the user to click anything. Refresh every 3s.
+    if (ADMIN.apiKey) {
+        startAutoRefresh(3000);
+    }
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/admin-sw.js').catch(() => {});
     }
