@@ -113,7 +113,7 @@
                 <span class="text-slate-600">·</span>
                 <span id="info-mode">⚡ <span class="text-green-400">Lite</span></span>
                 <span class="text-slate-600">·</span>
-                <span id="info-model">Gemma 4 E2B Q4 · 131K ctx</span>
+                <span id="info-model">Gemma 4 12B Q4 · 8K ctx</span>
             </div>
             <div class="flex items-center gap-3">
                 <span id="info-stream" class="text-purple-400">⚡ Stream ON</span>
@@ -911,6 +911,34 @@
             restoreLatestSessionForUser().catch((err) => { console.error(err); statusDiv.textContent = 'Không khôi phục được session trước'; });
         }
         userInput.focus();
+
+        // ── Fetch live model info from /health (updates on page load) ───
+        (async () => {
+            try {
+                const headers = currentApiKey ? { 'X-API-KEY': currentApiKey } : {};
+                const r = await fetch('/health', { headers });
+                if (!r.ok) return;
+                const data = await r.json();
+                const local = data.local || {};
+                const model = (local.models && local.models[0]) || null;
+                if (model) {
+                    const infoEl = document.getElementById('info-model');
+                    if (infoEl) {
+                        // Map alias → human label + ctx
+                        const m = model.toLowerCase();
+                        if (m.includes('12b')) {
+                            infoEl.textContent = 'Gemma 4 12B Q4 · 8K ctx';
+                        } else if (m.includes('e2b')) {
+                            infoEl.textContent = 'Gemma 4 E2B Q4 · 8K ctx';
+                        } else if (m.includes('e4b')) {
+                            infoEl.textContent = 'Gemma 4 E4B Q4 · 32K ctx';
+                        } else {
+                            infoEl.textContent = model;
+                        }
+                    }
+                }
+            } catch (_) { /* /health not ready yet — keep hardcoded label */ }
+        })();
     </script>
 </body>
 </html>
