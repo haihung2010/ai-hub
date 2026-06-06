@@ -243,6 +243,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             if api_key_record is None:
                 if not is_loopback:
                     self._failure_tracker.record_failure(client_ip)
+                self._audit_auth_failure(client_ip, provided_key)
                 self._log_denial(client_ip, request.url.path, "invalid_api_key")
                 return JSONResponse(
                     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -256,6 +257,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         else:
             if not is_loopback:
                 self._failure_tracker.record_failure(client_ip)
+            self._audit_auth_failure(client_ip, provided_key=None)
             self._log_denial(client_ip, request.url.path, "invalid_api_key")
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -271,6 +273,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         )
         limiter = self._limiter_for_limit(getattr(request.state, "api_key_rpm_limit", self._settings.rate_limit_per_minute))
         if not limiter.allow(rate_key):
+            self._audit_rate_limit(rate_key, limiter)
             self._log_denial(client_ip, request.url.path, "rate_limit_exceeded")
             return JSONResponse(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -328,3 +331,61 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
     def _log_denial(self, client_ip: str, path: str, reason: str) -> None:
         logger.warning("security_denied ip=%s path=%s reason=%s", client_ip, path, reason)
+
+    def _audit_auth_failure(self, client_ip: str, provided_key: str | None) -> None:
+        """Best-effort PG snapshot of the auth-failure event (Rank 7 fix).
+
+        We never log the raw provided_key — only its SHA-256 (matches the
+        rate-limit key shape). For loopback probes the failure tracker
+        is intentionally not consulted, but the PG audit row is still
+        written so audit queries see uniform coverage.
+        """
+        try:
+            from app.services import security_audit
+            key_material = provided_key or f"ip:{client_ip}"
+            key_hash = hashlib.sha256(key_material.encode("utf-8")).hexdigest()[:32]
+            snapshot_key = f"af:{client_ip}:{key_hash}"
+            blocked_until = 0.0
+            if hasattr(self._failure_tracker, "_states"):
+                # AuthFailureTracker (in-process). Best-effort read of block state.
+                state = self._failure_tracker._states.get(client_ip)
+                if state is not None:
+                    blocked_until = float(state.blocked_until)
+            security_audit.record_auth_failure(
+                key=snapshot_key,
+                failures=None,
+                blocked_until=blocked_until,
+            )
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.debug("audit_auth_failure skipped: %s", exc)
+
+    def _audit_rate_limit(self, rate_key: str, limiter: object) -> None:
+        """Best-effort PG snapshot of the rate-limit denial (Rank 7 fix).
+
+        For RedisRateLimiter we read the current ZSET timestamps so the
+        audit row reflects the actual bucket state. For the in-memory
+        limiter we use the current timestamp as a single-event marker
+        (the deque lives off-process and is volatile anyway).
+        """
+        try:
+            from app.services import security_audit
+            current_time = time.time()
+            timestamps: list[float] | None = None
+            if isinstance(limiter, RedisRateLimiter):
+                try:
+                    raw = limiter._r.zrange(f"rl:{rate_key}", 0, -1, withscores=True)
+                    timestamps = [float(score) for _member, score in raw]
+                except Exception:
+                    timestamps = None
+            elif isinstance(limiter, InMemoryRateLimiter):
+                bucket = limiter._buckets.get(rate_key)
+                if bucket is not None:
+                    with bucket.lock:
+                        timestamps = list(bucket.timestamps)
+            security_audit.record_rate_limit(
+                key=rate_key,
+                timestamps=timestamps,
+                now=current_time,
+            )
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.debug("audit_rate_limit skipped: %s", exc)
