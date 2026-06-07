@@ -745,30 +745,66 @@ async def user_messages(
     limit: int = 50,
     offset: int = 0,
     truncate: int = 200,
+    search: str | None = None,
+    role: str | None = None,
+    model: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
 ):
-    """Full chat history for a user, optionally filtered by project.
+    """Full chat history for a user, optionally filtered by project/role/model/search/date.
 
     Args:
         limit: max messages to return (default 50).
         offset: skip this many messages (for pagination).
         truncate: truncate message content to this many chars (set to 0 for full).
+        search: case-insensitive substring match on content (ILIKE).
+        role: 'user' / 'assistant' / 'system'.
+        model: filter by exact model name (matched via usage_events join).
+        date_from: ISO date or datetime lower bound (inclusive).
+        date_to: ISO date or datetime upper bound (inclusive).
     """
-    sql = f"""
+    base_sql = f"""
         SELECT m.id, m.role, m.content, m.created_at, s.project_id, m.is_summarized,
+               ue.model, ue.latency_ms, ue.prompt_tokens, ue.completion_tokens, ue.cost_usd,
                COUNT(*) OVER () AS total_count
         FROM messages m
         JOIN sessions s ON m.session_id = s.id
+        LEFT JOIN LATERAL (
+            SELECT model, latency_ms, prompt_tokens, completion_tokens, cost_usd
+            FROM usage_events ue
+            WHERE ue.user_id = m.user_id
+              AND ue.project_id = s.project_id
+              AND ue.created_at > m.created_at - INTERVAL '5 seconds'
+              AND ue.created_at < m.created_at + INTERVAL '5 seconds'
+            ORDER BY ABS(EXTRACT(EPOCH FROM (ue.created_at - m.created_at)))
+            LIMIT 1
+        ) ue ON TRUE
         WHERE m.user_id = %s
     """
     params: list = [user_id]
     if project_id:
-        sql += " AND s.project_id = %s"
+        base_sql += " AND s.project_id = %s"
         params.append(project_id)
-    sql += " ORDER BY m.created_at DESC LIMIT %s OFFSET %s"
+    if role:
+        base_sql += " AND m.role = %s"
+        params.append(role)
+    if model:
+        base_sql += " AND ue.model = %s"
+        params.append(model)
+    if search:
+        base_sql += " AND m.content ILIKE %s"
+        params.append(f"%{search}%")
+    if date_from:
+        base_sql += " AND m.created_at >= %s"
+        params.append(date_from)
+    if date_to:
+        base_sql += " AND m.created_at <= %s"
+        params.append(date_to)
+    base_sql += " ORDER BY m.created_at DESC LIMIT %s OFFSET %s"
     params.extend([limit, offset])
 
     with get_db_connection() as conn:
-        rows = conn.execute(sql, params).fetchall()
+        rows = conn.execute(base_sql, params).fetchall()
         out = []
         for r in rows:
             d = dict(r)

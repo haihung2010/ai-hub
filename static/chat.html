@@ -259,254 +259,279 @@
         }
         .btn:hover { background: #4f46e5; border-color: #4f46e5; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Master-detail chat viewer */
+        .cv-header { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem; background: rgba(15,23,42,0.55); backdrop-filter: blur(24px); border-bottom: 1px solid var(--border-subtle); flex-shrink: 0; }
+        .cv-header h1 { margin: 0; font-size: 1.1rem; font-weight: 700; }
+        .cv-header .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-muted); }
+        .cv-header .btn-icon { background: transparent; border: 1px solid var(--border-subtle); color: var(--text-secondary); width: 32px; height: 32px; border-radius: 0.5rem; cursor: pointer; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; }
+        .cv-header .btn-icon:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+        .cv-header .btn { background: var(--accent-1); color: white; border: 1px solid var(--accent-1); padding: 0.4rem 0.9rem; border-radius: 0.5rem; cursor: pointer; font-size: 0.75rem; font-weight: 600; }
+        .cv-header .btn:hover { background: #4f46e5; border-color: #4f46e5; }
+
+        .cv-toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.75rem 1.5rem; background: rgba(15,23,42,0.4); border-bottom: 1px solid var(--border-subtle); align-items: center; flex-shrink: 0; }
+        .cv-toolbar input, .cv-toolbar select { background: var(--bg-input); border: 1px solid var(--border-subtle); color: var(--text-primary); padding: 0.4rem 0.6rem; border-radius: 0.4rem; font-size: 0.75rem; font-family: inherit; }
+        .cv-toolbar input:focus, .cv-toolbar select:focus { outline: none; border-color: var(--accent-1); }
+        .cv-toolbar .select { min-width: 110px; }
+
+        .cv-split { display: grid; grid-template-columns: minmax(380px, 40%) 1fr; height: calc(100vh - 80px - 64px - 56px); gap: 1px; background: var(--border-subtle); }
+        .cv-list { overflow-y: auto; background: var(--bg-base); }
+        .cv-detail { overflow-y: auto; background: var(--bg-base); padding: 1.25rem 1.5rem; }
+
+        .cv-row { display: grid; grid-template-columns: 36px 80px 60px 60px 1fr 90px; gap: 0.5rem; align-items: center; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border-subtle); cursor: pointer; font-size: 0.8125rem; }
+        .cv-row:hover { background: rgba(255,255,255,0.02); }
+        .cv-row.selected { background: rgba(99,102,241,0.1); border-left: 2px solid var(--accent-1); }
+        .cv-row .num { color: var(--text-faint); font-family: 'JetBrains Mono', monospace; }
+        .cv-row .preview { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cv-row .when { color: var(--text-muted); font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; }
+        .cv-row .role-pill { display: inline-block; padding: 0.125rem 0.4rem; font-size: 0.65rem; font-weight: 700; border-radius: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .cv-turn { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-subtle); }
+        .cv-turn--system { opacity: 0.55; }
+        .cv-turn-meta { display: flex; align-items: center; gap: 0.5rem; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem; flex-wrap: wrap; }
+        .cv-turn-meta .role { padding: 0.125rem 0.5rem; border-radius: 0.25rem; font-weight: 700; font-size: 0.65rem; letter-spacing: 0.05em; }
+        .cv-turn-meta .role.user { background: rgba(99,102,241,0.15); color: #818cf8; }
+        .cv-turn-meta .role.assistant { background: rgba(168,85,247,0.15); color: #c084fc; }
+        .cv-turn-meta .role.system { background: rgba(148,163,184,0.15); color: var(--text-muted); }
+        .cv-turn-body { padding: 0.75rem 1rem; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 0.5rem; line-height: 1.6; color: var(--text-primary); white-space: pre-wrap; word-break: break-word; }
+        .cv-turn-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; opacity: 0; transition: opacity 0.15s; }
+        .cv-turn:hover .cv-turn-actions { opacity: 1; }
+        .cv-turn-actions button { background: transparent; border: 1px solid var(--border-subtle); color: var(--text-muted); padding: 0.25rem 0.625rem; border-radius: 0.375rem; font-size: 0.7rem; cursor: pointer; }
+        .cv-turn-actions button:hover { background: var(--bg-elevated); color: var(--text-primary); }
+
+        .cv-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-faint); padding: 2rem; text-align: center; }
     </style>
 </head>
 <body>
     <div class="chat-container">
-        <div class="chat-header">
+        <header class="cv-header">
+            <button class="btn-icon" onclick="goBack()" title="Back to admin">←</button>
             <div>
-                <h1 id="chat-title">Chat</h1>
-                <div class="chat-header-info">
-                    <span id="user-info">User</span>
-                    <span id="message-count">0 messages</span>
-                    <span id="last-activity">Last activity: —</span>
-                </div>
+                <h1 id="chat-title">Loading...</h1>
+                <p id="user-info" style="margin:0;font-size:0.75rem;color:var(--text-muted)"></p>
             </div>
-            <button class="back-btn" onclick="goBack()">← Back to Admin</button>
+            <span id="message-count" class="mono" style="margin-left:auto">0 / 0</span>
+            <button class="btn" onclick="refreshList()">↻ Refresh</button>
+        </header>
+
+        <div class="cv-toolbar">
+            <input id="filter-search" type="search" placeholder="Search message content..." style="flex:1;min-width:200px">
+            <select id="filter-role" class="select"><option value="">All roles</option><option value="user">User</option><option value="assistant">Assistant</option><option value="system">System</option></select>
+            <select id="filter-model" class="select"><option value="">All models</option></select>
+            <input id="filter-from" type="date" title="From date">
+            <input id="filter-to" type="date" title="To date">
+            <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.75rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted)"><input type="checkbox" id="show-system-cb"> show system</label>
+            <button class="btn" onclick="applyFilters()">Apply</button>
         </div>
 
-        <div class="messages-container" id="messages-container">
-            <div class="loading">
-                <div class="spinner"></div>
-                <span>Loading messages...</span>
-            </div>
-        </div>
-        <div style="text-align:center;padding:1rem;flex-shrink:0;background:rgba(15,23,42,0.4);border-top:1px solid var(--border-subtle)">
-            <button id="load-older-btn" class="btn" style="display:none" onclick="loadOlder()">Load older messages</button>
+        <div class="cv-split">
+            <aside class="cv-list" id="cv-list">
+                <div class="cv-list-header" style="display:grid;grid-template-columns:36px 80px 60px 60px 1fr 90px;gap:0.5rem;padding:0.5rem 0.75rem;font-size:0.65rem;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border-subtle)">
+                    <span>#</span><span>Role</span><span>Lat</span><span>Tok</span><span>Preview</span><span>When</span>
+                </div>
+                <div id="cv-rows"></div>
+                <div id="cv-list-footer" style="padding:0.75rem;text-align:center">
+                    <button id="load-more-btn" class="btn" onclick="loadMore()" style="display:none">Load more</button>
+                </div>
+            </aside>
+            <section class="cv-detail" id="cv-detail">
+                <div class="cv-empty">
+                    <p>Select a message on the left to view its details.</p>
+                </div>
+            </section>
         </div>
     </div>
 
     <script>
         const API_KEY = localStorage.getItem('api_key') || '1XteCCQ_s_UbrqOGEIYybmDBnokWhxYap90D6_Jojx8';
         const PAGE_SIZE = 50;
-        let allMessages = [];     // accumulated across pages
-        let totalCount = 0;       // from server's total_count
-        let currentOffset = 0;    // how many messages already loaded
+        let allMessages = [];
+        let totalCount = 0;
+        let currentOffset = 0;
+        let selectedId = null;
         let currentUserId = null;
         let currentProjectId = null;
 
-        async function fetchMessages(offset, limit) {
-            const url = `/v1/admin/users/${encodeURIComponent(currentUserId)}/messages?project_id=${encodeURIComponent(currentProjectId)}&limit=${limit}&offset=${offset}`;
-            const res = await fetch(url, { headers: { 'X-API-KEY': API_KEY } });
-            return await res.json();
+        function escapeHtml(s) { return (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+        function fmtTimeShort(iso) { try { return new Date(iso).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'}); } catch { return ''; } }
+        function fmtDateShort(iso) { try { return new Date(iso).toLocaleDateString('en-GB', {day: '2-digit', month: 'short'}); } catch { return ''; } }
+        function fmtRelative(iso) { if (!iso) return ''; const d = (Date.now() - new Date(iso).getTime()) / 1000; if (d < 60) return Math.floor(d) + 's ago'; if (d < 3600) return Math.floor(d/60) + 'm ago'; if (d < 86400) return Math.floor(d/3600) + 'h ago'; return Math.floor(d/86400) + 'd ago'; }
+
+        function buildUrl(offset = 0) {
+            const params = new URLSearchParams();
+            params.set('project_id', currentProjectId);
+            params.set('limit', PAGE_SIZE);
+            params.set('offset', offset);
+            const search = document.getElementById('filter-search').value.trim();
+            if (search) params.set('search', search);
+            const role = document.getElementById('filter-role').value;
+            if (role) params.set('role', role);
+            const model = document.getElementById('filter-model').value;
+            if (model) params.set('model', model);
+            const from = document.getElementById('filter-from').value;
+            if (from) params.set('date_from', from);
+            const to = document.getElementById('filter-to').value;
+            if (to) params.set('date_to', to);
+            return `/v1/admin/users/${encodeURIComponent(currentUserId)}/messages?${params.toString()}`;
         }
 
-        async function loadChat() {
-            const params = new URLSearchParams(window.location.search);
-            currentUserId = params.get('user_id');
-            currentProjectId = params.get('project_id');
-            const userName = params.get('user_name');
+        async function api(path) {
+            const r = await fetch(path, { headers: { 'X-API-KEY': API_KEY } });
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            return r.json();
+        }
 
-            if (!currentUserId || !currentProjectId) {
-                showEmpty('Missing user or project ID');
-                return;
-            }
-
+        async function loadUserDetail() {
             try {
-                // Load user detail
-                const userRes = await fetch(`/v1/admin/users/${encodeURIComponent(currentUserId)}/detail`, {
-                    headers: { 'X-API-KEY': API_KEY }
-                });
-                const userDetail = await userRes.json();
-
-                // Load first page
-                const messages = await fetchMessages(0, PAGE_SIZE);
-
-                // Capture total count from first message (or 0 if empty)
-                totalCount = (messages && messages.length > 0 && messages[0].total_count != null)
-                    ? messages[0].total_count
-                    : (messages ? messages.length : 0);
-                allMessages = messages || [];
-                currentOffset = allMessages.length;
-
-                // Update header
-                document.getElementById('chat-title').textContent = `${userName || 'User'} — Chat`;
-                document.getElementById('user-info').textContent = `User: ${userName || currentUserId}`;
-                updateCountLabel();
-
-                if (userDetail.last_message_at) {
-                    const date = new Date(userDetail.last_message_at);
-                    document.getElementById('last-activity').textContent =
-                        `Last activity: ${date.toLocaleString()}`;
-                }
-
-                // Display messages
-                displayMessages(allMessages);
-            } catch (error) {
-                console.error('Error loading chat:', error);
-                showEmpty('Error loading messages');
-            }
+                const d = await api(`/v1/admin/users/${currentUserId}/detail`);
+                const u = d.user;
+                document.getElementById('chat-title').textContent = `${u.name} — Chat`;
+                document.getElementById('user-info').textContent = `User: ${u.id.slice(0, 8)}… · Tenant: ${u.tenant_id} · Project: ${currentProjectId}`;
+            } catch(e) { console.error(e); }
         }
 
-        async function loadOlder() {
-            const btn = document.getElementById('load-older-btn');
-            if (!btn) return;
-            const prevLabel = btn.textContent;
-            btn.disabled = true;
-            btn.textContent = 'Loading...';
+        async function loadList(reset = true) {
+            if (reset) {
+                currentOffset = 0;
+                allMessages = [];
+                selectedId = null;
+            }
             try {
-                const more = await fetchMessages(currentOffset, PAGE_SIZE);
-                if (more && more.length > 0) {
-                    allMessages = allMessages.concat(more);
-                    currentOffset += more.length;
-                    displayMessages(allMessages);
-                }
-            } catch (e) {
-                console.error('loadOlder failed', e);
-            } finally {
-                btn.disabled = false;
-                updateCountLabel();
-            }
-        }
-
-        function updateCountLabel() {
-            const el = document.getElementById('message-count');
-            if (el) el.textContent = `${allMessages.length} of ${totalCount} messages`;
-            const btn = document.getElementById('load-older-btn');
-            if (btn) {
-                if (allMessages.length < totalCount) {
-                    btn.style.display = '';
-                    const remaining = totalCount - allMessages.length;
-                    btn.textContent = `Load older (${remaining} more available)`;
+                const res = await api(buildUrl(currentOffset));
+                if (reset) {
+                    allMessages = res;
+                    totalCount = (res[0] && res[0].total_count) || 0;
                 } else {
-                    btn.style.display = 'none';
-                    btn.textContent = 'Load older messages';
+                    allMessages.push(...res);
                 }
+                renderList();
+                updateCountDisplay();
+                populateModelFilter(allMessages);
+            } catch (e) {
+                console.error('loadList failed', e);
             }
         }
 
-        function displayMessages(messages) {
-            const container = document.getElementById('messages-container');
+        function populateModelFilter(messages) {
+            const sel = document.getElementById('filter-model');
+            const current = sel.value;
+            const models = [...new Set(messages.map(m => m.model).filter(Boolean))].sort();
+            sel.innerHTML = '<option value="">All models</option>' +
+                models.map(m => `<option value="${escapeHtml(m)}" ${m === current ? 'selected' : ''}>${escapeHtml(m)}</option>`).join('');
+        }
 
-            if (!messages || messages.length === 0) {
-                showEmpty('No messages yet');
-                return;
-            }
-
-            // Sort messages by date (oldest first)
-            const sorted = [...messages].sort((a, b) =>
-                new Date(a.created_at) - new Date(b.created_at)
-            );
-
-            // Build pairs
-            const pairs = [];
-            for (let i = 0; i < sorted.length; i++) {
-                const m = sorted[i];
-                if (m.role !== 'user') continue;
-                const next = sorted[i + 1];
-                pairs.push({
-                    idx: pairs.length + 1,
-                    time: m.created_at,
-                    request: m.content || '',
-                    response: (next && next.role === 'assistant') ? (next.content || '') : '',
-                    response_at: (next && next.role === 'assistant') ? next.created_at : null,
-                });
-            }
-
-            const trunc = (s, n) => s.length > n ? s.slice(0, n) + '…' : s;
-            const timeShort = (iso) => { try { const d = new Date(iso); return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); } catch { return ''; } };
-            const dateKey = (iso) => { try { return new Date(iso).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); } catch { return ''; } };
-
-            let html = '';
-            let lastDate = '';
-            for (const p of pairs) {
-                const dk = dateKey(p.time);
-                if (dk !== lastDate) { html += `<div class="date-divider">${dk}</div>`; lastDate = dk; }
-                const aiText = p.response ? trunc(p.response, 160) : 'no reply';
-                const aiClass = p.response ? 'ai-line' : 'ai-line no-reply';
-                html += `
-                <div class="msg-pair" data-idx="${p.idx - 1}">
-                    <div class="meta">
-                        <span class="time">${timeShort(p.time)}</span>
-                        <span class="idx">#${p.idx}</span>
-                    </div>
-                    <div class="user-line" title="${escapeHtml(p.request)}">${escapeHtml(trunc(p.request, 180))}</div>
-                    <div class="${aiClass}" title="${escapeHtml(p.response || '')}">${escapeHtml(aiText)}</div>
+        function renderList() {
+            const showSystem = document.getElementById('show-system-cb').checked;
+            const filtered = showSystem ? allMessages : allMessages.filter(m => m.role !== 'system');
+            const container = document.getElementById('cv-rows');
+            container.innerHTML = filtered.map((m, i) => {
+                const totalTokens = (m.prompt_tokens || 0) + (m.completion_tokens || 0);
+                return `
+                <div class="cv-row ${selectedId === m.id ? 'selected' : ''}" data-id="${escapeHtml(m.id)}" onclick="selectMessage('${escapeHtml(m.id)}')">
+                    <span class="num">${i + 1}</span>
+                    <span class="role-pill role-${m.role}">${m.role}</span>
+                    <span>${m.latency_ms ? (Math.round(m.latency_ms/100)/10).toFixed(1) + 's' : '–'}</span>
+                    <span>${totalTokens || '–'}</span>
+                    <span class="preview">${escapeHtml((m.content || '').slice(0, 80))}</span>
+                    <span class="when" title="${escapeHtml(m.created_at)}">${fmtTimeShort(m.created_at)}</span>
                 </div>`;
-            }
+            }).join('');
+            document.getElementById('load-more-btn').style.display = allMessages.length < totalCount ? '' : 'none';
+        }
 
-            container.innerHTML = `<div style="font-size:0.82rem">${html}</div>`;
+        function updateCountDisplay() {
+            const showSystem = document.getElementById('show-system-cb').checked;
+            const filtered = showSystem ? allMessages : allMessages.filter(m => m.role !== 'system');
+            document.getElementById('message-count').textContent = `${filtered.length} of ${totalCount}`;
+        }
 
-            // Detail overlay
-            let overlay = document.getElementById('detail-overlay');
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.id = 'detail-overlay';
-                overlay.className = 'detail-overlay';
-                overlay.innerHTML = '<div class="detail-panel" id="detail-panel"></div>';
-                overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('active'); });
-                document.body.appendChild(overlay);
-            }
-
-            const showDetail = (p) => {
-                const panel = document.getElementById('detail-panel');
-                const fmt = (iso) => { try { return new Date(iso).toLocaleString(); } catch { return iso || ''; } };
-                panel.innerHTML = `
-                    <div class="detail-section">
-                        <div class="detail-label user">REQUEST #${p.idx} • ${fmt(p.time)}</div>
-                        <div class="detail-box user">${escapeHtml(p.request)}</div>
+        function selectMessage(id) {
+            selectedId = id;
+            renderList();
+            const m = allMessages.find(x => x.id === id);
+            if (!m) return;
+            const totalTokens = (m.prompt_tokens || 0) + (m.completion_tokens || 0);
+            const cost = m.cost_usd != null ? `$${Number(m.cost_usd).toFixed(6)}` : '–';
+            const detail = document.getElementById('cv-detail');
+            detail.innerHTML = `
+                <div class="cv-turn cv-turn--${m.role}">
+                    <div class="cv-turn-meta">
+                        <span class="role ${m.role}">${m.role}</span>
+                        <span>${fmtDateShort(m.created_at)} ${fmtTimeShort(m.created_at)}</span>
+                        <span>${fmtRelative(m.created_at)}</span>
+                        <span>·</span>
+                        <span>${escapeHtml(m.model || '?')}</span>
+                        <span>·</span>
+                        <span>${m.latency_ms ? (m.latency_ms/1000).toFixed(2) + 's' : '–'}</span>
+                        <span>·</span>
+                        <span>${totalTokens} tok (${m.prompt_tokens || 0}→${m.completion_tokens || 0})</span>
+                        <span>·</span>
+                        <span>${cost}</span>
+                        <span>·</span>
+                        <span>${m.is_summarized ? 'summarized' : ''}</span>
                     </div>
-                    ${p.response ? `
-                    <div class="detail-section">
-                        <div class="detail-label ai">RESPONSE ${p.response_at ? '• ' + fmt(p.response_at) : ''}</div>
-                        <div class="detail-box ai">${escapeHtml(p.response)}</div>
-                    </div>` : '<div style="color:var(--text-faint);font-style:italic;margin-bottom:1rem">No response</div>'}
-                    <button class="detail-close" onclick="document.getElementById(\'detail-overlay\').classList.remove(\'active\')">Close</button>
-                `;
-                overlay.classList.add('active');
-            };
-
-            container.querySelectorAll('.msg-pair').forEach(row => {
-                row.style.cursor = 'pointer';
-                row.addEventListener('click', () => {
-                    const idx = parseInt(row.dataset.idx);
-                    if (pairs[idx]) showDetail(pairs[idx]);
-                });
-            });
-
-            // Update header count
-            updateCountLabel();
+                    <div class="cv-turn-body">${escapeHtml(m.content || '').replace(/\n/g, '<br>')}</div>
+                    <div class="cv-turn-actions">
+                        <button onclick="copyContent('${escapeHtml(m.id)}')">⤴ Copy</button>
+                        <button onclick="viewRaw('${escapeHtml(m.id)}')">⤵ Raw JSON</button>
+                    </div>
+                </div>`;
         }
 
-        function showEmpty(text) {
-            const container = document.getElementById('messages-container');
-            container.innerHTML = `
-                <div class="empty-state">
-                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                    </svg>
-                    <div>${text}</div>
-                </div>
-            `;
+        function copyContent(id) {
+            const m = allMessages.find(x => x.id === id);
+            if (m && navigator.clipboard) navigator.clipboard.writeText(m.content || '').then(() => {});
         }
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        function viewRaw(id) {
+            const m = allMessages.find(x => x.id === id);
+            if (!m) return;
+            const detail = document.getElementById('cv-detail');
+            detail.innerHTML = `<pre style="background:var(--bg-elevated);padding:1rem;border-radius:0.5rem;overflow:auto;font-size:0.75rem;color:var(--text-muted);border:1px solid var(--border-subtle)">${escapeHtml(JSON.stringify(m, null, 2))}</pre>
+                <button class="btn" onclick="selectMessage('${escapeHtml(m.id)}')" style="margin-top:1rem">← Back to thread</button>`;
+        }
+
+        function applyFilters() {
+            loadList(true);
+        }
+
+        function loadMore() {
+            currentOffset = allMessages.length;
+            loadList(false);
+        }
+
+        function refreshList() {
+            loadList(true);
         }
 
         function goBack() {
-            const params = new URLSearchParams(window.location.search);
-            const projectId = params.get('project_id');
-            const userId = params.get('user_id');
-
-            // Go back to admin with user detail view
-            window.location.href = `/admin.html?view=user&project=${projectId}&user=${userId}`;
+            window.history.back();
         }
 
-        // Load chat on page load
-        loadChat();
+        document.addEventListener('keydown', e => {
+            if (e.key === 'j' || e.key === 'k') {
+                const rows = document.querySelectorAll('.cv-row');
+                if (!rows.length) return;
+                const idx = Array.from(rows).findIndex(r => r.classList.contains('selected'));
+                const next = e.key === 'j' ? Math.max(0, idx - 1) : Math.min(rows.length - 1, idx + 1);
+                rows[next]?.click();
+                rows[next]?.scrollIntoView({ block: 'nearest' });
+            }
+        });
+
+        document.getElementById('show-system-cb').addEventListener('change', () => { renderList(); updateCountDisplay(); });
+
+        // init
+        const url = new URLSearchParams(window.location.search);
+        currentUserId = url.get('user_id');
+        currentProjectId = url.get('project_id') || '';
+        if (currentUserId) {
+            loadUserDetail();
+            loadList(true);
+        } else {
+            document.getElementById('chat-title').textContent = 'Missing user_id';
+        }
     </script>
 </body>
 </html>
