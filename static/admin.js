@@ -883,7 +883,7 @@ async function loadUserDetail(userId, userName) {
                     </div>`).join('')}
                 </div>
             </div>` : ''}
-            <button class="btn btn-primary" id="open-chat-btn" style="width:100%;padding:1rem;font-size:0.875rem">${ICON.chevron} View Full Chat History</button>
+            <button class="btn btn-primary" id="open-chat-btn" style="width:100%;padding:1.5rem 2rem;font-size:1.0625rem;font-weight:700;letter-spacing:0.02em;background:linear-gradient(135deg,var(--accent-1) 0%,var(--accent-2) 100%);border:none;box-shadow:0 4px 20px rgba(99,102,241,0.25),0 0 0 1px rgba(168,85,247,0.1);transition:all 0.2s ease;display:flex;align-items:center;justify-content:center;gap:0.75rem" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 30px rgba(99,102,241,0.4),0 0 0 1px rgba(168,85,247,0.2)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(99,102,241,0.25),0 0 0 1px rgba(168,85,247,0.1)'">${ICON.chevron} <span>View Full Chat History</span> <span style="font-size:0.75rem;font-weight:500;opacity:0.85;background:rgba(255,255,255,0.15);padding:0.2rem 0.5rem;border-radius:0.375rem">full history →</span></button>
         `;
         if (d.pinned_memories.length) DataTable.mount('pinned-mem-table', {
             columns: [
