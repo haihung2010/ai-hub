@@ -657,26 +657,43 @@ async def list_active_tenants():
 async def list_project_users(project_id: str, limit: int = 10):
     """List the most recently active users in a project.
 
-    Uses LEFT JOINs throughout so users with usage_events but no
-    sessions (e.g. API-only traffic, loadtest traffic) still surface.
+    Uses pre-aggregated subqueries (one per metric) to avoid the
+    sessions × messages CROSS JOIN explosion that produced 24M rows
+    for 12 users × 2039 sessions × 4078 messages (~21s on-disk sort).
+    Each subquery is small and indexed; total join is at most N_users rows.
     """
     sql = """
         SELECT
             u.id, u.name, u.tenant_id, u.created_at,
-            COUNT(DISTINCT s.id) AS session_count,
-            COUNT(DISTINCT m.id) AS message_count,
-            MAX(m.created_at) AS last_message_at,
-            (MAX(ue.created_at) > NOW() - INTERVAL '5 minutes') AS is_active
+            COALESCE(s_agg.session_count, 0) AS session_count,
+            COALESCE(m_agg.message_count, 0) AS message_count,
+            m_agg.last_message_at,
+            (COALESCE(ue_agg.latest_activity, u.created_at) > NOW() - INTERVAL '5 minutes') AS is_active
         FROM users u
-        LEFT JOIN sessions s ON u.id = s.user_id AND s.project_id = %s
-        LEFT JOIN messages m ON m.session_id = s.id
-        LEFT JOIN usage_events ue ON ue.user_id = u.id AND ue.project_id = %s
-        GROUP BY u.id, u.name, u.tenant_id, u.created_at
-        ORDER BY last_message_at DESC NULLS LAST
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) AS session_count
+            FROM sessions
+            WHERE project_id = %s
+            GROUP BY user_id
+        ) s_agg ON u.id = s_agg.user_id
+        LEFT JOIN (
+            SELECT s.user_id, COUNT(m.id) AS message_count, MAX(m.created_at) AS last_message_at
+            FROM messages m
+            JOIN sessions s ON m.session_id = s.id
+            WHERE s.project_id = %s
+            GROUP BY s.user_id
+        ) m_agg ON u.id = m_agg.user_id
+        LEFT JOIN (
+            SELECT user_id, MAX(created_at) AS latest_activity
+            FROM usage_events
+            WHERE project_id = %s
+            GROUP BY user_id
+        ) ue_agg ON u.id = ue_agg.user_id
+        ORDER BY m_agg.last_message_at DESC NULLS LAST
         LIMIT %s
     """
     with get_db_connection() as conn:
-        rows = conn.execute(sql, (project_id, project_id, limit)).fetchall()
+        rows = conn.execute(sql, (project_id, project_id, project_id, limit)).fetchall()
         return [dict(row) for row in rows]
 
 
