@@ -1144,6 +1144,44 @@ class AIService:
         )
         return [*messages[:-1], guard, messages[-1]]
 
+    async def summarize(
+        self,
+        *,
+        text: str,
+        model_override: str = "",
+        user_id: str = "",
+        session_id: str = "",
+    ) -> str:
+        """Thin wrapper used by PeriodicSummarizer. Delegates to 12B.
+
+        Phase 1: minimal implementation. Sends `text` to the 12B model
+        on port 8080 and returns the raw completion. No memory/history.
+        Future phases can add session management, streaming, etc.
+        """
+        from app.models.chat import ChatRequest, Message  # local to avoid circular
+        req = ChatRequest(
+            user_name=user_id or "_rollup",
+            user_message=text,
+            project_id="rollup",
+            model_mode="normal",
+            stream=False,
+        )
+        # Use the OpenAI-compatible chat completions endpoint on port 8080
+        import httpx
+        async with httpx.AsyncClient(timeout=120.0) as c:
+            r = await c.post(
+                "http://127.0.0.1:8080/v1/chat/completions",
+                json={
+                    "model": model_override or "local-gemma4-12b-q4-text",
+                    "messages": [{"role": "user", "content": text}],
+                    "max_tokens": 1024,
+                    "temperature": 0.3,
+                },
+            )
+            r.raise_for_status()
+            data = r.json()
+            return data["choices"][0]["message"]["content"]
+
     async def _complete_local_with_queue_timeout(
         self,
         req: ChatRequest,

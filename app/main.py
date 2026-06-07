@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import logging
 import weakref
 import time
@@ -70,8 +71,40 @@ from app.services.mcp.minimax_websearch import (
 )
 from app.services.usage_service import UsageService
 from app.services.user_service import UserService
+from app.services.scheduler import PeriodicSummarizer
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 logger = logging.getLogger(__name__)
+
+
+class _SchedulerAIServiceProxy:
+    """Adapter so PeriodicSummarizer can call ai_service.summarize via weakref."""
+    def __init__(self, ref):
+        self._ref = ref
+
+    async def summarize(self, *, text, model_override, user_id, session_id):
+        svc = self._ref()
+        if svc is None:
+            raise RuntimeError("ai_service no longer alive")
+        return await svc.summarize(text=text, model_override=model_override, user_id=user_id, session_id=session_id)
+
+
+class _SchedulerDBProxy:
+    """Adapter so PeriodicSummarizer can call db.fetch_all / db.execute."""
+    def __init__(self, db_module):
+        self._db = db_module
+
+    async def fetch_all(self, sql):
+        with self._db.get_db_connection() as conn:
+            cur = conn.execute(sql)
+            cols = [d.name for d in cur.description] if cur.description else []
+            return [dict(zip(cols, row)) for row in cur.fetchall()]
+
+    async def execute(self, sql, *params):
+        with self._db.get_db_connection() as conn:
+            conn.execute(sql, params)
+            conn.commit()
 
 
 def _register_exception_handlers(app: FastAPI) -> None:
@@ -342,6 +375,28 @@ def create_app(
                 ihi=ihi_provider,
             )
             app.state.ai_service_ref = weakref.ref(app.state.ai_service)
+            # Adaptive routing: APScheduler for periodic IHI rollups (added 2026-06-07)
+            if settings.adaptive_routing_enabled:
+                try:
+                    scheduler = AsyncIOScheduler()
+                    db_module = importlib.import_module("app.core.database")
+                    summarizer = PeriodicSummarizer(
+                        ai_service=_SchedulerAIServiceProxy(app.state.ai_service_ref),
+                        db=_SchedulerDBProxy(db_module),
+                        min_tokens=settings.periodic_summary_min_tokens,
+                        window_hours=6,
+                    )
+                    scheduler.add_job(
+                        summarizer.rollup_once,
+                        CronTrigger.from_crontab(settings.periodic_summary_cron),
+                        id="ihi_rollup",
+                        replace_existing=True,
+                    )
+                    scheduler.start()
+                    app.state.scheduler = scheduler
+                    logger.info("periodic summary scheduler started: cron=%s", settings.periodic_summary_cron)
+                except Exception as e:
+                    logger.warning("failed to start periodic summary scheduler: %s", e)
             logger.info("ai-hub started on port %s", settings.app_port)
             logger.info(
                 "failure_risk mode: log_only=%s enable_actions=%s "
@@ -373,6 +428,12 @@ def create_app(
                     logger.info("MiniMax MCP client stopped")
                 except Exception as exc:
                     logger.warning("MiniMax MCP stop failed: %s", exc)
+            if hasattr(app.state, "scheduler"):
+                try:
+                    app.state.scheduler.shutdown(wait=False)
+                    logger.info("periodic summary scheduler stopped")
+                except Exception as e:
+                    logger.warning("scheduler shutdown failed: %s", e)
             # Graceful shutdown — flush pending Langfuse spans so a clean
             # exit does not drop the last few traces.
             langfuse_shutdown()
