@@ -233,13 +233,20 @@ async def reindex_knowledge(
     tenant_id: str | None = None,
     project_id: str | None = None,
     batch_size: int = 50,
+    force: bool = False,
 ) -> dict[str, object]:
-    """Back-fill embeddings for knowledge chunks that were ingested without a vector."""
+    """Back-fill embeddings for knowledge chunks.
+
+    By default only re-embeds chunks with NULL embedding. Pass ``force=true``
+    to re-embed every chunk — required to roll out Contextual Retrieval to
+    chunks ingested before the feature existed.
+    """
     ingestion = request.app.state.knowledge_ingestion_service
     result = ingestion.fill_missing_embeddings(
         tenant_id=tenant_id,
         project_id=project_id,
         batch_size=batch_size,
+        force=force,
     )
     return result
 

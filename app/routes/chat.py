@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import inspect
 import json
+import time
+import uuid
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -11,6 +13,11 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from app.core.errors import OllamaUnavailable, UpstreamError, UpstreamTimeout, VramExhausted
 from app.models.chat import ChatRequest, ChatResponse
 from app.services.ai_service import AIService
+from app.services.tracing_service import (
+    finish_chat,
+    record_span_metadata,
+    trace_chat,
+)
 
 router = APIRouter(prefix="/v1", tags=["chat"])
 
@@ -57,13 +64,37 @@ async def chat_endpoint(payload: ChatRequest, request: Request) -> ChatResponse 
     if payload.stream:
         api_key_id = getattr(request.state, "api_key_id", None)
 
+        # Start a Langfuse trace (no-op if env vars are unset). Streaming
+        # responses still get a top-level trace with latency metadata.
+        trace_id = uuid.uuid4().hex
+        trace = trace_chat(
+            trace_id=trace_id,
+            user_id=payload.user_name,
+            session_id=payload.session_id,
+            metadata={
+                "project_id": payload.project_id,
+                "tenant_id": payload.tenant_id,
+                "model_mode": payload.model_mode,
+                "stream": True,
+                "api_key_id": api_key_id,
+            },
+        )
+
         async def event_stream():
+            started = time.monotonic()
             try:
                 async for event in service.chat_stream(payload, api_key_id=api_key_id):
                     yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
             except (OllamaUnavailable, VramExhausted, UpstreamTimeout, UpstreamError) as exc:
                 error_event = {"type": "error", "code": _error_code(exc), "detail": str(exc)}
                 yield f"data: {json.dumps(error_event, ensure_ascii=False)}\n\n"
+            finally:
+                record_span_metadata(
+                    trace,
+                    latency_ms=int((time.monotonic() - started) * 1000),
+                    stream=True,
+                )
+                finish_chat(trace)
             yield "data: [DONE]\n\n"
 
         return StreamingResponse(
@@ -72,6 +103,34 @@ async def chat_endpoint(payload: ChatRequest, request: Request) -> ChatResponse 
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
+    # Non-streaming path — record latency, model, provider, token usage on
+    # the trace before returning.
+    api_key_id = getattr(request.state, "api_key_id", None)
+    trace_id = uuid.uuid4().hex
+    trace = trace_chat(
+        trace_id=trace_id,
+        user_id=payload.user_name,
+        session_id=payload.session_id,
+        metadata={
+            "project_id": payload.project_id,
+            "tenant_id": payload.tenant_id,
+            "model_mode": payload.model_mode,
+            "stream": False,
+            "api_key_id": api_key_id,
+        },
+    )
+    started = time.monotonic()
     if "api_key_id" in inspect.signature(service.chat).parameters:
-        return await service.chat(payload, api_key_id=getattr(request.state, "api_key_id", None))
-    return await service.chat(payload)
+        response = await service.chat(payload, api_key_id=api_key_id)
+    else:
+        response = await service.chat(payload)
+    record_span_metadata(
+        trace,
+        latency_ms=int((time.monotonic() - started) * 1000),
+        model=getattr(response, "model", None),
+        provider=getattr(response, "provider", None),
+        prompt_tokens=getattr(getattr(response, "usage", None), "prompt_tokens", None),
+        completion_tokens=getattr(getattr(response, "usage", None), "completion_tokens", None),
+    )
+    finish_chat(trace)
+    return response

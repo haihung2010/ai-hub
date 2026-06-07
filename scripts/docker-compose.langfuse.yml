@@ -1,0 +1,193 @@
+# Langfuse v3 self-hosted observability stack.
+#
+# This is a port-isolated variant of the official docker-compose.yml so it
+# does NOT collide with ai-hub's existing PostgreSQL (5432) and Redis (6379).
+# Langfuse uses its own PG + Redis internally; ai-hub continues to use its
+# own services unchanged.
+#
+# Run:    docker compose -f scripts/docker-compose.langfuse.yml up -d
+# Stop:   docker compose -f scripts/docker-compose.langfuse.yml down
+# Reset:  docker compose -f scripts/docker-compose.langfuse.yml down -v
+#
+# Then init: visit http://localhost:3000 — sign up, create project,
+# copy the public+secret keys, set in ai-hub .env:
+#   LANGFUSE_PUBLIC_KEY=pk-lf-...
+#   LANGFUSE_SECRET_KEY=sk-lf-...
+#   LANGFUSE_HOST=http://localhost:3000
+
+name: langfuse
+
+services:
+  langfuse-worker:
+    image: docker.io/langfuse/langfuse-worker:3
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    environment:
+      NEXTAUTH_URL: http://localhost:3000
+      DATABASE_URL: postgresql://postgres:langfuse_pg_secret@postgres:5432/postgres
+      SALT: langfuse_salt_50961df5c48eb192
+      ENCRYPTION_KEY: 55ff830e5cc3d4275c774ede385c2ebe2977797774ac5ac7ce74c0a7c0582a58
+      TELEMETRY_ENABLED: "false"
+      CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: langfuse_ch_secret
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: langfuse_minio_secret
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_MEDIA_UPLOAD_REGION: auto
+      LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: minio
+      LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: langfuse_minio_secret
+      LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://minio:9000
+      LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_S3_BATCH_EXPORT_ENABLED: "false"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_AUTH: langfuse_redis_secret
+
+  langfuse-web:
+    image: docker.io/langfuse/langfuse:3
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: langfuse_nextauth_secret_change_me
+      DATABASE_URL: postgresql://postgres:langfuse_pg_secret@postgres:5432/postgres
+      SALT: langfuse_salt_50961df5c48eb192
+      ENCRYPTION_KEY: 55ff830e5cc3d4275c774ede385c2ebe2977797774ac5ac7ce74c0a7c0582a58
+      TELEMETRY_ENABLED: "false"
+      CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: langfuse_ch_secret
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: langfuse_minio_secret
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_MEDIA_UPLOAD_REGION: auto
+      LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: minio
+      LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: langfuse_minio_secret
+      LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://minio:9000
+      LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_S3_BATCH_EXPORT_ENABLED: "false"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_AUTH: langfuse_redis_secret
+      # Pre-create org/project/keys so ai-hub can wire up without UI signup
+      LANGFUSE_INIT_ORG_ID: org-ai-hub
+      LANGFUSE_INIT_ORG_NAME: AI Hub
+      LANGFUSE_INIT_PROJECT_ID: proj-ai-hub
+      LANGFUSE_INIT_PROJECT_NAME: AI Hub Chat
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: pk-lf-aihub-2026-06-02-public
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: sk-lf-aihub-2026-06-02-secret-x7n2k9
+      LANGFUSE_INIT_USER_EMAIL: admin@ai-hub.local
+      LANGFUSE_INIT_USER_NAME: AI Hub Admin
+      LANGFUSE_INIT_USER_PASSWORD: aihub-langfuse-2026
+
+  clickhouse:
+    image: docker.io/clickhouse/clickhouse-server:24.3
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: langfuse_ch_secret
+    volumes:
+      - langfuse_clickhouse_data:/var/lib/clickhouse
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: cgr.dev/chainguard/minio:latest
+    restart: unless-stopped
+    entrypoint: sh
+    command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address ":9001" /data'
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: langfuse_minio_secret
+    ports:
+      - "127.0.0.1:9090:9000"
+      - "127.0.0.1:9091:9001"
+    volumes:
+      - langfuse_minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: docker.io/redis:7
+    restart: unless-stopped
+    command: --requirepass langfuse_redis_secret --maxmemory-policy noeviction
+    # ISOLATED port: 6380 on host, 6379 inside the container.
+    # Avoids conflict with ai-hub's existing Redis on host:6379.
+    ports:
+      - "127.0.0.1:6380:6379"
+    volumes:
+      - langfuse_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "langfuse_redis_secret", "ping"]
+      interval: 3s
+      timeout: 10s
+      retries: 10
+
+  postgres:
+    image: docker.io/postgres:17
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: langfuse_pg_secret
+      POSTGRES_DB: postgres
+      TZ: UTC
+      PGTZ: UTC
+    # ISOLATED port: 5434 on host, 5432 inside the container.
+    # Avoids conflict with ai-hub (host:5432) and vehix-db (host:5433).
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - langfuse_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  langfuse_postgres_data:
+  langfuse_clickhouse_data:
+  langfuse_minio_data:
+  langfuse_redis_data:

@@ -1368,7 +1368,7 @@ function showTab(tabId) {
     if (tab) tab.classList.add('active');
     const link = document.querySelector(`.tab-link[data-tab="${tabId}"]`);
     if (link) link.classList.add('active');
-    const titleMap = { dashboard: 'System Overview', gpu: 'GPU Command Center', management: 'Access Keys', knowledge: 'RAG Knowledge', tenants: 'Tenants & Users', audit: 'Chat Audit', database: 'Database Explorer', system: 'System Health' };
+    const titleMap = { dashboard: 'System Overview', gpu: 'GPU Command Center', management: 'Access Keys', knowledge: 'RAG Knowledge', tenants: 'Tenants & Users', audit: 'Chat Audit', ihi: 'IHI Monitor', database: 'Database Explorer', system: 'System Health', skills: 'Skill Registry' };
     setText('current-tab-title', titleMap[tabId] || tabId);
     if (tabId === 'dashboard') { showStatSkeletons(); restoreStatCards(); refreshDashboard(); }
     if (tabId === 'gpu') refreshDashboard();

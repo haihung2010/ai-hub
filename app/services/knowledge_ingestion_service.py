@@ -1,15 +1,65 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 import uuid
+from dataclasses import dataclass, field
 
 from app.core.database import get_db_connection
 from app.models.knowledge import KnowledgeCardCreate, KnowledgeCardRecord
 from app.services.knowledge_embedding_service import KnowledgeEmbeddingService
 from app.services.knowledge_link_service import KnowledgeLinkService
 
+logger = logging.getLogger(__name__)
+
 _PARAGRAPH_RE = re.compile(r"\n\s*\n+")
+
+
+@dataclass(frozen=True)
+class ChunkContext:
+    """Minimal card metadata used to build the Contextual Retrieval header.
+
+    Anthropic Contextual Retrieval (2024): prepend a short header derived from
+    surrounding metadata before embedding each chunk. The stored chunk content
+    is unchanged — only the *embedded* text gains the context.
+    """
+
+    title: str
+    knowledge_domain: str
+    summary: str = ""
+    tags: tuple[str, ...] = field(default_factory=tuple)
+
+
+def build_contextual_chunk(context: ChunkContext, chunk: str) -> str:
+    """Build a contextualized chunk for embedding.
+
+    Output shape::
+
+        Trích từ "<title>" thuộc chuyên đề <domain>. [Tóm tắt: <summary>.] [Thẻ: <tags>.]
+        \\n\\n
+        <chunk>
+
+    The blank line separates header from body so cross-encoder rerankers see
+    them as distinct segments. Vietnamese header is intentional — primary
+    deployment is a Vietnamese chatbot.
+    """
+    parts = [f'Trích từ "{context.title}" thuộc chuyên đề {context.knowledge_domain}.']
+    if context.summary:
+        parts.append(f"Tóm tắt: {context.summary}.")
+    if context.tags:
+        parts.append(f"Thẻ: {', '.join(context.tags)}.")
+    header = " ".join(parts)
+    return f"{header}\n\n{chunk}"
+
+
+def _context_from_request(req: KnowledgeCardCreate) -> ChunkContext:
+    return ChunkContext(
+        title=req.title,
+        knowledge_domain=req.knowledge_domain,
+        summary=req.summary or "",
+        tags=tuple(req.tags or ()),
+    )
 
 
 class KnowledgeIngestionService:
@@ -60,7 +110,14 @@ class KnowledgeIngestionService:
                     req.owner,
                 ),
             )
-            self._replace_chunks(conn, card_id, req.tenant_id, req.project_id, chunks)
+            self._replace_chunks(
+                conn,
+                card_id,
+                req.tenant_id,
+                req.project_id,
+                chunks,
+                context=_context_from_request(req),
+            )
             conn.commit()
 
         # Auto-generate knowledge links
@@ -106,7 +163,14 @@ class KnowledgeIngestionService:
             )
             if cursor.rowcount == 0:
                 raise KeyError(card_id)
-            self._replace_chunks(conn, card_id, req.tenant_id, req.project_id, chunks)
+            self._replace_chunks(
+                conn,
+                card_id,
+                req.tenant_id,
+                req.project_id,
+                chunks,
+                context=_context_from_request(req),
+            )
             conn.commit()
 
         # Auto-generate knowledge links
@@ -176,11 +240,22 @@ class KnowledgeIngestionService:
             chunks.append(current)
         return chunks
 
-    def _replace_chunks(self, conn, card_id: str, tenant_id: str, project_id: str, chunks: list[str]) -> None:
+    def _replace_chunks(
+        self,
+        conn,
+        card_id: str,
+        tenant_id: str,
+        project_id: str,
+        chunks: list[str],
+        *,
+        context: ChunkContext,
+    ) -> None:
         conn.execute("DELETE FROM knowledge_card_chunks WHERE card_id = %s", (card_id,))
         has_vector_column = self._has_column(conn, "knowledge_card_chunks", "embedding_vec")
         for index, chunk in enumerate(chunks):
-            embedding = self._embedding.embed(chunk) if self._embedding else None
+            # Contextual Retrieval (Anthropic 2024): embed header+chunk, store raw chunk.
+            embed_text = build_contextual_chunk(context, chunk) if self._embedding else chunk
+            embedding = self._embedding.embed(embed_text) if self._embedding else None
             base_values = (
                 str(uuid.uuid4()),
                 card_id,
@@ -192,13 +267,14 @@ class KnowledgeIngestionService:
                 embedding,
             )
             if has_vector_column:
+                pgvec = self._embedding.embed_as_pgvector(embed_text) if self._embedding else None
                 conn.execute(
                     """
                     INSERT INTO knowledge_card_chunks (
                         id, card_id, tenant_id, project_id, chunk_index, content, token_estimate, embedding, embedding_vec
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::vector)
                     """,
-                    (*base_values, self._embedding.embed_as_pgvector(chunk) if self._embedding else None),
+                    (*base_values, pgvec),
                 )
             else:
                 conn.execute(
@@ -224,19 +300,40 @@ class KnowledgeIngestionService:
         tenant_id: str | None = None,
         project_id: str | None = None,
         batch_size: int = 50,
+        force: bool = False,
     ) -> dict[str, int]:
-        """Embed chunks that have a NULL embedding blob. Returns updated/skipped counts."""
+        """Embed chunks that have a NULL embedding blob. Returns updated/skipped counts.
+
+        Uses Contextual Retrieval: reconstructs the card-level header from
+        knowledge_cards (title, domain, summary, tags) so backfilled embeddings
+        carry the same context as freshly ingested ones.
+
+        When ``force=True``, re-embeds every matching chunk regardless of
+        whether it already has an embedding — needed to roll Contextual
+        Retrieval out across chunks ingested before the feature existed.
+        """
         if not self._embedding:
             return {"total": 0, "updated": 0, "skipped": 0, "error": "no embedding service"}
 
-        sql = "SELECT id, content FROM knowledge_card_chunks WHERE embedding IS NULL"
+        sql = (
+            "SELECT chunks.id AS chunk_id, chunks.content AS chunk_content, "
+            "cards.title AS card_title, cards.knowledge_domain AS card_domain, "
+            "cards.summary AS card_summary, cards.tags AS card_tags "
+            "FROM knowledge_card_chunks chunks "
+            "JOIN knowledge_cards cards ON cards.id = chunks.card_id "
+        )
+        where_parts: list[str] = []
+        if not force:
+            where_parts.append("chunks.embedding IS NULL")
         params: list[object] = []
         if tenant_id:
-            sql += " AND tenant_id = %s"
+            where_parts.append("chunks.tenant_id = %s")
             params.append(tenant_id)
         if project_id:
-            sql += " AND project_id = %s"
+            where_parts.append("chunks.project_id = %s")
             params.append(project_id)
+        if where_parts:
+            sql += " WHERE " + " AND ".join(where_parts)
         sql += f" LIMIT {batch_size * 20}"
 
         with get_db_connection() as conn:
@@ -247,16 +344,26 @@ class KnowledgeIngestionService:
         skipped = 0
         for row in rows:
             try:
-                embedding = self._embedding.embed(row["content"])
-                vec_str = self._embedding.embed_as_pgvector(row["content"])
+                tags_raw = row["card_tags"] or "[]"
+                tags = tuple(json.loads(tags_raw)) if isinstance(tags_raw, str) else tuple(tags_raw)
+                context = ChunkContext(
+                    title=row["card_title"],
+                    knowledge_domain=row["card_domain"],
+                    summary=row["card_summary"] or "",
+                    tags=tags,
+                )
+                embed_text = build_contextual_chunk(context, row["chunk_content"])
+                embedding = self._embedding.embed(embed_text)
+                vec_str = self._embedding.embed_as_pgvector(embed_text)
                 with get_db_connection() as conn:
                     conn.execute(
                         "UPDATE knowledge_card_chunks SET embedding = %s, embedding_vec = %s::vector WHERE id = %s",
-                        (embedding, vec_str, row["id"]),
+                        (embedding, vec_str, row["chunk_id"]),
                     )
                     conn.commit()
                 updated += 1
-            except Exception:
+            except Exception as exc:
+                logger.warning("fill_missing_embeddings: skipping chunk %s: %s", row.get("chunk_id"), exc)
                 skipped += 1
 
         return {"total": total, "updated": updated, "skipped": skipped}
