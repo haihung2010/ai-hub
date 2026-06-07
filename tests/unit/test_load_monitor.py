@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 import pytest
 
 from app.services.load_monitor import LoadMonitor, _parse_saturation
@@ -33,8 +35,10 @@ def test_parse_saturation_missing_slots_key():
 class TestLoadMonitorCache:
     def test_first_probe_caches_result(self):
         mon = LoadMonitor()
-        # Set cache directly to test cache logic without real network
-        mon._cache[8080] = (0.5, 100.0)  # (saturation, expiry)
+        # Set cache directly to test cache logic without real network.
+        # Use time.monotonic() + 1000s as a "far future" expiry (handles
+        # long-running test processes where absolute monotonic > 100).
+        mon._cache[8080] = (0.5, time.monotonic() + 1000.0)  # (saturation, expiry)
         sat = mon.get_saturation(8080, probe_fn=lambda url: {"slots": []})
         assert sat == 0.5  # cached, probe_fn not called
 
