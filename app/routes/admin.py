@@ -655,7 +655,11 @@ async def list_active_tenants():
 
 @router.get("/tenants/{project_id}/users")
 async def list_project_users(project_id: str, limit: int = 10):
-    """List the most recently active users in a project."""
+    """List the most recently active users in a project.
+
+    Uses LEFT JOINs throughout so users with usage_events but no
+    sessions (e.g. API-only traffic, loadtest traffic) still surface.
+    """
     sql = """
         SELECT
             u.id, u.name, u.tenant_id, u.created_at,
@@ -664,7 +668,7 @@ async def list_project_users(project_id: str, limit: int = 10):
             MAX(m.created_at) AS last_message_at,
             (MAX(ue.created_at) > NOW() - INTERVAL '5 minutes') AS is_active
         FROM users u
-        JOIN sessions s ON u.id = s.user_id AND s.project_id = %s
+        LEFT JOIN sessions s ON u.id = s.user_id AND s.project_id = %s
         LEFT JOIN messages m ON m.session_id = s.id
         LEFT JOIN usage_events ue ON ue.user_id = u.id AND ue.project_id = %s
         GROUP BY u.id, u.name, u.tenant_id, u.created_at
