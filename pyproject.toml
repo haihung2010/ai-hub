@@ -21,6 +21,7 @@ asyncio_mode = "auto"
 markers = [
     "unit: fast, isolated unit tests",
     "integration: tests that exercise multiple modules with mocked upstream",
+    "no_isolated_db: opt out of the autouse isolated_db fixture in tests/conftest.py",
 ]
 addopts = "-ra --strict-markers --cov=app --cov-report=term-missing --cov-fail-under=80"
 testpaths = ["tests"]
