@@ -200,7 +200,9 @@
                     </div>
                     <div class="form-stack">
                         <input id="key-name" type="text" class="input" placeholder="Key label (e.g. mobile-app-prod)">
-                        <input id="key-tenant" type="text" class="input" placeholder="Tenant ID" value="default">
+                        <select id="key-tenant" class="select">
+                            <option value="">-- Loading tenants... --</option>
+                        </select>
                         <div class="form-row-toggle">
                             <input id="key-rpm" type="number" class="input mono form-flex" placeholder="RPM" value="60">
                             <label class="toggle">
@@ -333,8 +335,12 @@
                 </div>
                 <div class="form-stack" style="margin-bottom:1rem">
                     <div style="display:flex;gap:0.75rem">
-                        <input id="audit-user-id" type="text" class="input" placeholder="User ID (optional)">
-                        <input id="audit-project-id" type="text" class="input" placeholder="Project ID (optional)">
+                        <select id="audit-user-id" class="select" style="flex:1">
+                            <option value="">-- All recent users (load list first) --</option>
+                        </select>
+                        <select id="audit-project-id" class="select" style="flex:1">
+                            <option value="">-- All projects --</option>
+                        </select>
                         <button id="audit-load-btn" class="btn btn-primary">
                             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
                             Load Messages

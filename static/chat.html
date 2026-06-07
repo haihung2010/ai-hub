@@ -245,6 +245,20 @@
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(255,255,255,0.16);
         }
+
+        .btn {
+            background: var(--accent-1);
+            color: white;
+            border: 1px solid var(--accent-1);
+            padding: 0.5rem 1.25rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.15s ease;
+        }
+        .btn:hover { background: #4f46e5; border-color: #4f46e5; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -267,40 +281,58 @@
                 <span>Loading messages...</span>
             </div>
         </div>
+        <div style="text-align:center;padding:1rem;flex-shrink:0;background:rgba(15,23,42,0.4);border-top:1px solid var(--border-subtle)">
+            <button id="load-older-btn" class="btn" style="display:none" onclick="loadOlder()">Load older messages</button>
+        </div>
     </div>
 
     <script>
         const API_KEY = localStorage.getItem('api_key') || '1XteCCQ_s_UbrqOGEIYybmDBnokWhxYap90D6_Jojx8';
+        const PAGE_SIZE = 50;
+        let allMessages = [];     // accumulated across pages
+        let totalCount = 0;       // from server's total_count
+        let currentOffset = 0;    // how many messages already loaded
+        let currentUserId = null;
+        let currentProjectId = null;
+
+        async function fetchMessages(offset, limit) {
+            const url = `/v1/admin/users/${encodeURIComponent(currentUserId)}/messages?project_id=${encodeURIComponent(currentProjectId)}&limit=${limit}&offset=${offset}`;
+            const res = await fetch(url, { headers: { 'X-API-KEY': API_KEY } });
+            return await res.json();
+        }
 
         async function loadChat() {
             const params = new URLSearchParams(window.location.search);
-            const userId = params.get('user_id');
-            const projectId = params.get('project_id');
+            currentUserId = params.get('user_id');
+            currentProjectId = params.get('project_id');
             const userName = params.get('user_name');
 
-            if (!userId || !projectId) {
+            if (!currentUserId || !currentProjectId) {
                 showEmpty('Missing user or project ID');
                 return;
             }
 
             try {
                 // Load user detail
-                const userRes = await fetch(`/v1/admin/users/${encodeURIComponent(userId)}/detail`, {
+                const userRes = await fetch(`/v1/admin/users/${encodeURIComponent(currentUserId)}/detail`, {
                     headers: { 'X-API-KEY': API_KEY }
                 });
                 const userDetail = await userRes.json();
 
-                // Load messages
-                const messagesRes = await fetch(
-                    `/v1/admin/users/${encodeURIComponent(userId)}/messages?project_id=${encodeURIComponent(projectId)}`,
-                    { headers: { 'X-API-KEY': API_KEY } }
-                );
-                const messages = await messagesRes.json();
+                // Load first page
+                const messages = await fetchMessages(0, PAGE_SIZE);
+
+                // Capture total count from first message (or 0 if empty)
+                totalCount = (messages && messages.length > 0 && messages[0].total_count != null)
+                    ? messages[0].total_count
+                    : (messages ? messages.length : 0);
+                allMessages = messages || [];
+                currentOffset = allMessages.length;
 
                 // Update header
                 document.getElementById('chat-title').textContent = `${userName || 'User'} — Chat`;
-                document.getElementById('user-info').textContent = `User: ${userName || userId}`;
-                document.getElementById('message-count').textContent = `${messages.length} messages`;
+                document.getElementById('user-info').textContent = `User: ${userName || currentUserId}`;
+                updateCountLabel();
 
                 if (userDetail.last_message_at) {
                     const date = new Date(userDetail.last_message_at);
@@ -309,10 +341,47 @@
                 }
 
                 // Display messages
-                displayMessages(messages);
+                displayMessages(allMessages);
             } catch (error) {
                 console.error('Error loading chat:', error);
                 showEmpty('Error loading messages');
+            }
+        }
+
+        async function loadOlder() {
+            const btn = document.getElementById('load-older-btn');
+            if (!btn) return;
+            const prevLabel = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Loading...';
+            try {
+                const more = await fetchMessages(currentOffset, PAGE_SIZE);
+                if (more && more.length > 0) {
+                    allMessages = allMessages.concat(more);
+                    currentOffset += more.length;
+                    displayMessages(allMessages);
+                }
+            } catch (e) {
+                console.error('loadOlder failed', e);
+            } finally {
+                btn.disabled = false;
+                updateCountLabel();
+            }
+        }
+
+        function updateCountLabel() {
+            const el = document.getElementById('message-count');
+            if (el) el.textContent = `${allMessages.length} of ${totalCount} messages`;
+            const btn = document.getElementById('load-older-btn');
+            if (btn) {
+                if (allMessages.length < totalCount) {
+                    btn.style.display = '';
+                    const remaining = totalCount - allMessages.length;
+                    btn.textContent = `Load older (${remaining} more available)`;
+                } else {
+                    btn.style.display = 'none';
+                    btn.textContent = 'Load older messages';
+                }
             }
         }
 
@@ -406,7 +475,7 @@
             });
 
             // Update header count
-            document.getElementById('message-count').textContent = `${pairs.length} pairs • ${messages.length} messages`;
+            updateCountLabel();
         }
 
         function showEmpty(text) {

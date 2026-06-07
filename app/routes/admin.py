@@ -466,14 +466,14 @@ async def list_active_sessions(
         if project_id:
             sql = """
                 SELECT
-                    s.id, s.project_id, u.name as user_name,
+                    s.id, s.project_id, s.user_id, u.name as user_name, u.tenant_id,
                     COUNT(e.id) as message_count,
                     MAX(e.created_at) as last_active
                 FROM sessions s
                 JOIN users u ON s.user_id = u.id
                 LEFT JOIN usage_events e ON s.id = e.session_id
                 WHERE s.project_id = %s
-                GROUP BY s.id, s.project_id, u.name
+                GROUP BY s.id, s.project_id, s.user_id, u.name, u.tenant_id
                 ORDER BY last_active DESC NULLS LAST
                 LIMIT %s
             """
@@ -481,13 +481,13 @@ async def list_active_sessions(
         else:
             sql = """
                 SELECT
-                    s.id, s.project_id, u.name as user_name,
+                    s.id, s.project_id, s.user_id, u.name as user_name, u.tenant_id,
                     COUNT(e.id) as message_count,
                     MAX(e.created_at) as last_active
                 FROM sessions s
                 JOIN users u ON s.user_id = u.id
                 LEFT JOIN usage_events e ON s.id = e.session_id
-                GROUP BY s.id, s.project_id, u.name
+                GROUP BY s.id, s.project_id, s.user_id, u.name, u.tenant_id
                 ORDER BY last_active DESC NULLS LAST
                 LIMIT %s
             """

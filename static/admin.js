@@ -518,6 +518,20 @@ async function refreshDashboard() {
 }
 
 /* ====== Tab: Keys (Management) ====== */
+async function populateTenantSelector() {
+    const sel = document.getElementById('key-tenant');
+    if (!sel) return;
+    if (sel.dataset.loaded === '1') return;  // avoid re-fetch on every tab switch
+    try {
+        const tenants = await api('/v1/admin/tenants');
+        sel.innerHTML = '<option value="">-- Select tenant --</option>' +
+            tenants.map(t => `<option value="${escapeHtml(t.project_id)}">${escapeHtml(t.project_id)} / ${escapeHtml(t.tenant_id)} (${t.total_requests || 0} req)</option>`).join('');
+        sel.dataset.loaded = '1';
+    } catch (e) {
+        sel.innerHTML = '<option value="">-- Failed to load --</option>';
+    }
+}
+
 async function refreshKeys() {
     DataTable.setLoading('keys-table');
     try {
@@ -1389,7 +1403,7 @@ function showTab(tabId) {
     setText('current-tab-title', titleMap[tabId] || tabId);
     if (tabId === 'dashboard') { showStatSkeletons(); restoreStatCards(); refreshDashboard(); }
     if (tabId === 'gpu') refreshDashboard();
-    if (tabId === 'management') { refreshKeys(); refreshSessions(); }
+    if (tabId === 'management') { populateTenantSelector(); refreshKeys(); refreshSessions(); }
     if (tabId === 'knowledge') refreshKnowledge();
     if (tabId === 'tenants') loadTenants();
     if (tabId === 'audit') initAuditTab();
@@ -1531,6 +1545,40 @@ function initAuditTab() {
     const loadBtn = document.getElementById('audit-load-btn');
     if (loadBtn) {
         loadBtn.addEventListener('click', loadAuditMessages);
+    }
+    populateAuditSelectors();
+}
+
+async function populateAuditSelectors() {
+    try {
+        // Tenants → audit-project-id
+        const tenants = await api('/v1/admin/tenants');
+        const psel = document.getElementById('audit-project-id');
+        if (psel) {
+            psel.innerHTML = '<option value="">-- All projects --</option>' +
+                tenants.map(t => `<option value="${escapeHtml(t.project_id)}">${escapeHtml(t.project_id)} (${t.total_requests || 0} req)</option>`).join('');
+        }
+        // Recent users via management sessions
+        const sessions = await api('/v1/admin/management/sessions?limit=200');
+        const usel = document.getElementById('audit-user-id');
+        if (usel) {
+            const seen = new Set();
+            const users = [];
+            for (const s of sessions) {
+                if (s.user_id && !seen.has(s.user_id)) {
+                    seen.add(s.user_id);
+                    users.push(s);
+                }
+            }
+            usel.innerHTML = '<option value="">-- Select user (200 most recent) --</option>' +
+                users.map(u => {
+                    const label = u.user_name || (u.user_id ? u.user_id.slice(0, 8) : '?');
+                    const uid = u.user_id || '';
+                    return `<option value="${escapeHtml(uid)}">${escapeHtml(label)} • ${escapeHtml(u.tenant_id || '?')} (${escapeHtml(uid.slice(0, 8))}…)</option>`;
+                }).join('');
+        }
+    } catch (e) {
+        console.error('populateAuditSelectors failed', e);
     }
 }
 
