@@ -55,11 +55,11 @@ class Settings(BaseSettings):
     nine_router_denied_projects: list[str] = Field(default_factory=list, alias="NINE_ROUTER_DENIED_PROJECTS")
 
     default_model: str = Field(
-        default="local-gemma4-e4b-q8",
+        default="local-gemma4-12b-q4-text",
         alias="DEFAULT_MODEL",
     )
     lite_model: str = Field(
-        default="local-gemma4-e4b-q4",
+        default="local-gemma4-12b-q4-text",
         alias="LITE_MODEL",
     )
     lite_num_ctx: int = Field(default=65536, alias="LITE_NUM_CTX")
@@ -87,6 +87,15 @@ class Settings(BaseSettings):
     minimax_max_tokens: int = Field(default=0, ge=0, alias="MINIMAX_MAX_TOKENS")
     minimax_allowed_projects: list[str] = Field(default_factory=list, alias="MINIMAX_ALLOWED_PROJECTS")
     minimax_denied_projects: list[str] = Field(default_factory=list, alias="MINIMAX_DENIED_PROJECTS")
+    # MiniMax MCP web search — spawns `minimax-coding-plan-mcp` over stdio JSON-RPC
+    minimax_mcp_enabled: bool = Field(default=True, alias="MINIMAX_MCP_ENABLED")
+    minimax_mcp_command: str = Field(default="uvx", alias="MINIMAX_MCP_COMMAND")
+    minimax_mcp_args: list[str] = Field(
+        default_factory=lambda: ["minimax-coding-plan-mcp", "-y"],
+        alias="MINIMAX_MCP_ARGS",
+    )
+    minimax_mcp_timeout_seconds: float = Field(default=8.0, gt=0, alias="MINIMAX_MCP_TIMEOUT_SECONDS")
+    minimax_mcp_max_results: int = Field(default=5, ge=1, le=10, alias="MINIMAX_MCP_MAX_RESULTS")
     adaptive_max_tokens_enabled: bool = Field(default=True, alias="ADAPTIVE_MAX_TOKENS_ENABLED")
     adaptive_max_tokens_threshold: int = Field(default=5, ge=1, alias="ADAPTIVE_MAX_TOKENS_THRESHOLD")
     adaptive_max_tokens_cutoff_pct: float = Field(default=0.75, ge=0.1, le=1.0, alias="ADAPTIVE_MAX_TOKENS_CUTOFF_PCT")
@@ -124,7 +133,6 @@ class Settings(BaseSettings):
     structmem_max_procedural: int = Field(default=4, ge=0, alias="STRUCTMEM_MAX_PROCEDURAL")
     structmem_max_consolidated: int = Field(default=3, ge=0, alias="STRUCTMEM_MAX_CONSOLIDATED")
     structmem_debug_include_trace: bool = Field(default=False, alias="STRUCTMEM_DEBUG_INCLUDE_TRACE")
-    enable_web_search_tool: bool = Field(default=True, alias="ENABLE_WEB_SEARCH_TOOL")
     enable_failure_risk: bool = Field(default=True, alias="ENABLE_FAILURE_RISK")
     failure_risk_log_only: bool = Field(default=True, alias="FAILURE_RISK_LOG_ONLY")
     failure_risk_enable_actions: bool = Field(default=False, alias="FAILURE_RISK_ENABLE_ACTIONS")
@@ -149,14 +157,11 @@ class Settings(BaseSettings):
     ihi_llama_cpp_openai_url: str = Field(default="http://localhost:8083/v1", alias="IHI_LLAMA_CPP_OPENAI_URL")
     ihi_llama_cpp_enabled: bool = Field(default=True, alias="IHI_LLAMA_CPP_ENABLED")
     llama_cpp_nodes: list[str] = Field(default_factory=list, alias="LLAMA_CPP_NODES")
-    web_search_max_results: int = Field(default=5, ge=1, le=10, alias="WEB_SEARCH_MAX_RESULTS")
-    web_search_timeout_seconds: float = Field(default=8.0, gt=0, alias="WEB_SEARCH_TIMEOUT_SECONDS")
     enable_crew_agents: bool = Field(default=False, alias="ENABLE_CREW_AGENTS")
     crew_model: str = Field(default="local-gemma4-e4b-q4", alias="CREW_MODEL")
     google_api_key: str = Field(default="", alias="GOOGLE_API_KEY")
     google_ai_studio_api_key: str = Field(default="", alias="GOOGLE_AI_STUDIO_API_KEY")
     gemini_model: str = Field(default="gemini-2.0-flash", alias="GEMINI_MODEL")
-    google_search_cx: str = Field(default="", alias="GOOGLE_SEARCH_CX")
     searxng_base_url: str = Field(default="", alias="SEARXNG_BASE_URL")
     allowed_origins: list[str] = Field(
         default_factory=lambda: list(DEFAULT_ALLOWED_ORIGINS),

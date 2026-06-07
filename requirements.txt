@@ -5,7 +5,6 @@ requests>=2.31
 pydantic>=2.7
 pydantic-settings>=2.3
 python-dotenv>=1.0
-ddgs>=0.1
 crewai>=0.80
 langchain>=0.3
 langchain-community>=0.3

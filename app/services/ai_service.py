@@ -30,7 +30,7 @@ from app.services.prediction_service import PredictionService
 from app.services.providers.base import ChatProvider
 from app.services.structmem_service import StructMemService
 from app.services.summary_service import SummaryService
-from app.services.tools.web_search_service import WebSearchService
+from app.services.mcp.minimax_websearch import MiniMaxMCPClient
 from app.services.usage_service import UsageEvent, UsageService
 from app.utils.cost_calculator import calculate_cost_usd
 from app.utils.token_counter import count_messages_tokens, count_text_tokens
@@ -145,7 +145,7 @@ class AIService:
         settings: Settings,
         users: UserService,
         summaries: SummaryService | None = None,
-        web_search: WebSearchService | None = None,
+        minimax_mcp: MiniMaxMCPClient | None = None,
         memory_retrieval: MemoryRetrievalService | None = None,
         structmem: StructMemService | None = None,
         predictions: PredictionService | None = None,
@@ -170,7 +170,7 @@ class AIService:
         self._settings = settings
         self._users = users
         self._summaries = summaries
-        self._web_search = web_search
+        self._minimax_mcp = minimax_mcp
         self._memory_retrieval = memory_retrieval
         self._structmem = structmem
         self._predictions = predictions
@@ -443,15 +443,15 @@ class AIService:
             return self._cloud
         return self._local
 
-    def _build_search_context(self, query: str) -> tuple[str | None, list[str]]:
-        if not self._web_search or not self._settings.enable_web_search_tool:
+    async def _build_search_context(self, query: str) -> tuple[str | None, list[str]]:
+        if not self._minimax_mcp or not self._settings.minimax_mcp_enabled:
             return None, []
 
         safe_query = query.strip()[:300]
         try:
-            results = self._web_search.search(
+            results = await self._minimax_mcp.search(
                 safe_query,
-                max_results=self._settings.web_search_max_results,
+                max_results=self._settings.minimax_mcp_max_results,
             )
         except Exception:
             logger.exception("Web search failed query=%s", safe_query)
@@ -782,7 +782,7 @@ class AIService:
         )
         return risk, decision
 
-    def _apply_failure_risk_decision(
+    async def _apply_failure_risk_decision(
         self,
         *,
         decision: RiskPolicyDecision,
@@ -791,6 +791,18 @@ class AIService:
         source_urls: list[str],
         route_reason: str,
     ) -> tuple[list[Message], list[str], str]:
+        # Always run MCP search when there's an explicit /search: prefix,
+        # regardless of whether the risk decision is applied. Explicit user
+        # intent wins. (The MCP client replaces the old local WebSearchService.)
+        explicit_query = self._explicit_search_query(req)
+        if explicit_query:
+            logger.info("MCP search trigger (explicit /search:) query=%r", explicit_query[:80])
+            search_context, urls = await self._build_search_context(explicit_query)
+            logger.info("MCP search returned context=%s urls=%d",
+                       "yes" if search_context else "no", len(urls))
+            if search_context:
+                return self._inject_search_context(messages, search_context), urls, route_reason
+
         if not decision.applied:
             return messages, source_urls, route_reason
         if decision.route_reason_suffix:
@@ -805,9 +817,13 @@ class AIService:
                 ),
             )
             return [*messages[:-1], guard, messages[-1]], source_urls, route_reason
-        search_query = self._explicit_search_query(req)
-        if decision.action == "enable_search" and search_query:
-            search_context, urls = self._build_search_context(search_query)
+        # Failure-risk classifier also enables search (for non-/search: messages with ?)
+        if decision.action == "enable_search":
+            search_query_for_mcp = req.user_message.strip()
+            logger.info("MCP search trigger (risk action=enable_search) query=%r", search_query_for_mcp[:80])
+            search_context, urls = await self._build_search_context(search_query_for_mcp)
+            logger.info("MCP search returned context=%s urls=%d",
+                       "yes" if search_context else "no", len(urls))
             if search_context:
                 return self._inject_search_context(messages, search_context), urls, route_reason
         return messages, source_urls, route_reason
@@ -1168,7 +1184,12 @@ class AIService:
         search_query = self._explicit_search_query(req)
         if search_query:
             provider = self._select_explicit_search_provider(req)
-            model, num_ctx = self._settings.openrouter_model, 0
+            # Pick model name matching the actual provider (cloud uses
+            # OpenRouter model ID; local uses the local default_model).
+            if provider is self._cloud:
+                model, num_ctx = self._settings.openrouter_model, 0
+            else:
+                model, num_ctx = self._settings.default_model, self._settings.default_num_ctx
         else:
             model, num_ctx = self._select_model(req, prompt.model)
             provider = self._select_provider(req)
@@ -1270,7 +1291,12 @@ class AIService:
         search_query = self._explicit_search_query(req)
         if search_query:
             provider = self._select_explicit_search_provider(req)
-            model, num_ctx = self._settings.openrouter_model, 0
+            # Pick model name matching the actual provider (cloud uses
+            # OpenRouter model ID; local uses the local default_model).
+            if provider is self._cloud:
+                model, num_ctx = self._settings.openrouter_model, 0
+            else:
+                model, num_ctx = self._settings.default_model, self._settings.default_num_ctx
         else:
             model, num_ctx = self._select_model(req, prompt.model)
             provider = self._select_provider(req)
@@ -1410,7 +1436,7 @@ class AIService:
                 sources=[],
                 usage=None,
             )
-        messages, source_urls, route_reason = self._apply_failure_risk_decision(
+        messages, source_urls, route_reason = await self._apply_failure_risk_decision(
             decision=risk_decision,
             req=req,
             messages=messages,

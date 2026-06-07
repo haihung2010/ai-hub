@@ -22,7 +22,7 @@ const ADMIN = {
     charts: { requests: null, latency: null, gpu: null, cost: null, modelUsage: null },
     gpuHistory: { labels: [], util: [], temp: [], vram: [] },
     GPU_MAX_POINTS: 60,
-    tabs: ['dashboard','gpu','management','knowledge','tenants','audit','system'],
+    tabs: ['dashboard','gpu','management','knowledge','tenants','audit','ihi','system'],
     tenant: { view: 'list', selectedTenant: null, selectedUser: null },
     theme: localStorage.getItem('admin-theme') || 'dark',
     cmdPaletteOpen: false,
@@ -1109,6 +1109,22 @@ function toggleLive() {
     document.getElementById('auto-refresh-btn')?.click();
 }
 
+function startAutoRefresh(intervalMs = 3000) {
+    if (ADMIN.autoTimer) clearInterval(ADMIN.autoTimer);
+    ADMIN.autoTimer = setInterval(refreshDashboard, intervalMs);
+    const btn = document.getElementById('auto-refresh-btn');
+    if (btn) btn.innerHTML = '🟢 LIVE: 3s';
+}
+
+function stopAutoRefresh() {
+    if (ADMIN.autoTimer) {
+        clearInterval(ADMIN.autoTimer);
+        ADMIN.autoTimer = null;
+    }
+    const btn = document.getElementById('auto-refresh-btn');
+    if (btn) btn.innerHTML = '⚪ LIVE: OFF';
+}
+
 /* ====== Theme Toggle ====== */
 function applyTheme(theme) {
     ADMIN.theme = theme;
@@ -1369,7 +1385,7 @@ function showTab(tabId) {
     if (tab) tab.classList.add('active');
     const link = document.querySelector(`.tab-link[data-tab="${tabId}"]`);
     if (link) link.classList.add('active');
-    const titleMap = { dashboard: 'System Overview', gpu: 'GPU Command Center', management: 'Access Keys', knowledge: 'RAG Knowledge', tenants: 'Tenants & Users', audit: 'Chat Audit', database: 'Database Explorer', system: 'System Health', skills: 'Skill Registry' };
+    const titleMap = { dashboard: 'System Overview', gpu: 'GPU Command Center', management: 'Access Keys', knowledge: 'RAG Knowledge', tenants: 'Tenants & Users', audit: 'Chat Audit', ihi: 'IHI Monitor', database: 'Database Explorer', system: 'System Health', skills: 'Skill Registry' };
     setText('current-tab-title', titleMap[tabId] || tabId);
     if (tabId === 'dashboard') { showStatSkeletons(); restoreStatCards(); refreshDashboard(); }
     if (tabId === 'gpu') refreshDashboard();
@@ -1379,7 +1395,135 @@ function showTab(tabId) {
     if (tabId === 'audit') initAuditTab();
     if (tabId === 'database') initDatabaseTab();
     if (tabId === 'skills') initSkillsTab();
+    if (tabId === 'ihi') initIHITab();
     if (tabId === 'system') { refreshSystemHealth(); refreshSecurityLogs(); refreshSystemCharts(); }
+}
+
+/* ====== IHI Tab ====== */
+let ihiHistory = [];
+
+function escHtml(s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function ihiAddHistory(entry) {
+    ihiHistory.unshift(entry);
+    if (ihiHistory.length > 50) ihiHistory.pop();
+    const el = document.getElementById('ihi-history-log');
+    if (!el) return;
+    el.textContent = ihiHistory.map(h =>
+        '[' + h.time + '] ' + h.alert + ' | devices: ' + (h.devices || []).join(',') +
+        (h.case_id ? ' | case=' + h.case_id : '') +
+        (h.confidence ? ' conf=' + h.confidence.toFixed(2) : '')
+    ).join('\n');
+    el.scrollTop = 0;
+}
+
+function renderRagTable(cases) {
+    const tbody = document.getElementById('rag-table-body');
+    const empty = document.getElementById('rag-table-empty');
+    if (!tbody) return;
+    const filter = (document.getElementById('rag-filter-input')?.value || '').toLowerCase();
+    const sevFilter = document.getElementById('rag-severity-filter')?.value || '';
+    const filtered = cases.filter(c => {
+        if (sevFilter && c.severity !== sevFilter) return false;
+        if (filter) {
+            const s = (c.case_id || '') + (c.symptom || '') + (c.description || '') + JSON.stringify(c.pattern || {});
+            return s.toLowerCase().includes(filter);
+        }
+        return true;
+    });
+    if (!filtered.length) {
+        tbody.innerHTML = '';
+        if (empty) empty.style.display = '';
+        return;
+    }
+    if (empty) empty.style.display = 'none';
+    tbody.innerHTML = filtered.map(c => {
+        const sevCls = c.severity === 'CRITICAL' ? 'badge-critical' : c.severity === 'WARNING' ? 'badge-warning' : 'badge-info';
+        const sevBadge = '<span class="badge ' + sevCls + '">' + escHtml(c.severity || '') + '</span>';
+        const statusCls = c.status === 'active' ? 'badge-ok' : 'badge-muted';
+        const statusBadge = '<span class="badge ' + statusCls + '">' + escHtml(c.status || '') + '</span>';
+        const p = c.pattern || {};
+        const patternStr = Object.keys(p).filter(k => p[k] != null).map(k => k.replace('_', '') + '=' + p[k]).join(', ') || '-';
+        return '<tr>' +
+            '<td class="mono" style="font-size:0.7rem">' + escHtml(c.case_id || '') + '</td>' +
+            '<td>' + sevBadge + '</td>' +
+            '<td style="font-weight:600">' + escHtml(c.symptom || '') + '</td>' +
+            '<td class="mono" style="font-size:0.65rem; color:var(--text-muted)">' + escHtml(patternStr) + '</td>' +
+            '<td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap" title="' + escHtml(c.description || '') + '">' + escHtml((c.description || '').slice(0, 50)) + '</td>' +
+            '<td class="mono" style="text-align:right">' + (c.match_count || 0) + '</td>' +
+            '<td>' + statusBadge + '</td>' +
+            '</tr>';
+    }).join('');
+}
+
+async function loadRagCases() {
+    try {
+        const res = await api('/v1/ihi/rag');
+        return res || [];
+    } catch (e) { return []; }
+}
+
+async function refreshRagTable() {
+    const cases = await loadRagCases();
+    renderRagTable(cases);
+}
+
+function initIHITab() {
+    // Wire analyze button
+    document.getElementById('ihi-analyze-btn')?.addEventListener('click', async () => {
+        const ts = document.getElementById('ihi-ts')?.value || '';
+        const deviceId = document.getElementById('ihi-device-id')?.value || '';
+        const temp = parseFloat(document.getElementById('ihi-temp')?.value);
+        const vib = parseFloat(document.getElementById('ihi-vib')?.value);
+        const current = parseFloat(document.getElementById('ihi-current')?.value);
+        if (!deviceId) { toast('Device ID required', 'warn'); return; }
+        const payload = { ts, data: [{ id: deviceId, t: isNaN(temp) ? null : temp, v: isNaN(vib) ? null : vib, c: isNaN(current) ? null : current }] };
+        try {
+            toast('Sending analyze request...', 'info');
+            const res = await api('/v1/ihi/analyze', { method: 'POST', body: payload });
+            const resultEl = document.getElementById('ihi-analyze-result');
+            const outputEl = document.getElementById('ihi-analyze-output');
+            if (resultEl) resultEl.style.display = '';
+            if (outputEl) outputEl.textContent = JSON.stringify(res, null, 2);
+            ihiAddHistory({ time: new Date().toLocaleTimeString(), alert: res.alert || '?', devices: res.devices || [], case_id: res.case_id, confidence: res.confidence });
+            toast('Analyze complete: ' + (res.alert || '?'), res.alert === 'DANGER' ? 'err' : 'ok');
+        } catch (e) { toast('Analyze failed: ' + e.message, 'err'); }
+    });
+
+    // Wire rag create button
+    document.getElementById('rag-create-btn')?.addEventListener('click', async () => {
+        const ts = document.getElementById('rag-fb-ts')?.value || '';
+        const deviceId = document.getElementById('rag-fb-device')?.value || '';
+        const severity = document.getElementById('rag-fb-severity')?.value || 'CRITICAL';
+        const description = document.getElementById('rag-fb-desc')?.value || '';
+        const resolution = document.getElementById('rag-fb-resolution')?.value || '';
+        if (!deviceId || !description) { toast('Device ID and Description required', 'warn'); return; }
+        const payload = { ts, device_id: deviceId, severity, description, ...(resolution ? { resolution } : {}) };
+        try {
+            toast('Creating RAG case...', 'info');
+            const res = await api('/v1/ihi/rag/feedback', { method: 'POST', body: payload });
+            const resultEl = document.getElementById('rag-create-result');
+            const outputEl = document.getElementById('rag-create-output');
+            if (resultEl) resultEl.style.display = '';
+            if (outputEl) outputEl.textContent = JSON.stringify(res, null, 2);
+            toast('RAG case created: ' + (res.case_id || '?'), 'ok');
+            await refreshRagTable();
+        } catch (e) { toast('Create failed: ' + e.message, 'err'); }
+    });
+
+    // Wire filters and refresh
+    document.getElementById('ihi-refresh-rag-btn')?.addEventListener('click', refreshRagTable);
+    document.getElementById('rag-filter-input')?.addEventListener('input', refreshRagTable);
+    document.getElementById('rag-severity-filter')?.addEventListener('change', refreshRagTable);
+    document.getElementById('ihi-clear-history-btn')?.addEventListener('click', () => {
+        ihiHistory = [];
+        const el = document.getElementById('ihi-history-log');
+        if (el) el.textContent = 'No requests sent yet.';
+    });
+
+    refreshRagTable();
 }
 
 /* ====== Chat Audit Tab ====== */
@@ -1753,6 +1897,18 @@ async function runDbSql() {
 function bindStaticEvents() {
     document.querySelectorAll('.tab-link').forEach(b => b.addEventListener('click', () => showTab(b.getAttribute('data-tab'))));
 
+    // Forward API key to cross-page links (e.g. /ihi-charts-v2.html, /ihi-feed-v3.html).
+    // Those pages accept ?key=... and persist to localStorage on load.
+    document.querySelectorAll('a.needs-key').forEach(a => {
+        a.addEventListener('click', (e) => {
+            if (!ADMIN.apiKey) { /* let browser navigate normally; target page will prompt */ return; }
+            e.preventDefault();
+            const url = new URL(a.getAttribute('data-href') || a.getAttribute('href'), location.origin);
+            url.searchParams.set('key', ADMIN.apiKey);
+            window.open(url.toString(), '_blank');
+        });
+    });
+
     document.getElementById('api-key-btn').addEventListener('click', async () => {
         const html = `<input id="apikey-input" class="input mono" type="password" placeholder="Paste your master/admin key" value="${escapeHtml(ADMIN.apiKey)}"/>`;
         const v = await openModal({
@@ -1839,6 +1995,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initSystemTab();
     applyTheme(ADMIN.theme);
     showTab('dashboard');
+    // Start auto-refresh by default so dashboard shows live data without
+    // requiring the user to click anything. Refresh every 3s.
+    if (ADMIN.apiKey) {
+        startAutoRefresh(3000);
+    }
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/admin-sw.js').catch(() => {});
     }
