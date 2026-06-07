@@ -118,6 +118,7 @@ async def send_request(session, stats, idx):
     payload = {
         "project_id": "test",
         "tenant_id": tenant_id,
+        "user_name": f"loadtest_user_{idx % 16}",
         "user_message": question,
         "model_mode": "lite",
         "enable_search": False,
