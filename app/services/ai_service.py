@@ -316,9 +316,14 @@ class AIService:
         # Use background provider if available, otherwise fallback to main local provider
         bg_provider = self._background_local or provider
 
-        # Mutually exclusive: StructMem and SummaryService must never both run for
-        # the same message. StructMem takes priority when ENABLE_STRUCTMEM=true.
-        if self._settings.enable_structmem and user_id and self._structmem:
+        # NOTE: StructMem and SummaryService are NOT mutually exclusive — they write
+        # to disjoint tables (memory_items / memory_episodes vs summaries). Prior
+        # versions returned early after scheduling StructMem, which silently disabled
+        # SummaryService whenever ENABLE_STRUCTMEM=true and left the `summaries`
+        # table empty. Both are now scheduled when their respective services are
+        # configured; the threshold check inside each service decides whether the
+        # background LLM call actually fires.
+        if user_id and self._settings.enable_structmem and self._structmem:
             asyncio.create_task(
                 self._structmem.process_recent_messages(
                     user_id=user_id,
@@ -331,8 +336,13 @@ class AIService:
                     consolidation_model=self._settings.structmem_consolidation_model,
                 )
             )
-            return
         if user_id and self._summaries:
+            logger.debug(
+                "scheduling SummaryService user=%s project=%s threshold=%d",
+                user_id,
+                project_id,
+                self._settings.summary_threshold,
+            )
             asyncio.create_task(
                 self._summaries.summarize(
                     user_id,

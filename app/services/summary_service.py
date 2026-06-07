@@ -169,3 +169,11 @@ class SummaryService:
                     (tenant_id, user_id, project_id, content),
                 )
             conn.commit()
+        logger.info(
+            "summary.upsert tenant=%s user=%s project=%s version=%d chars=%d",
+            tenant_id,
+            user_id,
+            project_id,
+            (existing["version"] + 1) if existing else 1,
+            len(content),
+        )
