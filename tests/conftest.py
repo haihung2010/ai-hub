@@ -37,15 +37,59 @@ _TEST_TABLES = [
     "api_keys",
 ]
 
+# Production DSN patterns. If DATABASE_URL matches any of these AND
+# AI_HUB_ALLOW_DB_TRUNCATE_FOR_TESTS=1, refuse to truncate to prevent
+# data loss (see session checkpoint 2026-06-06: pytest run at
+# 2026-06-07 00:14:29 TRUNCATEd 14 production tables in live ai_hub DB).
+_PROD_DSN_PATTERNS = (
+    "postgresql://aihub:aihub_pass@localhost:5432/ai_hub",
+    "postgresql://aihub:aihub_pass@127.0.0.1:5432/ai_hub",
+)
 
-@pytest.fixture(autouse=True)
-def isolated_db() -> None:
-    """Truncate all tables before each test for isolation (PostgreSQL)."""
-    if os.getenv("AI_HUB_ALLOW_DB_TRUNCATE_FOR_TESTS") != "1":
-        pytest.fail(
+
+def _is_prod_dsn(dsn: str) -> bool:
+    return any(pattern in dsn for pattern in _PROD_DSN_PATTERNS)
+
+
+def _should_refuse_truncate(env: dict[str, str] | None = None) -> str | None:
+    """Return an error message if the current env is configured to
+    TRUNCATE the production database. Return None if safe to proceed.
+
+    Pure function — no env access, no DB access, no I/O. Easy to unit-test.
+    """
+    e = env if env is not None else os.environ
+    if e.get("AI_HUB_ALLOW_DB_TRUNCATE_FOR_TESTS") != "1":
+        return (
             "Refusing to truncate PostgreSQL without "
             "AI_HUB_ALLOW_DB_TRUNCATE_FOR_TESTS=1. Point DATABASE_URL at a test DB."
         )
+    dsn = e.get("DATABASE_URL", "")
+    if dsn and _is_prod_dsn(dsn):
+        return (
+            "Refusing to TRUNCATE production database. "
+            "DATABASE_URL matches a known production DSN. "
+            "Set DATABASE_URL to a test database (e.g. ai_hub_test) "
+            "or unset AI_HUB_ALLOW_DB_TRUNCATE_FOR_TESTS."
+        )
+    return None
+
+
+@pytest.fixture(autouse=True)
+def isolated_db(request) -> None:
+    """Truncate all tables before each test for isolation (PostgreSQL).
+
+    Guards against accidental production-DB wipe: refuses to truncate if
+    DATABASE_URL matches a known production DSN (set AI_HUB_ALLOW_DB_TRUNCATE_FOR_TESTS=1).
+    Tests can opt-out of DB isolation by applying the ``no_isolated_db``
+    marker — e.g. when exercising the guard logic itself.
+    """
+    if "no_isolated_db" in request.keywords:
+        return
+    err = _should_refuse_truncate()
+    if err is not None:
+        if err.startswith("Refusing to TRUNCATE production"):
+            raise RuntimeError(err)
+        pytest.fail(err)
     init_db()
     with get_db_connection() as conn:
         conn.execute(f"TRUNCATE TABLE {', '.join(_TEST_TABLES)} CASCADE")
