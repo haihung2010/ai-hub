@@ -21,13 +21,16 @@ from app.models.memory import MemoryConsolidationRecord, MemoryItemRecord, Retri
 from app.services.ihi_warmup import get_ihi_warmup
 from app.prompts.loader import load_prompt
 from app.services.failure_risk_service import FailureRiskService
+from app.services.difficulty_classifier import DifficultyClassifier
 from app.services.fact_extraction_service import FactExtractionService
 from app.services.history_service import HistoryService
 from app.services.knowledge_retrieval_service import KnowledgeRetrievalService
+from app.services.load_monitor import LoadMonitor
 from app.services.memory_retrieval_service import MemoryRetrievalService
 from app.services.pinned_memory_service import PinnedMemoryService
 from app.services.prediction_service import PredictionService
 from app.services.providers.base import ChatProvider
+from app.services.router import AdaptiveRouter, ModelChoice
 from app.services.structmem_service import StructMemService
 from app.services.summary_service import SummaryService
 from app.services.mcp.minimax_websearch import MiniMaxMCPClient
@@ -179,6 +182,17 @@ class AIService:
         self._failure_risk = failure_risk
         self._knowledge_retrieval = knowledge_retrieval
         self._fact_extraction = fact_extraction
+        # Adaptive routing (added 2026-06-07)
+        self._difficulty_classifier = DifficultyClassifier()
+        self._load_monitor = LoadMonitor(
+            cache_ttl_seconds=settings.load_cache_ttl_seconds,
+        )
+        self._router = AdaptiveRouter(
+            difficulty_easy_threshold=settings.difficulty_easy_threshold,
+            difficulty_hard_threshold=settings.difficulty_hard_threshold,
+            saturation_12b_degrade=settings.saturation_12b_degrade_threshold,
+            saturation_e4b_degrade=settings.saturation_e4b_degrade_threshold,
+        )
         self._gpu_lock = asyncio.Semaphore(settings.gpu_concurrency)
         self._bg_lock = asyncio.Semaphore(settings.background_llama_cpp_parallel if settings.background_llama_cpp_parallel else settings.gpu_concurrency)
         self._cloud_lock = asyncio.Semaphore(settings.cloud_fallback_max_concurrency)
@@ -502,33 +516,54 @@ class AIService:
         return prompt_temperature
 
     def _select_model(self, req: ChatRequest, prompt_model: str) -> tuple[str, int]:
-        # BRANE: use query intent to override model selection
-        intent = self._query_classifier.classify(req)
-        hint = self._settings.query_type_model_map.get(intent.type)
-        if hint == "fast_background":
-            # fast_background handled in _route_fast_background_if_eligible
-            pass
-        elif hint == "normal":
-            ctx = self._settings.project_context_sizes.get(req.project_id, self._settings.default_num_ctx)
-            return self._settings.default_model, ctx
-        elif hint == "external":
-            return self._settings.openrouter_model, 0
+        # Adaptive routing (added 2026-06-07) — uses difficulty + load + project.
+        # Falls back to legacy BRANE regex when adaptive_routing_enabled=False.
+        if not self._settings.adaptive_routing_enabled:
+            # Legacy BRANE path (preserved for rollback)
+            intent = self._query_classifier.classify(req)
+            hint = self._settings.query_type_model_map.get(intent.type)
+            if hint == "fast_background":
+                pass  # handled in _route_fast_background_if_eligible
+            elif hint == "normal":
+                ctx = self._settings.project_context_sizes.get(req.project_id, self._settings.default_num_ctx)
+                return self._settings.default_model, ctx
+            elif hint == "external":
+                return self._settings.openrouter_model, 0
+            else:
+                ctx = self._settings.project_context_sizes.get(req.project_id, self._settings.default_num_ctx)
+                return self._settings.default_model, ctx
 
-        # Default routing (fallback or explicit model_mode)
-        if req.provider == "gemini":
-            return self._settings.gemini_model, 0
-        if req.model_mode == "external" or req.provider == "cloud":
-            return self._settings.openrouter_model, 0
-        # iHi project: always use the prompt file model (E2B Q4 on port 8083), regardless of model_mode
-        if req.project_id == "ihi":
-            ctx = self._settings.project_context_sizes.get(req.project_id, self._settings.lite_num_ctx)
-            prompt = load_prompt(req.project_id)
-            return prompt.model, ctx
-        if req.model_mode == "normal":
+        # Adaptive path
+        try:
+            history_count = len(req.history or [])
+            score = self._difficulty_classifier.score(req, history_count=history_count)
+            difficulty = self._difficulty_classifier.classify(req, history_count=history_count)
+            saturation = self._load_monitor.get_all_saturations()
+            project_hint = "ihi" if req.project_id == "ihi" else None
+
+            choice = self._router.route(
+                difficulty=difficulty,
+                saturation=saturation,
+                project_hint=project_hint,
+            )
+
+            # Map ModelChoice → (model_alias, ctx)
+            if choice == ModelChoice.PRIMARY_12B:
+                ctx = self._settings.project_context_sizes.get(req.project_id, 8192)
+                return choice.value, ctx
+            if choice == ModelChoice.E4B:
+                ctx = self._settings.project_context_sizes.get(req.project_id, 8192)
+                return choice.value, ctx
+            if choice == ModelChoice.E2B_BG:
+                # E2B-bg uses its own ctx (handled by bg_provider, no explicit ctx needed)
+                return choice.value, 0
+            # Fallback (shouldn't reach here)
+            ctx = self._settings.project_context_sizes.get(req.project_id, 8192)
+            return self._settings.default_model, ctx
+        except Exception as e:
+            logger.warning("_select_model adaptive path failed: %s — falling back to default", e)
             ctx = self._settings.project_context_sizes.get(req.project_id, self._settings.default_num_ctx)
             return self._settings.default_model, ctx
-        ctx = self._settings.project_context_sizes.get(req.project_id, self._settings.lite_num_ctx)
-        return self._settings.lite_model, ctx
 
     def _external_allowed(self, req: ChatRequest) -> bool:
         project = req.project_id.lower()
@@ -1108,6 +1143,44 @@ class AIService:
             ),
         )
         return [*messages[:-1], guard, messages[-1]]
+
+    async def summarize(
+        self,
+        *,
+        text: str,
+        model_override: str = "",
+        user_id: str = "",
+        session_id: str = "",
+    ) -> str:
+        """Thin wrapper used by PeriodicSummarizer. Delegates to 12B.
+
+        Phase 1: minimal implementation. Sends `text` to the 12B model
+        on port 8080 and returns the raw completion. No memory/history.
+        Future phases can add session management, streaming, etc.
+        """
+        from app.models.chat import ChatRequest, Message  # local to avoid circular
+        req = ChatRequest(
+            user_name=user_id or "_rollup",
+            user_message=text,
+            project_id="rollup",
+            model_mode="normal",
+            stream=False,
+        )
+        # Use the OpenAI-compatible chat completions endpoint on port 8080
+        import httpx
+        async with httpx.AsyncClient(timeout=120.0) as c:
+            r = await c.post(
+                "http://127.0.0.1:8080/v1/chat/completions",
+                json={
+                    "model": model_override or "local-gemma4-12b-q4-text",
+                    "messages": [{"role": "user", "content": text}],
+                    "max_tokens": 1024,
+                    "temperature": 0.3,
+                },
+            )
+            r.raise_for_status()
+            data = r.json()
+            return data["choices"][0]["message"]["content"]
 
     async def _complete_local_with_queue_timeout(
         self,

@@ -396,6 +396,19 @@ def init_db() -> None:
             )
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS ihi_rollups (
+                id TEXT PRIMARY KEY,
+                window_start TIMESTAMP NOT NULL,
+                window_end TIMESTAMP NOT NULL,
+                summary TEXT NOT NULL,
+                model TEXT NOT NULL,
+                source_window_count INTEGER NOT NULL DEFAULT 0,
+                source_token_count INTEGER NOT NULL DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         # Create indexes
         for stmt in [
             "CREATE INDEX IF NOT EXISTS idx_messages_tenant_session ON messages (tenant_id, session_id, id)",
