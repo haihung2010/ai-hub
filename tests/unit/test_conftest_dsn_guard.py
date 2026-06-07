@@ -36,22 +36,46 @@ def test_prod_dsn_detected_127():
 
 
 def test_clearly_different_dsn_not_detected():
-    """The substring matcher treats _test_db DSNs as prod-matching
-    (prefix is identical). That's acceptable because the guard is a
-    coarse safety net — but these DSNs are clearly different and must
-    be allowed through."""
+    """DSNs that differ in DB name (the last path component) must NOT
+    be treated as the production database. The guard is exact-match
+    on the DB name — different user/host/port is still prod (e.g.
+    aihub_test or aihub_staging)."""
+    from tests import conftest
+
+    # Empty
+    assert conftest._is_prod_dsn("") is False
+    # Test DB with similar prefix — the fix that matters most
+    assert conftest._is_prod_dsn(
+        "postgresql://aihub:aihub_pass@localhost:5432/ai_hub_test"
+    ) is False
+    assert conftest._is_prod_dsn(
+        "postgresql://aihub:aihub_pass@127.0.0.1:5432/ai_hub_test"
+    ) is False
+    # Staging DB with similar prefix
+    assert conftest._is_prod_dsn(
+        "postgresql://aihub:aihub_pass@localhost:5432/ai_hub_staging"
+    ) is False
+    # No path component at all
+    assert conftest._is_prod_dsn("postgresql://aihub:aihub_pass@localhost:5432") is False
+
+
+def test_prod_dsn_detected_regardless_of_user_or_host():
+    """The guard matches by DB name, not user/host. Any DSN ending in
+    /ai_hub is considered prod, even with different credentials."""
     from tests import conftest
 
     # Different user
     assert conftest._is_prod_dsn(
         "postgresql://aihub:test@localhost:5432/ai_hub"
-    ) is False
+    ) is True
     # Different host
     assert conftest._is_prod_dsn(
         "postgresql://aihub:aihub_pass@prod-server:5432/ai_hub"
-    ) is False
-    # Empty
-    assert conftest._is_prod_dsn("") is False
+    ) is True
+    # Different port
+    assert conftest._is_prod_dsn(
+        "postgresql://aihub:aihub_pass@localhost:5433/ai_hub"
+    ) is True
 
 
 # ── Pure-function tests for _should_refuse_truncate ──────────────────
@@ -93,16 +117,26 @@ def test_refuse_when_127_prod_dsn_set():
 def test_allow_when_test_dsn():
     from tests import conftest
 
-    # ai_hub_test (different db name) is treated as "looks like prod"
-    # by the substring matcher, so the guard still fires. This is the
-    # documented coarse behavior. To actually allow truncate, use a
-    # DSN with a different user, host, or port.
+    # The actual test DB DSN — different DB name suffix, must be allowed.
+    env = {
+        "AI_HUB_ALLOW_DB_TRUNCATE_FOR_TESTS": "1",
+        "DATABASE_URL": "postgresql://aihub:aihub_pass@localhost:5432/ai_hub_test",
+    }
+    err = conftest._should_refuse_truncate(env)
+    assert err is None
+
+
+def test_refuse_when_dsn_ends_with_ai_hub():
+    from tests import conftest
+
+    # Different host but same DB name (ai_hub) — still considered prod.
     env = {
         "AI_HUB_ALLOW_DB_TRUNCATE_FOR_TESTS": "1",
         "DATABASE_URL": "postgresql://aihub:aihub_pass@prod-server:5432/ai_hub",
     }
     err = conftest._should_refuse_truncate(env)
-    assert err is None
+    assert err is not None
+    assert "Refusing to TRUNCATE production" in err
 
 
 def test_allow_when_env_var_set_and_no_dsn():

@@ -37,18 +37,29 @@ _TEST_TABLES = [
     "api_keys",
 ]
 
-# Production DSN patterns. If DATABASE_URL matches any of these AND
-# AI_HUB_ALLOW_DB_TRUNCATE_FOR_TESTS=1, refuse to truncate to prevent
-# data loss (see session checkpoint 2026-06-06: pytest run at
-# 2026-06-07 00:14:29 TRUNCATEd 14 production tables in live ai_hub DB).
-_PROD_DSN_PATTERNS = (
-    "postgresql://aihub:aihub_pass@localhost:5432/ai_hub",
-    "postgresql://aihub:aihub_pass@127.0.0.1:5432/ai_hub",
-)
-
-
+# Production DSN matchers. Each entry is a function: DSN -> True if the
+# DSN targets the production database (database name == "ai_hub"). This
+# is the correct way to detect prod: by DB name, NOT by substring
+# (which incorrectly matches "ai_hub_test", "ai_hub_anything", etc.).
+#
+# Background: pytest run at 2026-06-07 00:14:29 wiped 14 production
+# tables because both AI_HUB_ALLOW_DB_TRUNCATE_FOR_TESTS=1 and the
+# production DATABASE_URL were set. This guard prevents that.
 def _is_prod_dsn(dsn: str) -> bool:
-    return any(pattern in dsn for pattern in _PROD_DSN_PATTERNS)
+    """Return True if the DSN targets the production database.
+
+    Detection is by the LAST path component (the database name), not by
+    substring: a DSN like ``postgresql://aihub:aihub_pass@localhost:5432/ai_hub_test``
+    must NOT match (test DB), only ``.../ai_hub`` matches.
+    """
+    if not dsn:
+        return False
+    # Find the DB name (last path component after the final '/')
+    last_slash = dsn.rfind("/")
+    if last_slash < 0:
+        return False
+    db_part = dsn[last_slash + 1:].split("?")[0]  # strip query params
+    return db_part == "ai_hub"
 
 
 def _should_refuse_truncate(env: dict[str, str] | None = None) -> str | None:
