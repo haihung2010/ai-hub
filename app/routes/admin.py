@@ -124,6 +124,99 @@ async def observability(request: Request) -> dict[str, object]:
     return request.app.state.usage_service.summary()
 
 
+@router.get("/risk/gap")
+async def risk_action_gap(request: Request) -> dict[str, object]:
+    """Show the failure_risk action gap.
+
+    The failure-risk service can RECOMMEND actions (enable_search, ask_clarification,
+    inject_risk_context) but may not APPLY them depending on settings
+    (FAILURE_RISK_LOG_ONLY, FAILURE_RISK_ENABLE_ACTIONS). The "gap" is the
+    number of events where an action was recommended but NOT applied.
+
+    This is the leading indicator for whether to enable actions. If gap > 0
+    over a long window, the operator may want to flip FAILURE_RISK_LOG_ONLY
+    off and FAILURE_RISK_ENABLE_ACTIONS on.
+
+    See session checkpoint 2026-06-06 (Rank 5 finding: 1,675 events, 0 actions
+    applied).
+    """
+    settings = request.app.state.settings
+    mode = {
+        "log_only": settings.failure_risk_log_only,
+        "enable_actions": settings.failure_risk_enable_actions,
+        "enable_search_action": settings.failure_risk_enable_search_action,
+        "high_threshold": settings.failure_risk_high_threshold,
+        "medium_threshold": settings.failure_risk_medium_threshold,
+    }
+    with get_db_connection() as conn:
+        # Total events
+        total = conn.execute(
+            "SELECT COUNT(*) AS n FROM failure_risk_events"
+        ).fetchone()["n"]
+        # Per-action breakdown: how many recommended vs applied
+        rows = conn.execute(
+            """
+            SELECT recommended_action,
+                   COUNT(*) AS total,
+                   SUM(action_applied) AS applied,
+                   COUNT(*) - SUM(action_applied) AS gap
+            FROM failure_risk_events
+            GROUP BY recommended_action
+            ORDER BY total DESC
+            """
+        ).fetchall()
+        # Last 24h gap (events that recommended a real action but weren't applied)
+        gap_24h = conn.execute(
+            """
+            SELECT COUNT(*) AS n
+            FROM failure_risk_events
+            WHERE action_applied = 0
+              AND recommended_action != 'none'
+              AND created_at > NOW() - INTERVAL '24 hours'
+            """
+        ).fetchone()["n"]
+    per_action = [
+        {
+            "recommended_action": r["recommended_action"],
+            "total": r["total"],
+            "applied": int(r["applied"] or 0),
+            # 'none' means no action was recommended, so lack of applied
+            # is by design — don't count it as a gap.
+            "gap": (
+                0 if r["recommended_action"] == "none"
+                else int(r["gap"] or 0)
+            ),
+        }
+        for r in rows
+    ]
+    total_gap = sum(p["gap"] for p in per_action)
+    return {
+        "mode": mode,
+        "summary": {
+            "total_events": total,
+            "total_gap": total_gap,
+            "gap_last_24h": gap_24h,
+            "action_enabled": (
+                not mode["log_only"] and mode["enable_actions"]
+            ),
+        },
+        "per_action": per_action,
+        "recommendation": (
+            "Actions ARE enabled — gap represents requests where risk_service "
+            "recommended an action but the action could not be applied "
+            "(e.g. enable_search requested but no search tool available)."
+            if not mode["log_only"] and mode["enable_actions"]
+            else (
+                "Actions are DISABLED (FAILURE_RISK_LOG_ONLY=true or "
+                "FAILURE_RISK_ENABLE_ACTIONS=false). All recommended actions "
+                "are recorded but not applied. To enable, set both to true "
+                "in .env and restart the API server. See the gap above to "
+                "estimate the impact."
+            )
+        ),
+    }
+
+
 @router.post("/model/switch")
 async def switch_model(payload: ModelSwitchRequest, request: Request) -> dict[str, object]:
     result = await _run_model_switch(payload.mode)
