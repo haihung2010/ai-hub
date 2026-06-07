@@ -309,6 +309,22 @@ def create_app(
             )
             app.state.ai_service_ref = weakref.ref(app.state.ai_service)
             logger.info("ai-hub started on port %s", settings.app_port)
+            logger.info(
+                "failure_risk mode: log_only=%s enable_actions=%s "
+                "enable_search_action=%s high_threshold=%.2f medium_threshold=%.2f",
+                settings.failure_risk_log_only,
+                settings.failure_risk_enable_actions,
+                settings.failure_risk_enable_search_action,
+                settings.failure_risk_high_threshold,
+                settings.failure_risk_medium_threshold,
+            )
+            if settings.failure_risk_log_only or not settings.failure_risk_enable_actions:
+                logger.warning(
+                    "failure_risk actions are DISABLED — risk events will be "
+                    "recorded but not applied. To enable, set "
+                    "FAILURE_RISK_LOG_ONLY=false and FAILURE_RISK_ENABLE_ACTIONS=true. "
+                    "See GET /v1/admin/risk/gap for the action gap."
+                )
 
             # Store module-level reference for get_ai_service() callers
             global _ai_service_instance
