@@ -739,10 +739,23 @@ async def user_detail(user_id: str):
 
 
 @router.get("/users/{user_id}/messages")
-async def user_messages(user_id: str, project_id: str | None = None, limit: int = 100):
-    """Full chat history for a user, optionally filtered by project."""
-    sql = """
-        SELECT m.id, m.role, m.content, m.created_at, s.project_id, m.is_summarized
+async def user_messages(
+    user_id: str,
+    project_id: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+    truncate: int = 200,
+):
+    """Full chat history for a user, optionally filtered by project.
+
+    Args:
+        limit: max messages to return (default 50).
+        offset: skip this many messages (for pagination).
+        truncate: truncate message content to this many chars (set to 0 for full).
+    """
+    sql = f"""
+        SELECT m.id, m.role, m.content, m.created_at, s.project_id, m.is_summarized,
+               COUNT(*) OVER () AS total_count
         FROM messages m
         JOIN sessions s ON m.session_id = s.id
         WHERE m.user_id = %s
@@ -751,12 +764,64 @@ async def user_messages(user_id: str, project_id: str | None = None, limit: int 
     if project_id:
         sql += " AND s.project_id = %s"
         params.append(project_id)
-    sql += " ORDER BY m.created_at DESC LIMIT %s"
-    params.append(limit)
+    sql += " ORDER BY m.created_at DESC LIMIT %s OFFSET %s"
+    params.extend([limit, offset])
 
     with get_db_connection() as conn:
         rows = conn.execute(sql, params).fetchall()
-        return [dict(row) for row in rows]
+        out = []
+        for r in rows:
+            d = dict(r)
+            if truncate > 0 and d.get('content') and len(d['content']) > truncate:
+                d['content'] = d['content'][:truncate] + '...'
+                d['truncated'] = True
+            else:
+                d['truncated'] = False
+            out.append(d)
+        return out
+
+
+@router.get("/users/{user_id}/stats")
+async def user_stats(user_id: str, project_id: str | None = None):
+    """Aggregated stats for a user — fast, no full message fetch.
+
+    Use this for the user detail page topbar (counts) instead of fetching
+    all messages just to count.
+    """
+    project_filter = ""
+    project_params: list = [project_id] if project_id else []
+    if project_id:
+        project_filter = " AND s.project_id = %s"
+
+    with get_db_connection() as conn:
+        row = conn.execute(
+            f"""
+            SELECT
+                (SELECT COUNT(DISTINCT s.id) FROM sessions s WHERE s.user_id = %s{project_filter}) AS session_count,
+                (SELECT COUNT(m.id) FROM messages m JOIN sessions s ON m.session_id = s.id WHERE m.user_id = %s{project_filter}) AS message_count,
+                (SELECT COUNT(m.id) FROM messages m JOIN sessions s ON m.session_id = s.id WHERE m.user_id = %s{project_filter} AND m.role = 'user') AS user_messages,
+                (SELECT COUNT(m.id) FROM messages m JOIN sessions s ON m.session_id = s.id WHERE m.user_id = %s{project_filter} AND m.role = 'assistant') AS assistant_messages,
+                (SELECT COUNT(m.id) FROM messages m JOIN sessions s ON m.session_id = s.id WHERE m.user_id = %s{project_filter} AND m.is_summarized = 1) AS summarized,
+                (SELECT MIN(m.created_at) FROM messages m JOIN sessions s ON m.session_id = s.id WHERE m.user_id = %s{project_filter}) AS first_at,
+                (SELECT MAX(m.created_at) FROM messages m JOIN sessions s ON m.session_id = s.id WHERE m.user_id = %s{project_filter}) AS last_at,
+                (SELECT COALESCE(SUM(prompt_tokens), 0) FROM usage_events WHERE user_id = %s) AS prompt_tok,
+                (SELECT COALESCE(SUM(completion_tokens), 0) FROM usage_events WHERE user_id = %s) AS completion_tok,
+                (SELECT COALESCE(SUM(cost_usd), 0) FROM usage_events WHERE user_id = %s) AS total_cost
+            """,
+            (
+                [user_id] + project_params
+                + [user_id] + project_params
+                + [user_id] + project_params
+                + [user_id] + project_params
+                + [user_id] + project_params
+                + [user_id] + project_params
+                + [user_id] + project_params
+                + [user_id]
+                + [user_id]
+                + [user_id]
+            ),
+        ).fetchone()
+        return dict(row) if row else {}
 
 
 @router.get("/gpu/stats")
