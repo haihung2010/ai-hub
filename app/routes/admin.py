@@ -702,6 +702,19 @@ async def user_detail(user_id: str):
             (user_id,),
         ).fetchall()
 
+        sessions = conn.execute(
+            """SELECT s.id, s.project_id, s.tenant_id, s.created_at,
+                      COUNT(m.id) AS message_count,
+                      MAX(m.created_at) AS last_message_at
+               FROM sessions s
+               LEFT JOIN messages m ON m.session_id = s.id
+               WHERE s.user_id = %s
+               GROUP BY s.id, s.project_id, s.tenant_id, s.created_at
+               ORDER BY s.created_at DESC
+               LIMIT 50""",
+            (user_id,),
+        ).fetchall()
+
         memory_items = conn.execute(
             """SELECT memory_type, subject, predicate, object, content, salience, created_at
                FROM memory_items WHERE user_id = %s
@@ -721,6 +734,7 @@ async def user_detail(user_id: str):
             "pinned_memories": [dict(r) for r in pinned],
             "memory_items": [dict(r) for r in memory_items],
             "summaries": [dict(r) for r in summaries],
+            "sessions": [dict(r) for r in sessions],
         }
 
 
