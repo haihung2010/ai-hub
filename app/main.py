@@ -319,6 +319,10 @@ def create_app(
             # Graceful shutdown — flush pending Langfuse spans so a clean
             # exit does not drop the last few traces.
             langfuse_shutdown()
+            # Drain the security-audit writer so the last few rate-limit
+            # / auth-failure denials are not lost on shutdown.
+            from app.services.security_audit import shutdown as security_audit_shutdown
+            security_audit_shutdown(wait=True)
 
     app = FastAPI(
         title="AI Hub",

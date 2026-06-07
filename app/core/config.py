@@ -109,6 +109,7 @@ class Settings(BaseSettings):
     public_docs_enabled: bool = Field(default=True, alias="PUBLIC_DOCS_ENABLED")
     auth_failure_limit: int = Field(default=10, ge=1, alias="AUTH_FAILURE_LIMIT")
     auth_failure_block_seconds: int = Field(default=900, ge=1, alias="AUTH_FAILURE_BLOCK_SECONDS")
+    security_pg_audit_enabled: bool = Field(default=True, alias="SECURITY_PG_AUDIT_ENABLED")
     summary_threshold: int = Field(default=20, ge=1, alias="SUMMARY_THRESHOLD")
     summary_context_token_threshold: int = Field(default=4000, ge=1, alias="SUMMARY_CONTEXT_TOKEN_THRESHOLD")
     summary_concurrency: int = Field(default=1, ge=1, alias="SUMMARY_CONCURRENCY")
