@@ -200,6 +200,12 @@ class AIService:
         self._gpu_lock = asyncio.Semaphore(settings.gpu_concurrency)
         self._bg_lock = asyncio.Semaphore(settings.background_llama_cpp_parallel if settings.background_llama_cpp_parallel else settings.gpu_concurrency)
         self._cloud_lock = asyncio.Semaphore(settings.cloud_fallback_max_concurrency)
+        # Explicit counters for in-flight requests per lock. asyncio
+        # Semaphore._value reads return the slots FREE, not in-flight, and
+        # can't tell us how many are WAITING. We track in-flight explicitly
+        # in the lock block and use it for degradation decisions.
+        self._bg_in_flight = 0
+        self._primary_in_flight = 0
         self._active_requests = 0
         self._latency_tracker = _LatencyTracker(
             window=settings.hybrid_latency_window,
@@ -1250,8 +1256,15 @@ class AIService:
         start = time.perf_counter()
         timeout = self._priority_adjusted_timeout(req)
         self._active_requests += 1
+        # Determine which lock + counter this call uses
+        is_bg = provider is self._background_local
+        is_primary = provider is self._local
+        in_flight_counter = (
+            self._bg_in_flight if is_bg
+            else (self._primary_in_flight if is_primary else None)
+        )
         try:
-            if provider.name == self._local.name:
+            if is_primary:
                 try:
                     if timeout == 0:
                         await self._gpu_lock.acquire()
@@ -1260,11 +1273,32 @@ class AIService:
                 except asyncio.TimeoutError as exc:
                     queue_wait_ms = round((time.perf_counter() - start) * 1000, 3)
                     raise UpstreamTimeout(f"local queue wait exceeded {timeout}s") from exc
+                self._primary_in_flight += 1
                 queue_wait_ms = round((time.perf_counter() - start) * 1000, 3)
                 try:
                     content = await self._complete(provider, messages, model, temperature, options)
                 finally:
+                    self._primary_in_flight -= 1
                     self._gpu_lock.release()
+                return content, queue_wait_ms
+
+            if is_bg:
+                # Background lock — same pattern but bg counter
+                try:
+                    if timeout == 0:
+                        await self._bg_lock.acquire()
+                    else:
+                        await asyncio.wait_for(self._bg_lock.acquire(), timeout=timeout)
+                except asyncio.TimeoutError as exc:
+                    queue_wait_ms = round((time.perf_counter() - start) * 1000, 3)
+                    raise UpstreamTimeout(f"background queue wait exceeded {timeout}s") from exc
+                self._bg_in_flight += 1
+                queue_wait_ms = round((time.perf_counter() - start) * 1000, 3)
+                try:
+                    content = await self._complete(provider, messages, model, temperature, options)
+                finally:
+                    self._bg_in_flight -= 1
+                    self._bg_lock.release()
                 return content, queue_wait_ms
 
             content = await self._complete(provider, messages, model, temperature, options)
@@ -1408,6 +1442,54 @@ class AIService:
         started = time.perf_counter()
         user_id = self._resolve_user(req)
         session_id = self._resolve_session(req, user_id)
+
+        # ─── Response cache (Redis) ───
+        # Skip when:
+        # - CLIENT supplied session_id (chatwoot/tool continuations) — context
+        #   depends on prior turns
+        # - history was supplied by caller (context-dependent)
+        # - model_mode is "external" or "thinking"
+        # We use ``req.session_id`` (what the client sent), NOT the internal
+        # session_id we just created — a fresh user calling /v1/chat with no
+        # session_id is cacheable, but a multi-turn dialog reusing the same
+        # session_id is not.
+        if req.session_id is None and not (req.history or []):
+            try:
+                from app.services.response_cache import lookup as _cache_lookup
+                cached = _cache_lookup(
+                    tenant_id=req.tenant_id,
+                    project_id=req.project_id,
+                    model_mode=req.model_mode,
+                    user_message=req.user_message,
+                    session_id=None,
+                    has_history=False,
+                )
+            except Exception:
+                cached = None
+            if cached:
+                logger.info(
+                    "response_cache HIT tenant=%s project=%s model=%s",
+                    req.tenant_id, req.project_id, req.model_mode,
+                )
+                return ChatResponse(
+                    project_id=req.project_id,
+                    session_id=session_id,
+                    model=cached.get("model", req.model_mode),
+                    provider="cache",
+                    content=cached.get("response", cached.get("content", "")),
+                    user_id=user_id,
+                    route="cache",
+                    latency_ms=round((time.perf_counter() - started) * 1000, 3),
+                    sources=cached.get("sources", []),
+                    usage={
+                        "prompt_tokens": 0,
+                        "completion_tokens": 0,
+                        "total_tokens": 0,
+                        "cost_usd": 0.0,
+                        "cache": "hit",
+                    },
+                )
+
         combined_history, summary, memory_bundle, knowledge_block = await self._load_context_parallel(
             req, session_id, user_id
         )
@@ -1442,6 +1524,37 @@ class AIService:
             provider, model, fast_route_reason = self._route_fast_background_if_eligible(req, provider, model)
             if fast_route_reason:
                 num_ctx = 0
+
+        # Smart degradation: if the chosen provider is the background
+        # (E2B-bg, 16 parallel) AND its semaphore is heavily used AND the
+        # primary 12B Q4 has headroom, route the request to 12B Q4
+        # instead. Prevents 504s when E2B-bg fills up.
+        # The check uses semaphore _value (slots free) and _waiters
+        # (queued requests) so it triggers even before the current request
+        # acquires the lock.
+        if (
+            provider is self._background_local
+            and self._bg_lock is not None
+            and req.model_mode != "external"
+        ):
+            # Use explicit counter (not semaphore._value) because asyncio
+            # Semaphore _value reads "slots free" and reflects the state
+            # at acquire time, not at decision time. The counter is
+            # incremented AFTER acquire and decremented AFTER release, so
+            # it always reflects the true in-flight count.
+            bg_in_flight = self._bg_in_flight
+            primary_in_flight = self._primary_in_flight
+            bg_capacity = self._settings.background_llama_cpp_parallel or self._settings.gpu_concurrency
+            primary_capacity = self._settings.gpu_concurrency
+            if bg_in_flight >= bg_capacity - 2 and primary_in_flight < primary_capacity - 1:
+                logger.warning(
+                    "degradation: E2B-bg saturated (in_flight=%d/%d), "
+                    "switching to 12B Q4 primary (in_flight=%d/%d)",
+                    bg_in_flight, bg_capacity, primary_in_flight, primary_capacity,
+                )
+                provider = self._local
+                model = self._settings.default_model
+                route_reason = "degraded_to_primary"
 
         if self._is_memory_check(req.user_message):
             memory_history = self._load_full_session_history(req, session_id)
@@ -1755,6 +1868,30 @@ class AIService:
                 cost_usd=cost_usd,
             )
         )
+        # ─── Cache write (only for cacheable, non-session, no-history) ───
+        # Wrapped in try/except so cache errors never break the response.
+        # Use ``req.session_id`` (client-supplied) not internal session_id so
+        # a fresh /v1/chat call from a new user is cached, but a multi-turn
+        # dialog with a client-supplied session_id is not.
+        if req.session_id is None and not (req.history or []):
+            try:
+                from app.services.response_cache import store as _cache_store
+                _cache_store(
+                    tenant_id=req.tenant_id,
+                    project_id=req.project_id,
+                    model_mode=req.model_mode,
+                    user_message=req.user_message,
+                    session_id=None,
+                    has_history=False,
+                    response={
+                        "response": content,
+                        "model": model,
+                        "sources": source_urls,
+                    },
+                )
+            except Exception:
+                pass  # cache write failure is non-fatal
+
         return ChatResponse(
             project_id=req.project_id,
             session_id=session_id,
