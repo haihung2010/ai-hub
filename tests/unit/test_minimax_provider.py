@@ -178,7 +178,10 @@ class TestPromptCaching:
         messages = body["messages"]
         assert "cache_control" not in messages[0]
         assert "cache_control" not in messages[1]
-        assert messages[-1]["cache_control"] == {"type": "ephemeral"}
+        # cache_control must live on a content block, not the message dict
+        last_content = messages[-1]["content"]
+        assert isinstance(last_content, list)
+        assert last_content[-1]["cache_control"] == {"type": "ephemeral"}
 
     @pytest.mark.unit
     async def test_caching_with_no_system_still_works(self) -> None:
@@ -191,8 +194,11 @@ class TestPromptCaching:
         body = _captured_body(client)
         # 'system' field is absent or empty when no system message present
         assert body.get("system") in (None, "")
-        # Last message marked
-        assert body["messages"][-1]["cache_control"] == {"type": "ephemeral"}
+        # Last message marked (cache_control lives on its content block)
+        last_msg = body["messages"][-1]
+        last_content = last_msg["content"]
+        assert isinstance(last_content, list)
+        assert last_content[-1]["cache_control"] == {"type": "ephemeral"}
 
 
 # ── Response parsing ────────────────────────────────────────────────────

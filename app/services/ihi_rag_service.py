@@ -173,9 +173,11 @@ class IHIragService:
             for case_id, emb_str in emb_rows:
                 try:
                     emb_list = [float(x) for x in emb_str.strip("[]").split(",")]
+                except (ValueError, AttributeError) as e:
+                    logger.warning("ihi: failed to parse embedding for case %s: %s", case_id, e)
+                    emb_list = []
+                if emb_list:
                     self._case_embeddings[case_id] = emb_list
-                except (ValueError, AttributeError):
-                    pass
             return len(self._case_cache)
         except Exception as e:
             logger.warning("load_cases failed: %s", e)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import logging
 import time
 import uuid
 
@@ -18,6 +19,8 @@ from app.services.tracing_service import (
     record_span_metadata,
     trace_chat,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v1", tags=["chat"])
 
@@ -40,8 +43,31 @@ def _error_code(exc: Exception) -> int:
 async def chat_endpoint(payload: ChatRequest, request: Request) -> ChatResponse | StreamingResponse:
     service: AIService = request.app.state.ai_service
     api_key_tenant = getattr(request.state, "api_key_tenant_id", None)
-    if api_key_tenant is not None and api_key_tenant != payload.tenant_id:
-        return JSONResponse(status_code=403, content={"detail": "tenant_id mismatch"})
+    if api_key_tenant is not None:
+        # Tenant-bound key: force-override the payload's tenant_id with the
+        # one bound to the API key. Clients cannot impersonate other tenants
+        # even by sending a different value in the body.
+        if payload.tenant_id != api_key_tenant:
+            logger.info(
+                "tenant_override api_key_id=%s client_tenant=%s key_tenant=%s",
+                getattr(request.state, "api_key_id", None),
+                payload.tenant_id,
+                api_key_tenant,
+            )
+        payload.tenant_id = api_key_tenant
+    else:
+        # Static master key (no tenant bound). The master key has
+        # legitimate cross-tenant access by design, so we honor the
+        # client-supplied tenant_id. Log an INFO line for audit so
+        # operators can see which tenants are being claimed by
+        # master-key traffic.
+        logger.info(
+            "master_key_chat api_key_id=%s tenant_id=%s project_id=%s user=%s",
+            getattr(request.state, "api_key_id", None),
+            payload.tenant_id,
+            payload.project_id,
+            payload.user_name,
+        )
 
     allowed_projects = getattr(request.state, "api_key_allowed_projects", None)
     if allowed_projects and payload.project_id not in allowed_projects:

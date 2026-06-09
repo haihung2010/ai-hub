@@ -39,3 +39,4 @@ cloudflared.deb
 *.egg-info/
 dist/
 build/
+.worktrees/

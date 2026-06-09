@@ -248,7 +248,7 @@
             storage.setItem('modelMode', currentMode);
         }
         let currentUserName = storage.getItem('userName') || null;
-        let currentApiKey = storage.getItem('apiKey') || 'ah_CNbXTLNbDFHPc6-FZtmW-_nIksBIOmBAS3UyeU8JVSI';
+        let currentApiKey = storage.getItem('apiKey') || '';
         let selectedFile = null;
         let searchEnabled = false;
         let streamEnabled = true;
@@ -317,7 +317,7 @@
             apiKeyBtn.className = 'hidden rounded-lg border border-green-700 bg-green-950 px-2.5 py-1.5 text-xs font-semibold text-green-400 transition-all sm:inline-flex sm:px-3 sm:py-2';
         }
 
-        const KNOWN_PROJECTS_DEFAULT = ['test','playground','research_lab','support_bot','sales_bot','legal_advisor','medical_q','customer_q','internal_wiki','iot','vehix','stock_prediction']; const KNOWN_PROJECTS_DEMO = ['test','sales_bot','playground','internal_wiki']; const KNOWN_PROJECTS = (currentApiKey === 'ah_CNbXTLNbDFHPc6-FZtmW-_nIksBIOmBAS3UyeU8JVSI') ? KNOWN_PROJECTS_DEMO : KNOWN_PROJECTS_DEFAULT;
+        const KNOWN_PROJECTS_DEFAULT = ['test','playground','research_lab','support_bot','sales_bot','legal_advisor','medical_q','customer_q','internal_wiki','iot','vehix','stock_prediction']; const KNOWN_PROJECTS = KNOWN_PROJECTS_DEFAULT;
 
         function updateCurrentProjectBadge() {
             const projText = document.getElementById('project-name-text');
@@ -908,7 +908,7 @@
         } else if (!currentUserName) {
             statusDiv.textContent = 'Nhập tên của bạn để bắt đầu';
         } else {
-            restoreLatestSessionForUser().catch((err) => { console.error(err); statusDiv.textContent = 'Không khôi phục được session trước'; });
+            restoreLatestSessionForUser().catch((err) => { console.error(err); alert('Không khôi phục được session trước: ' + (err && err.message ? err.message : err)); statusDiv.textContent = 'Không khôi phục được session trước'; });
         }
         userInput.focus();
 

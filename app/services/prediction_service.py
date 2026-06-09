@@ -61,11 +61,14 @@ class PredictionService:
     ) -> PredictionRecord:
         record_id = str(uuid.uuid4())
         with get_db_connection() as conn:
-            conn.execute(
+            row = conn.execute(
                 "INSERT INTO prediction_records "
                 "(id, tenant_id, project_id, user_id, session_id, assistant_message_id, symbol, horizon, "
                 "prediction_text, confidence, inputs_json, model, provider) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                "RETURNING id, tenant_id, project_id, user_id, session_id, assistant_message_id, "
+                "symbol, horizon, prediction_text, confidence, inputs_json, model, provider, "
+                "created_at, actual_outcome, evaluated_at",
                 (
                     record_id,
                     tenant_id,
@@ -81,13 +84,6 @@ class PredictionService:
                     model,
                     provider,
                 ),
-            )
-            row = conn.execute(
-                "SELECT id, tenant_id, project_id, user_id, session_id, assistant_message_id, "
-                "symbol, horizon, prediction_text, confidence, inputs_json, model, provider, "
-                "created_at, actual_outcome, evaluated_at "
-                "FROM prediction_records WHERE id = %s",
-                (record_id,),
             ).fetchone()
             conn.commit()
         return self._row_to_record(row)

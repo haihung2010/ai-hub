@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import logging
 import time
 from collections import deque
@@ -94,6 +95,20 @@ class AuthFailureTracker:
             state.failures.append(current_time)
             if len(state.failures) >= self._limit:
                 state.blocked_until = current_time + self._block_seconds
+        self._maybe_evict(current_time)
+
+    def _maybe_evict(self, now: float) -> None:
+        with self._lock:
+            size = len(self._states)
+            if size > 50000:
+                self._states.clear()
+                return
+            if size <= 10000:
+                return
+            cutoff = now - self._window_seconds
+            stale = [k for k, s in self._states.items() if not s.failures or s.failures[-1] < cutoff]
+            for k in stale:
+                self._states.pop(k, None)
 
     def reset(self, key: str) -> None:
         state = self._get_state(key)
@@ -224,7 +239,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if request.method == "OPTIONS" or self._is_public_path(request.url.path):
             return await call_next(request)
 
-        if False and not is_loopback and self._failure_tracker.is_blocked(client_ip) and request.url.path != "/admin.html":
+        if not is_loopback and self._failure_tracker.is_blocked(client_ip) and request.url.path != "/admin.html":
             self._log_denial(client_ip, request.url.path, "client_temporarily_blocked")
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -233,11 +248,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         provided_key = request.headers.get(API_KEY_HEADER)
         api_key_record: ApiKeyRecord | None = None
-        if provided_key == self._settings.api_key:
+        if provided_key is not None and hmac.compare_digest(provided_key, self._settings.api_key or ""):
             request.state.api_key_id = None
             request.state.api_key_tenant_id = None
             request.state.api_key_allow_external = True
             request.state.api_key_rpm_limit = self._settings.rate_limit_per_minute
+            request.state.api_key_allowed_projects = list(self._settings.allowed_projects) or None
+            request.state.api_key_is_admin = True
         elif provided_key:
             api_key_record = self._api_keys.lookup(provided_key)
             if api_key_record is None:
@@ -254,6 +271,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             request.state.api_key_allow_external = api_key_record.allow_external
             request.state.api_key_rpm_limit = api_key_record.rpm_limit
             request.state.api_key_allowed_projects = api_key_record.allowed_projects
+            request.state.api_key_is_admin = bool(getattr(api_key_record, "is_admin", False))
         else:
             if not is_loopback:
                 self._failure_tracker.record_failure(client_ip)
@@ -322,12 +340,15 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             return True
         return False
 
-    @staticmethod
-    def _client_ip(request: Request) -> str:
-        forwarded_for = request.headers.get("cf-connecting-ip") or request.headers.get("x-real-ip")
-        if forwarded_for:
-            return forwarded_for.split(",", 1)[0].strip()
-        return request.client.host if request.client is not None else "unknown"
+    def _client_ip(self, request: Request) -> str:
+        direct_ip = request.client.host if request.client is not None else "unknown"
+        trusted_proxies = set(self._settings.trusted_proxy_ips or [])
+        is_trusted_proxy = direct_ip in trusted_proxies or direct_ip in ("127.0.0.1", "::1", "localhost")
+        if is_trusted_proxy:
+            forwarded_for = request.headers.get("cf-connecting-ip") or request.headers.get("x-real-ip")
+            if forwarded_for:
+                return forwarded_for.split(",", 1)[0].strip()
+        return direct_ip
 
     def _log_denial(self, client_ip: str, path: str, reason: str) -> None:
         logger.warning("security_denied ip=%s path=%s reason=%s", client_ip, path, reason)

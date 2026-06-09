@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import logging
 import os
 from typing import Any
@@ -22,6 +24,28 @@ def _get_fb_service() -> FacebookService:
     if not token:
         raise HTTPException(status_code=500, detail="FACEBOOK_PAGE_ACCESS_TOKEN not configured")
     return FacebookService(token)
+
+
+def verify_facebook_signature(request: Request, body: bytes) -> bool:
+    """Verify the X-Hub-Signature-256 header on inbound POSTs.
+
+    Facebook signs every webhook delivery with HMAC-SHA256 of the raw body
+    using the app secret. We must verify the raw bytes (NOT a re-serialized
+    dict) so JSON whitespace differences don't break the digest.
+
+    If ``FACEBOOK_APP_SECRET`` is not configured we log a warning and return
+    True so a missing config does not crash the webhook — but operators
+    should configure it. Setting the env var is the only way to harden this.
+    """
+    secret = os.environ.get("FACEBOOK_APP_SECRET", "")
+    if not secret:
+        logger.warning("facebook signature not verified: FACEBOOK_APP_SECRET not configured")
+        return True
+    sig = request.headers.get("X-Hub-Signature-256", "")
+    if not sig:
+        return False
+    expected = "sha256=" + hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(sig, expected)
 
 
 async def _build_ai_response(sender_id: str, message_text: str, request: Request) -> str:
@@ -49,7 +73,7 @@ async def webhook_verify(
     hub_challenge: str = Query(alias="hub.challenge"),
 ):
     """Webhook verification GET from Meta/Facebook.
-    
+
     Facebook sends GET to verify the callback URL.
     Respond with hub.challenge to confirm.
     """
@@ -65,11 +89,15 @@ async def webhook_verify(
 @router.post("/facebook")
 async def webhook_event(request: Request, body: dict[str, Any] = {}):
     """Receive webhook events from Facebook (messages, comments, etc.)."""
+    raw = await request.body()
+    if not verify_facebook_signature(request, raw):
+        raise HTTPException(status_code=403, detail="invalid signature")
+
     if body.get("object") != "page":
         return {"status": "ignored"}
 
     entries = body.get("entry", [])
-    
+
     for entry in entries:
         for event in entry.get("messaging", []):
             await _handle_messaging_event(event, request)
@@ -84,7 +112,7 @@ async def _handle_messaging_event(event: dict, request: Request):
     sender_id = event.get("sender", {}).get("id", "")
     recipient_id = event.get("recipient", {}).get("id", "")
     message = event.get("message", {})
-    
+
     if sender_id == recipient_id:
         return  # ignore self-messages
 
@@ -102,23 +130,29 @@ async def _handle_messaging_event(event: dict, request: Request):
 
     logger.info(f"[FB Messenger] From {sender_id}: {message_text[:80]}")
 
-    fb_service = _get_fb_service()
+    token = os.environ.get("FACEBOOK_PAGE_ACCESS_TOKEN", "")
+    if not token:
+        raise HTTPException(status_code=500, detail="FACEBOOK_PAGE_ACCESS_TOKEN not configured")
 
     try:
-        await fb_service.mark_seen(sender_id)
-        await fb_service.send_typing_on(sender_id)
+        async with FacebookService(token) as fb_service:
+            await fb_service.mark_seen(sender_id)
+            await fb_service.send_typing_on(sender_id)
 
-        reply_text = await _build_ai_response(sender_id, message_text, request)
-        
-        if reply_text:
-            await fb_service.send_typing_off(sender_id)
-            await fb_service.send_text_message(sender_id, reply_text)
-            logger.info(f"[FB Reply] To {sender_id}: {reply_text[:80]}")
+            reply_text = await _build_ai_response(sender_id, message_text, request)
 
+            if reply_text:
+                await fb_service.send_typing_off(sender_id)
+                await fb_service.send_text_message(sender_id, reply_text)
+                logger.info(f"[FB Reply] To {sender_id}: {reply_text[:80]}")
     except Exception as exc:
         logger.error(f"[FB Messenger] Error: {exc}")
         try:
-            await fb_service.send_text_message(sender_id, "Xin lỗi, bot đang gặp sự cố. Vui lòng thử lại sau.")
+            async with FacebookService(token) as fb_service:
+                await fb_service.send_text_message(
+                    sender_id,
+                    "Xin lỗi, bot đang gặp sự cố. Vui lòng thử lại sau.",
+                )
         except Exception:
             pass
 
@@ -127,20 +161,24 @@ async def _handle_page_change_event(event: dict, request: Request):
     """Process page change events (comments, mentions)."""
     field = event.get("field", "")
     value = event.get("value", {})
-    
+
     if field != "feed":
         return
 
     item = value.get("item", "")
     verb = value.get("verb", "")
-    
+
     if item == "comment" and verb == "add":
         comment_id = value.get("comment_id", "")
         message_text = value.get("message", "")
         post_id = value.get("post_id", "")
-        
+
         logger.info(f"[FB Comment] On post {post_id}: {message_text[:80]}")
-        
+
+        token = os.environ.get("FACEBOOK_PAGE_ACCESS_TOKEN", "")
+        if not token:
+            raise HTTPException(status_code=500, detail="FACEBOOK_PAGE_ACCESS_TOKEN not configured")
+
         try:
             ai_service = request.app.state.ai_service
             chat_req = ChatRequest(
@@ -152,8 +190,8 @@ async def _handle_page_change_event(event: dict, request: Request):
             )
             reply_text = await ai_service.chat(chat_req)
             if reply_text.content:
-                fb_service = _get_fb_service()
-                await fb_service.reply_to_comment(comment_id, reply_text.content)
+                async with FacebookService(token) as fb_service:
+                    await fb_service.reply_to_comment(comment_id, reply_text.content)
                 logger.info(f"[FB Comment Reply] To {comment_id}: {reply_text.content[:80]}")
         except Exception as exc:
             logger.error(f"[FB Comment] Error: {exc}")

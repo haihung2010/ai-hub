@@ -22,7 +22,7 @@ def security_settings(tmp_path: Path) -> Settings:
         DEFAULT_MODEL="test-model:latest",
         REQUEST_TIMEOUT_SECONDS=5.0,
         MAX_HISTORY_MESSAGES=5,
-        API_KEY="test-api-key",
+        API_KEY="test-api-key-aaaaaaaaaa",
         RATE_LIMIT_PER_MINUTE=5,
         SECURITY_LOG_FILE=str(tmp_path / "security.log"),
         ALLOWED_ORIGINS=[

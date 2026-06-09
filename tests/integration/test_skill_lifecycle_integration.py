@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from tests.conftest import ensure_user
 
-API_KEY = "test-api-key"
+API_KEY = "test-api-key-aaaaaaaaaa"
 
 
 class TestSkillLifecycleIntegration:

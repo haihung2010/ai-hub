@@ -9,14 +9,30 @@ import time
 from pathlib import Path
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, Field
 
 from fastapi.responses import JSONResponse
 from app.core.database import get_db_connection
 
 router = APIRouter(prefix="/v1/admin", tags=["admin"])
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+
+def require_admin(request: Request) -> None:
+    """Reject the request unless the authenticated API key has admin privileges.
+
+    The security middleware sets ``request.state.api_key_is_admin`` for both
+    the static master key (always admin) and DB-backed virtual keys (per-key
+    ``is_admin`` flag). Routes under ``/v1/admin`` are sensitive — they expose
+    usage data, allow minting API keys, deleting knowledge cards, and running
+    arbitrary SELECT SQL — so non-admin keys must be denied with 403.
+    """
+    if not getattr(request.state, "api_key_is_admin", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="admin key required",
+        )
 
 
 class ModelSwitchRequest(BaseModel):
@@ -74,7 +90,7 @@ def _process_rss_mb() -> float:
     return round(pages * os.sysconf("SC_PAGE_SIZE") / 1024 / 1024, 2)
 
 
-@router.get("/usage")
+@router.get("/usage", dependencies=[Depends(require_admin)])
 async def usage(request: Request) -> dict[str, object]:
     settings = request.app.state.settings
     start_time = getattr(request.app.state, "start_time", time.time())
@@ -112,19 +128,19 @@ async def usage(request: Request) -> dict[str, object]:
     }
 
 
-@router.get("/stats")
+@router.get("/stats", dependencies=[Depends(require_admin)])
 async def stats(request: Request) -> dict[str, object]:
     """Request-level usage statistics — latency, routing, fallback, queueing, and errors."""
     return request.app.state.usage_service.summary()
 
 
-@router.get("/observability")
+@router.get("/observability", dependencies=[Depends(require_admin)])
 async def observability(request: Request) -> dict[str, object]:
     """Alias for dashboard-friendly request observability."""
     return request.app.state.usage_service.summary()
 
 
-@router.get("/risk/gap")
+@router.get("/risk/gap", dependencies=[Depends(require_admin)])
 async def risk_action_gap(request: Request) -> dict[str, object]:
     """Show the failure_risk action gap.
 
@@ -217,7 +233,7 @@ async def risk_action_gap(request: Request) -> dict[str, object]:
     }
 
 
-@router.post("/model/switch")
+@router.post("/model/switch", dependencies=[Depends(require_admin)])
 async def switch_model(payload: ModelSwitchRequest, request: Request) -> dict[str, object]:
     result = await _run_model_switch(payload.mode)
     if result["returncode"] != 0:
@@ -227,7 +243,7 @@ async def switch_model(payload: ModelSwitchRequest, request: Request) -> dict[st
     return result
 
 
-@router.post("/knowledge/reindex")
+@router.post("/knowledge/reindex", dependencies=[Depends(require_admin)])
 async def reindex_knowledge(
     request: Request,
     tenant_id: str | None = None,
@@ -251,7 +267,7 @@ async def reindex_knowledge(
     return result
 
 
-@router.get("/queue")
+@router.get("/queue", dependencies=[Depends(require_admin)])
 async def queue_status(request: Request) -> dict[str, object]:
     """GPU queue depth: active requests and available slots."""
     settings = request.app.state.settings
@@ -262,7 +278,7 @@ async def queue_status(request: Request) -> dict[str, object]:
     return {"capacity": capacity, "active": active, "waiting": max(0, active - capacity)}
 
 
-@router.get("/health/providers")
+@router.get("/health/providers", dependencies=[Depends(require_admin)])
 async def provider_health(request: Request) -> dict[str, object]:
     settings = request.app.state.settings
     local = request.app.state.local_provider
@@ -309,7 +325,7 @@ def _validate_select_sql(sql: str) -> str | None:
     return None
 
 
-@router.post("/security/unblock")
+@router.post("/security/unblock", dependencies=[Depends(require_admin)])
 async def security_unblock(request: Request, body: dict | None = None):
     """Clear auth-failure block for a given IP (defaults to caller's IP)."""
     body = body or {}
@@ -357,7 +373,7 @@ async def run_query(request: Request, body: dict):
         return JSONResponse(status_code=400, content={"detail": str(e)})
 
 
-@router.get("/db/tables")
+@router.get("/db/tables", dependencies=[Depends(require_admin)])
 async def list_db_tables():
     """List all user tables with row counts and column info."""
     try:
@@ -396,7 +412,7 @@ async def list_db_tables():
         return JSONResponse(status_code=500, content={"detail": str(e)})
 
 
-@router.get("/db/preview/{table_name}")
+@router.get("/db/preview/{table_name}", dependencies=[Depends(require_admin)])
 async def preview_table(table_name: str, limit: int = 100, offset: int = 0):
     """Preview rows of a table (safe identifier validation)."""
     if not table_name.replace("_", "").isalnum():
@@ -436,7 +452,7 @@ async def preview_table(table_name: str, limit: int = 100, offset: int = 0):
         return JSONResponse(status_code=400, content={"detail": str(e)})
 
 
-@router.get("/management/keys")
+@router.get("/management/keys", dependencies=[Depends(require_admin)])
 async def list_api_keys(request: Request):
     """List all API keys with usage and owner info."""
     sql = """
@@ -455,7 +471,7 @@ async def list_api_keys(request: Request):
         return [dict(row) for row in rows]
 
 
-@router.get("/management/sessions")
+@router.get("/management/sessions", dependencies=[Depends(require_admin)])
 async def list_active_sessions(
     request: Request,
     project_id: str | None = None,
@@ -499,11 +515,11 @@ class KeyCreateRequest(BaseModel):
     name: str
     tenant_id: str = "default"
     is_admin: bool = False
-    rpm_limit: int = 60
+    rpm_limit: int = Field(default=60, ge=1, le=10000)
     monthly_budget_usd: float | None = None
 
 
-@router.post("/keys")
+@router.post("/keys", dependencies=[Depends(require_admin)])
 async def create_api_key(payload: KeyCreateRequest, request: Request):
     """Create a new virtual API key."""
     from app.services.api_key_service import ApiKeyService
@@ -518,7 +534,7 @@ async def create_api_key(payload: KeyCreateRequest, request: Request):
     return {"id": key_id, "key": raw_key}
 
 
-@router.delete("/keys/{key_id}")
+@router.delete("/keys/{key_id}", dependencies=[Depends(require_admin)])
 async def delete_api_key(key_id: str):
     """Disable/Delete an API key."""
     with get_db_connection() as conn:
@@ -529,13 +545,13 @@ async def delete_api_key(key_id: str):
 
 class KeyPatchRequest(BaseModel):
     enabled: bool | None = None
-    rpm_limit: int | None = None
+    rpm_limit: int | None = Field(default=None, ge=1, le=10000)
     monthly_budget_usd: float | None = None
     is_admin: bool | None = None
     name: str | None = None
 
 
-@router.patch("/keys/{key_id}")
+@router.patch("/keys/{key_id}", dependencies=[Depends(require_admin)])
 async def patch_api_key(key_id: str, payload: KeyPatchRequest):
     """Partially update an API key (re-enable, change limits, rename, toggle admin)."""
     fields = payload.model_dump(exclude_none=True)
@@ -572,11 +588,11 @@ class RagUploadRequest(BaseModel):
     tenant_id: str = "default"
     domain: str = "general"
     title: str
-    content: str
+    content: str = Field(..., max_length=10_000_000)
     tags: list[str] = []
 
 
-@router.get("/knowledge/cards")
+@router.get("/knowledge/cards", dependencies=[Depends(require_admin)])
 async def list_knowledge_cards(
     request: Request,
     tenant_id: str | None = None,
@@ -601,7 +617,7 @@ async def list_knowledge_cards(
         return [dict(row) for row in rows]
 
 
-@router.post("/knowledge/upload")
+@router.post("/knowledge/upload", dependencies=[Depends(require_admin)])
 async def upload_knowledge(payload: RagUploadRequest, request: Request):
     """Ingest text content directly into the vector knowledge base."""
     from app.models.knowledge import KnowledgeCardCreate
@@ -618,7 +634,7 @@ async def upload_knowledge(payload: RagUploadRequest, request: Request):
     return {"id": card.id, "status": "indexed"}
 
 
-@router.delete("/knowledge/cards/{card_id}")
+@router.delete("/knowledge/cards/{card_id}", dependencies=[Depends(require_admin)])
 async def delete_knowledge_card(card_id: str):
     """Delete a knowledge card. Chunks cascade via FK ON DELETE CASCADE."""
     with get_db_connection() as conn:
@@ -632,7 +648,7 @@ async def delete_knowledge_card(card_id: str):
     return {"status": "deleted", "id": card_id}
 
 
-@router.get("/tenants")
+@router.get("/tenants", dependencies=[Depends(require_admin)])
 async def list_active_tenants():
     """List projects with usage activity (groups usage_events by project_id)."""
     sql = """
@@ -653,7 +669,7 @@ async def list_active_tenants():
         return [dict(row) for row in rows]
 
 
-@router.get("/tenants/{project_id}/users")
+@router.get("/tenants/{project_id}/users", dependencies=[Depends(require_admin)])
 async def list_project_users(project_id: str, limit: int = 10):
     """List the most recently active users in a project.
 
@@ -697,7 +713,7 @@ async def list_project_users(project_id: str, limit: int = 10):
         return [dict(row) for row in rows]
 
 
-@router.get("/users/{user_id}/detail")
+@router.get("/users/{user_id}/detail", dependencies=[Depends(require_admin)])
 async def user_detail(user_id: str):
     """User profile: info, bound API key, pinned memory, structured memory, summaries."""
     with get_db_connection() as conn:
@@ -755,7 +771,7 @@ async def user_detail(user_id: str):
         }
 
 
-@router.get("/users/{user_id}/messages")
+@router.get("/users/{user_id}/messages", dependencies=[Depends(require_admin)])
 async def user_messages(
     user_id: str,
     project_id: str | None = None,
@@ -834,7 +850,7 @@ async def user_messages(
         return out
 
 
-@router.get("/users/{user_id}/stats")
+@router.get("/users/{user_id}/stats", dependencies=[Depends(require_admin)])
 async def user_stats(user_id: str, project_id: str | None = None):
     """Aggregated stats for a user — fast, no full message fetch.
 
@@ -877,7 +893,7 @@ async def user_stats(user_id: str, project_id: str | None = None):
         return dict(row) if row else {}
 
 
-@router.get("/gpu/stats")
+@router.get("/gpu/stats", dependencies=[Depends(require_admin)])
 async def gpu_stats():
     """Fetch live NVIDIA GPU metrics."""
     try:

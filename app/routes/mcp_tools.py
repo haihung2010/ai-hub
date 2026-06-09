@@ -11,7 +11,7 @@ import logging
 import subprocess
 from typing import Any
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -133,6 +133,15 @@ async def get_system_status():
 
 
 class DBQueryRequest(BaseModel):
+    """DEPRECATED — kept only to avoid breaking old clients. The
+    ``/v1/tools/query-database`` endpoint now always returns 410 Gone.
+
+    The previous substring blocklist was bypassable (string literals,
+    stacked statements via ``;``) and exposed raw SQL execution to any
+    caller with an MCP-visible API key. Use the admin ``/v1/admin/db/*``
+    endpoints with proper admin auth instead.
+    """
+
     sql: str
     limit: int = 50
 
@@ -146,24 +155,15 @@ class DBQueryResponse(BaseModel):
 
 @router.post("/query-database", response_model=DBQueryResponse)
 async def query_database(req: DBQueryRequest):
-    """Execute a read-only SQL query against AI Hub PostgreSQL. SELECT only."""
-    sql_upper = req.sql.strip().upper()
-    if not sql_upper.startswith("SELECT"):
-        return DBQueryResponse(error="Only SELECT queries are allowed")
-    if any(kw in sql_upper for kw in ["DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "TRUNCATE"]):
-        return DBQueryResponse(error="Write operations are not allowed")
+    """DISABLED 2026-06-08 — substring blocklist was bypassable.
 
-    try:
-        from app.core.database import get_db_connection
-        with get_db_connection() as conn:
-            rows = conn.execute(req.sql).fetchmany(min(req.limit, 200))
-            if not rows:
-                return DBQueryResponse(rows=[], count=0)
-            columns = list(rows[0].keys()) if rows else []
-            return DBQueryResponse(
-                columns=columns,
-                rows=[dict(r) for r in rows],
-                count=len(rows),
-            )
-    except Exception as e:
-        return DBQueryResponse(error=str(e)[:500])
+    Returns 410 Gone. Use admin ``/v1/admin/db/*`` with proper auth for
+    ad-hoc queries during incident response.
+    """
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "query-database tool is disabled due to security. "
+            "Use the admin /v1/admin/db/* endpoints with proper admin auth."
+        ),
+    )

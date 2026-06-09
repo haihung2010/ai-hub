@@ -1,4 +1,4 @@
-"""Custom MCP tools for AI Hub — stock analysis, knowledge search, system info.
+"""Custom MCP tools for AI Hub — knowledge search, system info.
 
 These are registered alongside the auto-generated FastAPI MCP tools.
 Add to app/main.py after FastApiMCP mount.
@@ -30,33 +30,16 @@ def create_mcp_with_custom_tools(app: FastAPI) -> FastApiMCP | None:
             ],
         )
 
-        # ── Custom tool: Stock Analysis ──
-        @mcp.tool()
-        def analyze_stock(symbol: str, timeframe: str = "daily") -> dict[str, Any]:
-            """Analyze a Vietnamese stock symbol using Doden analysis pipeline.
-            
-            Args:
-                symbol: Stock ticker (e.g., 'FPT', 'VHM', 'STB')
-                timeframe: Analysis timeframe ('daily', 'weekly', 'monthly')
-            
-            Returns:
-                Analysis results with technical indicators and recommendations.
-            """
-            try:
-                result = subprocess.run(
-                    ["/home/hung/ai-hub/venv/bin/python3", "-c", f"""
-import sys
-sys.path.insert(0, '/home/hung/anti_doc/doden')
-# Placeholder — integrate with actual doden when available
-print(json.dumps({{"symbol": "{symbol}", "timeframe": "{timeframe}", "status": "analysis_requested", "note": "Connect doden pipeline for full analysis"}}))
-"""],
-                    capture_output=True, text=True, timeout=30,
-                )
-                return json.loads(result.stdout) if result.returncode == 0 else {
-                    "error": result.stderr[:500]
-                }
-            except Exception as e:
-                return {"error": str(e)}
+        # ── Custom tool: Stock Analysis (DISABLED — pending real implementation) ──
+        # Original implementation was a stub that used `subprocess.run` with
+        # f-string interpolation of user-supplied `symbol` and `timeframe`,
+        # which is a shell/code injection vector. Removed 2026-06-08.
+        # See `app/routes/mcp_tools.py` for the HTTP-level stub endpoint.
+        async def analyze_stock(self, symbol: str, timeframe: str) -> dict:  # type: ignore[no-redef]
+            """Stock analysis tool. Pending real implementation."""
+            raise NotImplementedError(
+                "analyze_stock: implementation pending — connect to real pipeline"
+            )
 
         # ── Custom tool: Knowledge Search ──
         @mcp.tool()

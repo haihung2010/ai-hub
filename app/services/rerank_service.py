@@ -15,17 +15,25 @@ class RerankResult:
 
 
 class RerankService:
-    def __init__(self, base_url: str, timeout: float = 10.0) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        timeout: float = 10.0,
+        client: httpx.AsyncClient | None = None,
+    ) -> None:
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
+        self._client = client
+        self._owns_client = client is None
 
-    def rerank(self, query: str, documents: list[str]) -> list[RerankResult]:
+    async def rerank(self, query: str, documents: list[str]) -> list[RerankResult]:
         """Score documents against query. Returns sorted by score desc. Fallback: original order."""
         if not documents:
             return []
+        client = self._client or httpx.AsyncClient(timeout=self._timeout)
         try:
-            with httpx.Client(timeout=self._timeout) as client:
-                resp = client.post(
+            try:
+                resp = await client.post(
                     f"{self._base_url}/v1/rerank",
                     json={"model": "bge-reranker-v2-m3", "query": query, "documents": documents},
                 )
@@ -36,6 +44,9 @@ class RerankService:
                 ]
                 results.sort(key=lambda r: r.score, reverse=True)
                 return results
+            finally:
+                if self._owns_client:
+                    await client.aclose()
         except Exception as exc:
             logger.warning("Reranker unavailable, falling back to hybrid score: %s", exc)
             return [RerankResult(index=i, score=0.0) for i in range(len(documents))]

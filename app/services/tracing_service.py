@@ -16,12 +16,18 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 from contextlib import contextmanager
-from typing import Any, Iterator
+from typing import Any, Iterator, Optional
 
 logger = logging.getLogger(__name__)
 
+# The Langfuse client is process-local and NOT safe to share across event loops
+# or threads concurrently when constructing (background flush threads bind to
+# the creating thread). We guard creation with a lock and lazily build one
+# client per process. Call reset() in tests that need a fresh client.
 _langfuse_client: Any | None = None
+_langfuse_lock: threading.Lock = threading.Lock()
 _enabled: bool | None = None
 
 
@@ -36,18 +42,68 @@ def _is_enabled() -> bool:
 
 def _get_client() -> Any:
     global _langfuse_client
-    if _langfuse_client is None:
-        from langfuse import Langfuse  # local import — keeps startup fast when disabled
+    if _langfuse_client is not None:
+        return _langfuse_client
+    with _langfuse_lock:
+        if _langfuse_client is None:
+            from langfuse import Langfuse  # local import — keeps startup fast when disabled
 
-        _langfuse_client = Langfuse(
-            public_key=os.getenv("LANGFUSE_PUBLIC_KEY", ""),
-            secret_key=os.getenv("LANGFUSE_SECRET_KEY", ""),
-            host=os.getenv("LANGFUSE_HOST", "http://localhost:3000"),
-            flush_at=2,
-            flush_interval=1.0,
-        )
-        logger.info("Langfuse tracing enabled host=%s", os.getenv("LANGFUSE_HOST"))
+            _langfuse_client = Langfuse(
+                public_key=os.getenv("LANGFUSE_PUBLIC_KEY", ""),
+                secret_key=os.getenv("LANGFUSE_SECRET_KEY", ""),
+                host=os.getenv("LANGFUSE_HOST", "http://localhost:3000"),
+                flush_at=2,
+                flush_interval=1.0,
+            )
+            logger.info("Langfuse tracing enabled host=%s", os.getenv("LANGFUSE_HOST"))
     return _langfuse_client
+
+
+def reset() -> None:
+    """Clear the cached Langfuse client. Intended for tests."""
+    global _langfuse_client
+    with _langfuse_lock:
+        if _langfuse_client is not None:
+            try:
+                _langfuse_client.flush()
+            except Exception:
+                pass
+        _langfuse_client = None
+
+
+class TracingService:
+    """Thin class wrapper exposing the module-level tracing helpers.
+
+    The Langfuse client itself remains a process-local singleton (see module
+    docstring) — this class is just a convenient namespace for callers that
+    prefer dependency-injection over module-level functions.
+    """
+
+    def __init__(self) -> None:
+        pass
+
+    def is_enabled(self) -> bool:
+        return _is_enabled()
+
+    def trace_chat(self, **kwargs: Any) -> Any | None:
+        return trace_chat(**kwargs)
+
+    def finish_chat(self, span: Any | None) -> None:
+        finish_chat(span)
+
+    def shutdown(self) -> None:
+        shutdown()
+
+    def reset(self) -> None:
+        reset()
+
+
+def get_tracing_service() -> TracingService:
+    """Return a process-wide TracingService instance."""
+    return _tracing_service
+
+
+_tracing_service: TracingService = TracingService()
 
 
 def trace_chat(

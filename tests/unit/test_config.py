@@ -30,7 +30,7 @@ def test_defaults_available(monkeypatch: pytest.MonkeyPatch, tmp_path: pytest.Te
     with pytest.raises(ValidationError):
         Settings()
 
-    monkeypatch.setenv("API_KEY", "test-api-key")
+    monkeypatch.setenv("API_KEY", "test-api-key-aaaaaaaaaa")
     s = Settings()
     assert s.app_port == 8000
     assert s.default_model == "local-gemma4-e4b-q8"

@@ -49,10 +49,11 @@ class MiniMaxProvider:
         messages: list[Message],
         temperature: float,
         options: dict | None,
+        model_override: str | None = None,
     ) -> dict[str, Any]:
         system_text, non_system = _split_system(messages)
         body: dict[str, Any] = {
-            "model": self._model,
+            "model": model_override if model_override else self._model,
             "messages": [m.model_dump(exclude_none=True) for m in non_system],
             "temperature": temperature,
         }
@@ -63,11 +64,19 @@ class MiniMaxProvider:
                 body["max_tokens"] = options["max_tokens"]
         # Cache control: mark the system block (rarely changes) and the
         # last user message (gets a cache hit on the second turn onward).
+        # Per Anthropic Messages API spec, cache_control must live on a
+        # content block, not on the message dict itself.
         if self._enable_caching:
             if "system" in body and isinstance(body["system"], list):
                 body["system"][-1]["cache_control"] = {"type": "ephemeral"}
             if body["messages"]:
-                body["messages"][-1]["cache_control"] = {"type": "ephemeral"}
+                last_msg = body["messages"][-1]
+                content = last_msg.get("content")
+                if isinstance(content, str):
+                    last_msg["content"] = [{"type": "text", "text": content}]
+                    content = last_msg["content"]
+                if isinstance(content, list) and content:
+                    content[-1]["cache_control"] = {"type": "ephemeral"}
         return body
 
     def _format_system(self, text: str) -> Any:
@@ -93,10 +102,11 @@ class MiniMaxProvider:
     ) -> str:
         if not self._api_key:
             raise UpstreamError("minimax api key is not configured")
-        # Allow caller to override the model for one call (e.g. benchmark)
-        if model and model != self._model:
-            self._model = model
-        payload = self._build_payload(messages, temperature, options)
+        # Use a local var to avoid mutating shared state under concurrent calls
+        effective_model = model if model else self._model
+        payload = self._build_payload(
+            messages, temperature, options, model_override=effective_model
+        )
         try:
             resp = await self._client.post(
                 f"{self._base_url}/messages",
@@ -127,9 +137,10 @@ class MiniMaxProvider:
     ) -> AsyncIterator[str]:
         if not self._api_key:
             raise UpstreamError("minimax api key is not configured")
-        if model and model != self._model:
-            self._model = model
-        payload = self._build_payload(messages, temperature, options)
+        effective_model = model if model else self._model
+        payload = self._build_payload(
+            messages, temperature, options, model_override=effective_model
+        )
         payload["stream"] = True
         try:
             async with self._client.stream(

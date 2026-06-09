@@ -45,7 +45,7 @@ def service_settings() -> Settings:
         DEFAULT_MODEL="test-model:latest",
         REQUEST_TIMEOUT_SECONDS=5.0,
         MAX_HISTORY_MESSAGES=5,
-        API_KEY="test-api-key",
+        API_KEY="test-api-key-aaaaaaaaaa",
         RATE_LIMIT_PER_MINUTE=5,
         ALLOWED_HOSTS=["testserver"],
     )

@@ -1,4 +1,9 @@
-"""Facebook Graph API service for page messaging and content management."""
+"""Facebook Graph API service for page messaging and content management.
+
+Callers are responsible for closing the underlying HTTP client, either by
+using this class as an async context manager (``async with FacebookService(token)``)
+or by explicitly calling ``await service.close()`` when done.
+"""
 
 import logging
 import time
@@ -21,7 +26,17 @@ class FacebookPageInfo:
 class FacebookService:
     def __init__(self, page_access_token: str):
         self._token = page_access_token
-        self._client = httpx.AsyncClient(timeout=30.0)
+        self._client: httpx.AsyncClient | None = None
+        self._owns_client = True
+
+    async def __aenter__(self) -> "FacebookService":
+        if self._client is None:
+            self._client = httpx.AsyncClient(timeout=30.0)
+            self._owns_client = True
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        await self.close()
 
     async def get_page_info(self) -> FacebookPageInfo:
         """Fetch current page info using the page access token."""
@@ -120,4 +135,6 @@ class FacebookService:
         return False
 
     async def close(self):
-        await self._client.aclose()
+        if self._client is not None and self._owns_client:
+            await self._client.aclose()
+            self._client = None

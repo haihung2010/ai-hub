@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class SkillService:
     def __init__(self) -> None:
-        self._cache: dict[str, list[SkillRecord]] = {}
+        pass
 
     # ── CRUD ────────────────────────────────────────────────────────────────
 
@@ -78,7 +78,6 @@ class SkillService:
             updated_at=now,
             eval_score=0.0,
         )
-        self._cache.clear()
         return record
 
     def list_skills(self, tenant_id: str, project_id: str, include_inactive: bool = False) -> list[SkillRecord]:
@@ -159,14 +158,12 @@ class SkillService:
             )
             conn.commit()
 
-        self._cache.clear()
         return self.get_skill(skill_id)
 
     def delete(self, skill_id: str) -> bool:
         with get_db_connection() as conn:
             conn.execute("DELETE FROM skills WHERE id=%s", (skill_id,))
             conn.commit()
-        self._cache.clear()
         return True
 
     # ── Skill matching ────────────────────────────────────────────────────────
@@ -260,7 +257,6 @@ class SkillService:
             )
             conn.commit()
 
-        self._cache.clear()
         return SkillEvaluationResult(
             skill_id=skill_id, passed=passed, failed=failed, total=total,
             score=score, details=details,
@@ -311,7 +307,6 @@ class SkillService:
                     (datetime.utcnow(), skill_id),
                 )
                 conn.commit()
-        self._cache.clear()
         return updated or self.get_skill(skill_id)
 
     # ── Helpers ─────────────────────────────────────────────────────────────

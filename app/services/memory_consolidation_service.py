@@ -141,6 +141,16 @@ class MemoryConsolidationService:
             source_episode_ids=episode_ids,
             content=content,
         )
+
+        with get_db_connection() as conn:
+            item_ids = [item.id for item in items]
+            if item_ids:
+                conn.execute(
+                    "DELETE FROM memory_items WHERE id = ANY(%s)",
+                    (item_ids,),
+                )
+            conn.commit()
+
         logger.info(
             "Consolidated memory user=%s project=%s items=%d record=%s",
             user_id,

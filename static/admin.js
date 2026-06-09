@@ -6,12 +6,15 @@
    ====================================================================== */
 
 /* ====== State & Config ====== */
+// SECURITY: ?key= in URL is rejected. API keys in query strings leak via
+// referer headers, browser history, and server access logs. Always enter
+// the key in the UI prompt.
 (() => {
     const params = new URLSearchParams(location.search);
-    const k = params.get('key') || params.get('apiKey');
-    if (k) {
-        localStorage.setItem('apiKey', k);
-        params.delete('key'); params.delete('apiKey');
+    if (params.has('key') || params.has('apiKey')) {
+        console.warn('[admin] Ignoring ?key=/?apiKey= from URL — enter the API key in the UI to avoid leaking it via referer/logs.');
+        params.delete('key');
+        params.delete('apiKey');
         history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params.toString() : '') + location.hash);
     }
 })();
@@ -917,7 +920,7 @@ async function loadUserChat(userId, userName) {
     el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-muted)">Loading…</div>';
 
     try {
-        const data = await api(`/v1/admin/users/${encodeURIComponent(userId)}/messages?project_id=${encodeURIComponent(ADMIN.tenant.selectedTenant || '')}`);
+        const data = await api(`/v1/admin/users/${encodeURIComponent(userId)}/messages?project_id=${encodeURIComponent(ADMIN.tenant.selectedTenant || '')}&truncate=0&limit=200`);
 
         document.getElementById('chat-header-info').innerHTML = `${escapeHtml(userName)} • ${data.length} messages`;
 
@@ -960,7 +963,7 @@ async function loadUserChat(userId, userName) {
             const dk = dateKey(p.time);
             if (dk !== lastDate) { html += `<div style="font-size:0.85rem;color:var(--text-muted);padding:0.8rem 0 0.3rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase">${dk}</div>`; lastDate = dk; }
             const sumBadge = p.summarized ? ' <span style="background:rgba(245,158,11,0.2);color:#fbbf24;padding:0.1rem 0.5rem;border-radius:3px;font-size:0.7rem;vertical-align:middle">SUM</span>' : '';
-            const respPreview = p.response ? `<span style="color:#6ee7b7">${escapeHtml(trunc(p.response, 240))}</span>` : '<span style="color:var(--text-faint);font-style:italic">no reply</span>';
+            const respPreview = p.response ? `<span style="color:#6ee7b7">${escapeHtml(p.response)}</span>` : '<span style="color:var(--text-faint);font-style:italic">no reply</span>';
             html += `
             <div class="chat-pair-row" data-idx="${p.idx - 1}" style="display:grid;grid-template-columns:5rem 1fr;gap:0.3rem 1rem;padding:0.7rem 0.8rem;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:background 0.15s;line-height:1.5" onmouseenter="this.style.background='rgba(255,255,255,0.03)'" onmouseleave="this.style.background='transparent'">
                 <div style="grid-row:1/3;display:flex;flex-direction:column;align-items:flex-end;gap:0.2rem;padding-top:0.15rem">
@@ -968,8 +971,8 @@ async function loadUserChat(userId, userName) {
                     <span style="font-size:0.7rem;color:var(--text-faint)">#${p.idx}</span>
                     ${sumBadge}
                 </div>
-                <div style="font-size:1rem;color:var(--text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapeHtml(p.request)}">▸ ${escapeHtml(trunc(p.request, 280))}</div>
-                <div style="font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:1.2rem" title="${escapeHtml(p.response || '')}">↳ ${respPreview}</div>
+                <div style="font-size:1rem;color:var(--text-strong);word-break:break-word;overflow-wrap:anywhere" title="${escapeHtml(p.request)}"><span style="color:var(--accent-1);font-weight:700">▸ USER:</span> ${escapeHtml(p.request)}</div>
+                <div style="font-size:0.95rem;padding-left:1.2rem;word-break:break-word;overflow-wrap:anywhere" title="${escapeHtml(p.response || '')}">${respPreview.startsWith('<span') ? respPreview.replace('<span style="color:#6ee7b7">', '<span style="color:#6ee7b7"><span style="color:#6ee7b7;font-weight:700">↳ AI:</span> ') : respPreview}</div>
             </div>`;
         }
 
@@ -1132,6 +1135,10 @@ function startAutoRefresh(intervalMs = 3000) {
     const btn = document.getElementById('auto-refresh-btn');
     if (btn) btn.innerHTML = '🟢 LIVE: 3s';
 }
+
+window.addEventListener('beforeunload', () => {
+    if (ADMIN.autoTimer) { clearInterval(ADMIN.autoTimer); ADMIN.autoTimer = null; }
+});
 
 function stopAutoRefresh() {
     if (ADMIN.autoTimer) {
@@ -1948,16 +1955,11 @@ async function runDbSql() {
 function bindStaticEvents() {
     document.querySelectorAll('.tab-link').forEach(b => b.addEventListener('click', () => showTab(b.getAttribute('data-tab'))));
 
-    // Forward API key to cross-page links (e.g. /ihi-charts-v2.html, /ihi-feed-v3.html).
-    // Those pages accept ?key=... and persist to localStorage on load.
+    // SECURITY: do NOT forward ?key= to cross-page links (leaks via referer/logs).
+    // Cross-page links (e.g. /ihi-charts-v2.html, /ihi-feed-v3.html) now prompt
+    // for the key on load instead of accepting it from the URL.
     document.querySelectorAll('a.needs-key').forEach(a => {
-        a.addEventListener('click', (e) => {
-            if (!ADMIN.apiKey) { /* let browser navigate normally; target page will prompt */ return; }
-            e.preventDefault();
-            const url = new URL(a.getAttribute('data-href') || a.getAttribute('href'), location.origin);
-            url.searchParams.set('key', ADMIN.apiKey);
-            window.open(url.toString(), '_blank');
-        });
+        a.addEventListener('click', () => { /* let browser navigate normally; target page will prompt */ });
     });
 
     document.getElementById('api-key-btn').addEventListener('click', async () => {

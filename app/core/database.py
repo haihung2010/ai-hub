@@ -30,6 +30,16 @@ def _get_pool() -> ConnectionPool:
             kwargs={"row_factory": dict_row},
             open=True,
         )
+        try:
+            with _pool.connection() as conn:
+                conn.execute("SELECT 1").fetchone()
+            logger.info("PostgreSQL pool warmed up successfully")
+        except Exception as exc:
+            _pool = None
+            raise RuntimeError(
+                f"Failed to warm up PostgreSQL pool — check DATABASE_URL "
+                f"and ensure the server is reachable. Underlying error: {exc}"
+            ) from exc
     return _pool
 
 
@@ -146,6 +156,13 @@ def init_db() -> None:
                 FOREIGN KEY (user_id) REFERENCES users (id)
             )
         """)
+        conn.execute(
+            "ALTER TABLE memory_items ADD COLUMN IF NOT EXISTS content_hash TEXT"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_memory_items_user_content_hash "
+            "ON memory_items (user_id, content_hash)"
+        )
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS memory_consolidations (
@@ -490,7 +507,11 @@ def init_db() -> None:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_chunks_embedding_hnsw ON knowledge_card_chunks USING hnsw (embedding_vec vector_cosine_ops) WITH (m = 16, ef_construction = 200)")
             conn.commit()
         except Exception as exc:
-            logger.warning("Could not initialize pgvector support: %s", exc)
+            logger.warning(
+                "Could not initialize pgvector support — vector extension unavailable. "
+                "RAG will fall back to token-overlap search. Error: %s",
+                exc,
+            )
             conn.rollback()
 
     logger.info("Database initialized (PostgreSQL)")

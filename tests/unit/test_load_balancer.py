@@ -11,6 +11,7 @@ import respx
 
 from app.services.providers.llama_cpp import LlamaCppProvider
 from app.services.providers.load_balancer import LlamaCppLoadBalancer, _free_slots
+from app.core.errors import UpstreamError
 
 
 def _make_real_provider(url: str = "http://llama.test/v1") -> LlamaCppProvider:
@@ -105,8 +106,8 @@ class TestLoadBalancerPick:
                 providers=[p1, p2],
                 slots_urls=["http://n1/slots", "http://n2/slots"],
             )
-            picked = await lb._pick()
-        assert picked is p1
+            with pytest.raises(UpstreamError, match="no healthy providers"):
+                await lb._pick()
 
 
 class TestLoadBalancerComplete:

@@ -3,7 +3,7 @@
 from functools import lru_cache
 import json
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_ALLOWED_ORIGINS = [
@@ -62,7 +62,7 @@ class Settings(BaseSettings):
         default="local-gemma4-12b-q4-text",
         alias="LITE_MODEL",
     )
-    lite_num_ctx: int = Field(default=65536, alias="LITE_NUM_CTX")
+    lite_num_ctx: int = Field(default=8192, ge=512, le=131072, alias="LITE_NUM_CTX")
     default_num_ctx: int = Field(default=8192, alias="DEFAULT_NUM_CTX")
     lite_max_history_messages: int = Field(default=20, alias="LITE_MAX_HISTORY_MESSAGES")
     request_timeout_seconds: float = Field(default=60.0, alias="REQUEST_TIMEOUT_SECONDS")
@@ -104,7 +104,7 @@ class Settings(BaseSettings):
     load_shed_threshold: int = Field(default=5, ge=0, alias="LOAD_SHED_THRESHOLD")
     ai_top_p: float = Field(default=0.0, ge=0.0, le=1.0, alias="AI_TOP_P")
     provider_call_timeout_seconds: float = Field(default=0.0, ge=0.0, alias="PROVIDER_CALL_TIMEOUT_SECONDS")
-    api_key: str = Field(alias="API_KEY")
+    api_key: str = Field(min_length=16, alias="API_KEY")
     rate_limit_per_minute: int = Field(default=5, ge=1, alias="RATE_LIMIT_PER_MINUTE")
     security_log_file: str = Field(default="security.log", alias="SECURITY_LOG_FILE")
     # Langfuse tracing — when LANGFUSE_PUBLIC_KEY is non-empty, every chat
@@ -181,7 +181,9 @@ class Settings(BaseSettings):
         default_factory=lambda: list(DEFAULT_ALLOWED_HOSTS),
         alias="ALLOWED_HOSTS",
     )
-    database_url: str = Field(default="", alias="DATABASE_URL")
+    trusted_proxy_ips: list[str] = Field(default_factory=list, alias="TRUSTED_PROXY_IPS")
+    allowed_projects: list[str] = Field(default_factory=list, alias="ALLOWED_PROJECTS")
+    database_url: str = Field(default="", min_length=1, alias="DATABASE_URL")
     redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
     project_context_sizes: dict[str, int] = Field(default_factory=dict, alias="PROJECT_CONTEXT_SIZES")
     fanpage_lazy_web_search: bool = Field(default=True, alias="FANPAGE_LAZY_WEB_SEARCH")
@@ -217,7 +219,7 @@ class Settings(BaseSettings):
     # Format: {"project_name": {"max_history_messages": 10, "model_mode": "lite", ...}}
     per_project_overrides: dict[str, dict] = Field(default_factory=dict, alias="PER_PROJECT_OVERRIDES")
 
-    @field_validator("allowed_origins", "allowed_hosts", "openrouter_allowed_projects", "openrouter_denied_projects", "llama_cpp_nodes", "minimax_allowed_projects", "minimax_denied_projects", mode="before")
+    @field_validator("allowed_origins", "allowed_hosts", "trusted_proxy_ips", "allowed_projects", "openrouter_allowed_projects", "openrouter_denied_projects", "llama_cpp_nodes", "minimax_allowed_projects", "minimax_denied_projects", mode="before")
     @classmethod
     def _parse_string_list(cls, value: list[str] | str) -> list[str]:
         if isinstance(value, list):
@@ -239,6 +241,37 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return json.loads(value)
         return {}
+
+    @field_validator("project_context_sizes")
+    @classmethod
+    def _validate_project_context_sizes(cls, value: dict[str, int]) -> dict[str, int]:
+        for project, ctx in value.items():
+            if not isinstance(ctx, int) or ctx < 512:
+                raise ValueError(
+                    f"project_context_sizes['{project}'] must be >= 512, got {ctx!r}"
+                )
+        return value
+
+    @model_validator(mode="after")
+    def _validate_failure_risk_thresholds(self) -> "Settings":
+        medium = self.failure_risk_medium_threshold
+        high = self.failure_risk_high_threshold
+        if medium < 0 or high > 1.0 or medium >= high:
+            raise ValueError(
+                f"failure_risk thresholds invalid: medium={medium} (>=0), "
+                f"high={high} (<=1.0), and medium < high required"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _validate_adaptive_max_tokens(self) -> "Settings":
+        severe = self.adaptive_max_tokens_severe_pct
+        cutoff = self.adaptive_max_tokens_cutoff_pct
+        if severe >= cutoff:
+            raise ValueError(
+                f"adaptive_max_tokens invalid: severe={severe} must be < cutoff={cutoff}"
+            )
+        return self
 
 
 @lru_cache(maxsize=1)

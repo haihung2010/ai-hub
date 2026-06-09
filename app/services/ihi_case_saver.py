@@ -37,9 +37,11 @@ class IHICaseSaver:
         if llm_result.confidence < 0.5:
             return None
 
-        # Build pattern from readings
+        # Build pattern from readings.
+        # TODO: derive from device specs — for now use a sane industrial-temp default
+        # (70-90 °C) instead of the prior 0-100 range which matched every reading.
         pattern = {
-            "t_min": 0, "t_max": 100, "v_min": 0, "v_max": 10,
+            "t_min": 70, "t_max": 90, "v_min": 0, "v_max": 10,
             "c_min": 0, "c_max": 100,
             "extra": {},
         }

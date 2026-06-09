@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import re
@@ -97,8 +98,15 @@ class MemoryExtractionService:
                     content = str(value.get("content", "")).strip()
                     if not content:
                         continue
+                    content_hash = hashlib.md5(content.encode("utf-8")).hexdigest()
+                    existing = conn.execute(
+                        "SELECT 1 FROM memory_items WHERE user_id = %s AND content_hash = %s LIMIT 1",
+                        (user_id, content_hash),
+                    ).fetchone()
+                    if existing:
+                        continue
                     conn.execute(
-                        "INSERT INTO memory_items (id, episode_id, user_id, tenant_id, project_id, memory_type, subject, predicate, object, content, salience) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                        "INSERT INTO memory_items (id, episode_id, user_id, tenant_id, project_id, memory_type, subject, predicate, object, content, content_hash, salience) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                         (
                             str(uuid.uuid4()),
                             episode_id,
@@ -110,6 +118,7 @@ class MemoryExtractionService:
                             value.get("predicate"),
                             value.get("object"),
                             content,
+                            content_hash,
                             float(value.get("salience", 0) or 0),
                         ),
                     )

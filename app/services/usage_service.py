@@ -76,10 +76,13 @@ class UsageService:
             conn.commit()
         return event_id
 
-    def get_time_series(self, days: int = 1, bucket: str = "hour") -> list[dict[str, object]]:
+    def get_time_series(self, days: int = 1, bucket: str = "hour", tenant_id: str | None = None) -> list[dict[str, object]]:
         with get_db_connection() as conn:
-            # interval conversion for safety
             interval = f"{days} days"
+            tenant_clause = " AND tenant_id = %s" if tenant_id else ""
+            params: list[object] = [bucket, interval]
+            if tenant_id:
+                params.append(tenant_id)
             rows = conn.execute(
                 f"""
                 SELECT
@@ -89,11 +92,11 @@ class UsageService:
                     SUM(CASE WHEN status_code >= 400 OR error_type IS NOT NULL THEN 1 ELSE 0 END) AS error_requests,
                     AVG(latency_ms) AS avg_latency_ms
                 FROM usage_events
-                WHERE created_at > NOW() - %s::interval
+                WHERE created_at > NOW() - %s::interval{tenant_clause}
                 GROUP BY 1
                 ORDER BY 1 ASC
                 """,
-                (bucket, interval),
+                tuple(params),
             ).fetchall()
         return [
             {
@@ -106,18 +109,23 @@ class UsageService:
             for row in rows
         ]
 
-    def get_cost_series_7d(self) -> list[dict[str, object]]:
+    def get_cost_series_7d(self, tenant_id: str | None = None) -> list[dict[str, object]]:
         with get_db_connection() as conn:
+            tenant_clause = " AND tenant_id = %s" if tenant_id else ""
+            params: list[object] = []
+            if tenant_id:
+                params.append(tenant_id)
             rows = conn.execute(
-                """
+                f"""
                 SELECT
                     DATE_TRUNC('day', created_at) AS day,
                     COALESCE(SUM(cost_usd), 0) AS cost_usd
                 FROM usage_events
-                WHERE created_at > NOW() - INTERVAL '7 days'
+                WHERE created_at > NOW() - INTERVAL '7 days'{tenant_clause}
                 GROUP BY 1
                 ORDER BY 1 ASC
-                """
+                """,
+                tuple(params),
             ).fetchall()
         return [
             {
@@ -127,12 +135,14 @@ class UsageService:
             for row in rows
         ]
 
-    def summary(self) -> dict[str, object]:
-        time_series = self.get_time_series()
-        cost_series_7d = self.get_cost_series_7d()
+    def summary(self, tenant_id: str | None = None) -> dict[str, object]:
+        time_series = self.get_time_series(tenant_id=tenant_id)
+        cost_series_7d = self.get_cost_series_7d(tenant_id=tenant_id)
+        tenant_filter = " WHERE tenant_id = %s" if tenant_id else ""
+        tenant_params: list[object] = [tenant_id] if tenant_id else []
         with get_db_connection() as conn:
             totals = conn.execute(
-                """
+                f"""
                 SELECT
                     COUNT(*) AS total_requests,
                     SUM(CASE WHEN status_code >= 200 AND status_code < 400 THEN 1 ELSE 0 END) AS success_requests,
@@ -145,43 +155,53 @@ class UsageService:
                     COUNT(queue_wait_ms) AS queue_wait_requests,
                     COALESCE(SUM(cost_usd), 0) AS total_cost_usd,
                     COALESCE(SUM(CASE WHEN DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE) THEN cost_usd ELSE 0 END), 0) AS month_cost_usd
-                FROM usage_events
-                """
+                FROM usage_events{tenant_filter}
+                """,
+                tuple(tenant_params),
             ).fetchone()
             latency_rows = conn.execute(
-                "SELECT latency_ms FROM usage_events WHERE latency_ms IS NOT NULL ORDER BY created_at DESC LIMIT 1000"
+                f"SELECT latency_ms FROM usage_events{tenant_filter} "
+                "AND latency_ms IS NOT NULL ORDER BY created_at DESC LIMIT 1000" if tenant_filter
+                else "SELECT latency_ms FROM usage_events WHERE latency_ms IS NOT NULL ORDER BY created_at DESC LIMIT 1000"
             ).fetchall()
             by_provider_rows = conn.execute(
                 "SELECT provider, COUNT(*) AS requests, AVG(latency_ms) AS avg_latency_ms "
-                "FROM usage_events GROUP BY provider ORDER BY requests DESC"
+                f"FROM usage_events{tenant_filter} GROUP BY provider ORDER BY requests DESC",
+                tuple(tenant_params),
             ).fetchall()
             by_model_rows = conn.execute(
                 "SELECT model, COUNT(*) AS requests, AVG(latency_ms) AS avg_latency_ms "
-                "FROM usage_events GROUP BY model ORDER BY requests DESC"
+                f"FROM usage_events{tenant_filter} GROUP BY model ORDER BY requests DESC",
+                tuple(tenant_params),
             ).fetchall()
             by_route_rows = conn.execute(
                 "SELECT COALESCE(route_alias, 'unknown') AS route_alias, COUNT(*) AS requests, "
                 "SUM(fallback_used) AS fallback_requests, AVG(latency_ms) AS avg_latency_ms "
-                "FROM usage_events GROUP BY COALESCE(route_alias, 'unknown') ORDER BY requests DESC"
+                f"FROM usage_events{tenant_filter} GROUP BY COALESCE(route_alias, 'unknown') ORDER BY requests DESC",
+                tuple(tenant_params),
             ).fetchall()
             by_route_reason_rows = conn.execute(
                 "SELECT COALESCE(route_reason, 'unknown') AS route_reason, COUNT(*) AS requests, "
                 "AVG(queue_wait_ms) AS avg_queue_wait_ms, SUM(fallback_used) AS fallback_requests "
-                "FROM usage_events GROUP BY COALESCE(route_reason, 'unknown') ORDER BY requests DESC"
+                f"FROM usage_events{tenant_filter} GROUP BY COALESCE(route_reason, 'unknown') ORDER BY requests DESC",
+                tuple(tenant_params),
             ).fetchall()
             by_project_rows = conn.execute(
                 "SELECT tenant_id, project_id, COUNT(*) AS requests, AVG(latency_ms) AS avg_latency_ms, "
                 "SUM(fallback_used) AS fallback_requests "
-                "FROM usage_events GROUP BY tenant_id, project_id ORDER BY requests DESC LIMIT 20"
+                f"FROM usage_events{tenant_filter} GROUP BY tenant_id, project_id ORDER BY requests DESC LIMIT 20",
+                tuple(tenant_params),
             ).fetchall()
             by_status_rows = conn.execute(
                 "SELECT status_code, COALESCE(error_type, '') AS error_type, COUNT(*) AS requests "
-                "FROM usage_events GROUP BY status_code, COALESCE(error_type, '') ORDER BY requests DESC"
+                f"FROM usage_events{tenant_filter} GROUP BY status_code, COALESCE(error_type, '') ORDER BY requests DESC",
+                tuple(tenant_params),
             ).fetchall()
             recent_rows = conn.execute(
                 "SELECT tenant_id, project_id, provider, model, route_alias, latency_ms, "
                 "status_code, error_type, fallback_used, queue_wait_ms, route_reason, created_at "
-                "FROM usage_events ORDER BY created_at DESC LIMIT 50"
+                f"FROM usage_events{tenant_filter} ORDER BY created_at DESC LIMIT 50",
+                tuple(tenant_params),
             ).fetchall()
 
         total_requests = totals["total_requests"] or 0

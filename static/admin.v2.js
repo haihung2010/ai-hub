@@ -902,7 +902,7 @@ async function loadUserChat(userId, userName) {
     el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-muted)">Loading…</div>';
 
     try {
-        const data = await api(`/v1/admin/users/${encodeURIComponent(userId)}/messages?project_id=${encodeURIComponent(ADMIN.tenant.selectedTenant || '')}`);
+        const data = await api(`/v1/admin/users/${encodeURIComponent(userId)}/messages?project_id=${encodeURIComponent(ADMIN.tenant.selectedTenant || '')}&truncate=0&limit=200`);
 
         document.getElementById('chat-header-info').innerHTML = `${escapeHtml(userName)} • ${data.length} messages`;
 
@@ -945,7 +945,7 @@ async function loadUserChat(userId, userName) {
             const dk = dateKey(p.time);
             if (dk !== lastDate) { html += `<div style="font-size:0.85rem;color:var(--text-muted);padding:0.8rem 0 0.3rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase">${dk}</div>`; lastDate = dk; }
             const sumBadge = p.summarized ? ' <span style="background:rgba(245,158,11,0.2);color:#fbbf24;padding:0.1rem 0.5rem;border-radius:3px;font-size:0.7rem;vertical-align:middle">SUM</span>' : '';
-            const respPreview = p.response ? `<span style="color:#6ee7b7">${escapeHtml(trunc(p.response, 240))}</span>` : '<span style="color:var(--text-faint);font-style:italic">no reply</span>';
+            const respPreview = p.response ? `<span style="color:#6ee7b7">${escapeHtml(p.response)}</span>` : '<span style="color:var(--text-faint);font-style:italic">no reply</span>';
             html += `
             <div class="chat-pair-row" data-idx="${p.idx - 1}" style="display:grid;grid-template-columns:5rem 1fr;gap:0.3rem 1rem;padding:0.7rem 0.8rem;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:background 0.15s;line-height:1.5" onmouseenter="this.style.background='rgba(255,255,255,0.03)'" onmouseleave="this.style.background='transparent'">
                 <div style="grid-row:1/3;display:flex;flex-direction:column;align-items:flex-end;gap:0.2rem;padding-top:0.15rem">
@@ -953,8 +953,8 @@ async function loadUserChat(userId, userName) {
                     <span style="font-size:0.7rem;color:var(--text-faint)">#${p.idx}</span>
                     ${sumBadge}
                 </div>
-                <div style="font-size:1rem;color:var(--text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapeHtml(p.request)}">▸ ${escapeHtml(trunc(p.request, 280))}</div>
-                <div style="font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:1.2rem" title="${escapeHtml(p.response || '')}">↳ ${respPreview}</div>
+                <div style="font-size:1rem;color:var(--text-strong);word-break:break-word;overflow-wrap:anywhere" title="${escapeHtml(p.request)}"><span style="color:var(--accent-1);font-weight:700">▸ USER:</span> ${escapeHtml(p.request)}</div>
+                <div style="font-size:0.95rem;padding-left:1.2rem;word-break:break-word;overflow-wrap:anywhere" title="${escapeHtml(p.response || '')}">${respPreview.startsWith('<span') ? respPreview.replace('<span style="color:#6ee7b7">', '<span style="color:#6ee7b7"><span style="color:#6ee7b7;font-weight:700">↳ AI:</span> ') : respPreview}</div>
             </div>`;
         }
 

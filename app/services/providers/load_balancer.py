@@ -8,6 +8,7 @@ from collections.abc import AsyncIterator
 
 import httpx
 
+from app.core.errors import UpstreamError
 from app.models.chat import Message
 from app.services.providers.llama_cpp import LlamaCppProvider
 
@@ -50,8 +51,8 @@ class LlamaCppLoadBalancer:
         logger.debug("llama.cpp slot counts: %s", list(zip(self._slots_urls, counts)))
         best_idx = max(range(len(counts)), key=lambda i: counts[i])
         if counts[best_idx] < 0:
-            logger.warning("all llama.cpp backends unreachable, using first provider")
-            return self._providers[0]
+            logger.warning("all llama.cpp backends unreachable")
+            raise UpstreamError("no healthy providers available")
         return self._providers[best_idx]
 
     async def complete(

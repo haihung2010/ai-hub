@@ -5,11 +5,32 @@ from __future__ import annotations
 import logging
 
 import psycopg
-from psycopg.rows import dict_row
 from crewai.tools import BaseTool
 from ddgs import DDGS
+from psycopg.rows import dict_row
+from psycopg_pool import ConnectionPool
 
 logger = logging.getLogger(__name__)
+
+_pool: ConnectionPool | None = None
+
+
+def _get_pool(db_url: str) -> ConnectionPool:
+    global _pool
+    if _pool is None:
+        _pool = ConnectionPool(db_url, min_size=1, max_size=4, kwargs={"row_factory": dict_row})
+    return _pool
+
+
+def reset_pool() -> None:
+    """Close and clear the module-level pool (used by tests and shutdown)."""
+    global _pool
+    if _pool is not None:
+        try:
+            _pool.close()
+        except Exception:
+            pass
+        _pool = None
 
 
 class WebSearchTool(BaseTool):
@@ -35,7 +56,7 @@ class DBConnectorTool(BaseTool):
         if not sql.strip().upper().startswith("SELECT"):
             return "Only SELECT queries are allowed."
         try:
-            with psycopg.connect(self.db_url, row_factory=dict_row) as conn:
+            with _get_pool(self.db_url).connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute("SET LOCAL statement_timeout = '5s'")
                     cur.execute(sql)
