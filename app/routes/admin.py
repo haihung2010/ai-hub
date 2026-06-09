@@ -301,6 +301,92 @@ async def provider_health(request: Request) -> dict[str, object]:
     }
 
 
+@router.get("/health/instances", dependencies=[Depends(require_admin)])
+async def instance_health(request: Request) -> dict[str, object]:
+    """Probe each llama.cpp instance individually. Returns per-port status,
+    model alias, and uptime probe latency. Use this for faster failure
+    detection than waiting for /v1/admin/health/providers (which only
+    reports config without probing).
+
+    Each instance is probed with a 1s timeout GET /v1/models. If the probe
+    fails, the instance status is "down" and a reason is returned.
+    """
+    import asyncio
+    import time
+    import httpx
+
+    settings = request.app.state.settings
+
+    # Build list of instances to probe: primary, background, reranker, iHi
+    instances = [
+        {"name": "primary",   "alias": "local-gemma4-12b-q4-text", "url": settings.llama_cpp_openai_url},
+        {"name": "background", "alias": "local-gemma4-e2b-q4-bg",   "url": settings.background_llama_cpp_openai_url if settings.background_llama_cpp_enabled else None},
+        {"name": "reranker",  "alias": "bge-reranker-v2-m3",         "url": None},  # resolved below
+        {"name": "ihi",       "alias": "local-gemma4-e2b-q4-ihi",  "url": settings.ihi_llama_cpp_openai_url if settings.ihi_llama_cpp_enabled else None},
+    ]
+
+    # Resolve reranker URL from settings.llama_cpp_nodes or build default
+    # The reranker lives on port 8082 by convention.
+    if instances[2]["url"] is None:
+        base = settings.llama_cpp_openai_url  # http://localhost:8080/v1
+        if base:
+            # swap port to 8082
+            try:
+                from urllib.parse import urlparse
+                parsed = urlparse(base)
+                instances[2]["url"] = f"{parsed.scheme}://{parsed.hostname}:8082/v1"
+            except Exception:
+                pass
+
+    async def _probe(inst: dict) -> dict:
+        if not inst["url"]:
+            return {**inst, "status": "disabled", "latency_ms": None, "model": None, "error": "no_url_configured"}
+        t0 = time.monotonic()
+        try:
+            async with httpx.AsyncClient(timeout=1.0) as client:
+                resp = await client.get(f"{inst['url']}/models")
+            elapsed_ms = round((time.monotonic() - t0) * 1000, 1)
+            if resp.status_code == 200:
+                data = resp.json()
+                models = data.get("data", [])
+                model_id = models[0]["id"] if models else None
+                return {
+                    **inst,
+                    "status": "up",
+                    "latency_ms": elapsed_ms,
+                    "model": model_id,
+                    "error": None,
+                }
+            return {
+                **inst,
+                "status": "degraded",
+                "latency_ms": elapsed_ms,
+                "model": None,
+                "error": f"HTTP {resp.status_code}",
+            }
+        except Exception as exc:
+            elapsed_ms = round((time.monotonic() - t0) * 1000, 1)
+            return {
+                **inst,
+                "status": "down",
+                "latency_ms": elapsed_ms,
+                "model": None,
+                "error": str(exc)[:200],
+            }
+
+    results = await asyncio.gather(*[_probe(i) for i in instances])
+    healthy = sum(1 for r in results if r["status"] == "up")
+    return {
+        "summary": {
+            "total": len(results),
+            "healthy": healthy,
+            "degraded": sum(1 for r in results if r["status"] == "degraded"),
+            "down": sum(1 for r in results if r["status"] == "down"),
+        },
+        "instances": results,
+    }
+
+
 _DB_QUERY_MAX_ROWS = 1000
 _DB_FORBIDDEN_KEYWORDS = (
     "insert", "update", "delete", "drop", "alter", "truncate",
@@ -916,3 +1002,14 @@ async def gpu_stats():
     except Exception as e:
         # Fallback for dev environment without NVIDIA
         return {"gpus": [], "error": str(e)}
+
+
+@router.get("/cache/stats", dependencies=[Depends(require_admin)])
+async def cache_stats() -> dict[str, object]:
+    """Return Redis query-cache stats: hits, misses, hit rate, errors.
+
+    Stats are in-process counters; they reset on process restart. Useful
+    for measuring cache effectiveness during smoke / load tests.
+    """
+    from app.services.response_cache import get_stats
+    return get_stats()

@@ -23,10 +23,15 @@ def _get_database_url() -> str:
 def _get_pool() -> ConnectionPool:
     global _pool
     if _pool is None:
+        # min_size kept small for cold start; max_size bumped from 10 → 20
+        # to handle 200 RPM without connection timeouts (2026-06-09 tune).
+        # Override via DB_POOL_MAX_SIZE env var if needed.
+        import os
+        max_size = int(os.environ.get("DB_POOL_MAX_SIZE", "20"))
         _pool = ConnectionPool(
             _get_database_url(),
             min_size=2,
-            max_size=10,
+            max_size=max_size,
             kwargs={"row_factory": dict_row},
             open=True,
         )
