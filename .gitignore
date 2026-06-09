@@ -40,3 +40,4 @@ cloudflared.deb
 dist/
 build/
 .worktrees/
+static/skill-comparison/
