@@ -15,7 +15,7 @@ from app.models.chat import Message
 
 logger = logging.getLogger(__name__)
 
-_ALLOWED_OPTIONS = {"max_tokens", "top_p", "num_ctx"}
+_ALLOWED_OPTIONS = {"max_tokens", "top_p", "num_ctx", "chat_template_kwargs"}
 _CHANNEL_ARTIFACT_RE = re.compile(r"(?:&lt;|<)(?:\\|)?channel(?:\\|&gt;|\\|>|\\||\||&gt;|>)?", re.IGNORECASE)
 _CHANNEL_STOP_SEQUENCES = ["<|channel>", "<|channel|>", "<channel|>", "&lt;|channel&gt;", "&lt;channel|&gt;"]
 
@@ -153,7 +153,14 @@ class LlamaCppProvider:
         choices = data.get("choices") or []
         if not choices:
             raise UpstreamError("llama.cpp returned no choices")
-        return self._sanitize_content(choices[0]["message"]["content"])
+        msg = choices[0]["message"]
+        # Some llama.cpp builds (Gemma 4 reasoning variant) put the actual answer
+        # in `reasoning_content` and leave `content` empty. Fall back to reasoning
+        # content if content is blank. Sanitize both.
+        content = msg.get("content", "")
+        if not content and msg.get("reasoning_content"):
+            content = msg["reasoning_content"]
+        return self._sanitize_content(content)
 
     async def stream_complete(
         self,

@@ -114,6 +114,10 @@ class QueryClassifier:
 
     @staticmethod
     def _strip_diacritics(text: str) -> str:
+        # NFD decomposes accented chars to base+combining-mark, but Vietnamese
+        # `đ` is NOT a precomposed char (it has no diacritic mark), so NFD leaves
+        # it as-is and the encode-ascii step strips it to "". Manual fix:
+        text = text.replace("đ", "d").replace("Đ", "D")
         return unicodedata.normalize("NFD", text).encode("ascii", "ignore").decode("ascii").lower()
 
     @staticmethod
@@ -316,6 +320,20 @@ class AIService:
             r"\b(tai lieu|document|docs|knowledge|rag|noi bo|internal|chinh sach|policy)\b",
             r"\b(du lieu|database|bao cao|report|quy trinh|procedure|huong dan|guide)\b",
             r"\b(theo|dua tren|trong file|trong tai lieu|tra cuu|lookup|search)\b",
+            # Fanpage/e-commerce product + policy questions (added 2026-06-08 so
+            # E2B-bg / 12B have actual context to answer instead of deflecting
+            # "sản phẩm gì?"). These match common questions in fanpage_buy_sell,
+            # fanpage_product_info, fanpage_complaint, fanpage_promo, legal_qa.
+            r"\b(san pham|product|gía|price|gia bao nhieu|bao nhieu tien|cost)\b",
+            r"\b(thanh phan|ingredient|cong dung|use|usage|cach dung|huong dan su dung)\b",
+            r"\b(hsd|han su dung|expiry|expiration|date|ngay san xuat)\b",
+            r"\b(xuat xu|origin|nuoc san xuat|hang chinh hang|chinh hang|authentic)\b",
+            r"\b(doi tra|return|doi hang|tra hang|hoan tien|refund|bill)\b",
+            r"\b(bao hanh|warranty|guarantee|bao hanh bao lau|may bao lau)\b",
+            r"\b(ship|shipping|cod|thanh toan|free ship|phi ship|giao hang)\b",
+            r"\b(khuyen mai|khuyen mai gi|ma giam gia|voucher|sale|flash sale|promo|combo)\b",
+            r"\b(dung tich|the tich|ml|gram|size|kich thuoc|trong luong)\b",
+            r"\b(cam ket|chinh sach|quy dinh|dieu khoan|chinh sach cong ty)\b",
         ]
         return any(re.search(pattern, normalized) for pattern in patterns)
 
@@ -423,6 +441,10 @@ class AIService:
 
     @staticmethod
     def _strip_diacritics(text: str) -> str:
+        # NFD decomposes accented chars to base+combining-mark, but Vietnamese
+        # `đ` is NOT a precomposed char (it has no diacritic mark), so NFD leaves
+        # it as-is and the encode-ascii step strips it to "". Manual fix:
+        text = text.replace("đ", "d").replace("Đ", "D")
         return unicodedata.normalize("NFD", text).encode("ascii", "ignore").decode("ascii").lower()
 
     def _should_web_search(self, text: str) -> bool:
@@ -567,8 +589,14 @@ class AIService:
 
     def _external_allowed(self, req: ChatRequest) -> bool:
         project = req.project_id.lower()
-        denied = {item.lower() for item in self._settings.openrouter_denied_projects}
-        allowed = {item.lower() for item in self._settings.openrouter_allowed_projects}
+        # MiniMax M3 is the primary cloud provider. Check its allow/deny
+        # lists first; fall back to OpenRouter's lists for legacy keys
+        # (so existing deny rules keep working during the migration).
+        denied = {item.lower() for item in self._settings.minimax_denied_projects}
+        allowed = {item.lower() for item in self._settings.minimax_allowed_projects}
+        if not denied and not allowed and (self._settings.openrouter_denied_projects or self._settings.openrouter_allowed_projects):
+            denied = {item.lower() for item in self._settings.openrouter_denied_projects}
+            allowed = {item.lower() for item in self._settings.openrouter_allowed_projects}
         if project in denied:
             return False
         explicit = req.allow_external if req.allow_external is not None else self._settings.external_llm_default_allowed
@@ -588,7 +616,11 @@ class AIService:
         if not wants_cloud:
             return self._local
         cloud = self._nine_router or self._cloud
-        if not self._settings.openrouter_enabled and not self._settings.nine_router_enabled:
+        if (
+            not self._settings.openrouter_enabled
+            and not self._settings.nine_router_enabled
+            and not self._settings.minimax_enabled
+        ):
             raise UpstreamError("external llm provider is not enabled")
         if not cloud:
             raise UpstreamError("external llm provider is not available")
@@ -644,6 +676,11 @@ class AIService:
                 options["max_tokens"] = max_tokens
             if num_ctx:
                 options["num_ctx"] = num_ctx
+            # Disable "thinking" mode for Gemma 4 reasoning models — they consume
+            # all output tokens on planning and never produce a user-visible reply.
+            # We want the model to give a direct answer; reasoning is internal.
+            # (added 2026-06-08 to make E2B-bg / 12B-Q4 actually return content)
+            options["chat_template_kwargs"] = {"enable_thinking": False}
         else:
             max_tokens = self._settings.openrouter_max_tokens or self._settings.ai_max_tokens
             if max_tokens:
@@ -903,6 +940,25 @@ class AIService:
     def _load_history(self, req: ChatRequest, session_id: str) -> list[Message]:
         limit = self._effective_history_cap(self._settings, req.model_mode, req.project_id)
         if req.history:
+            # Client-supplied history is a prompt-injection surface. The text is
+            # sanitized below (control chars / nulls stripped) but operators
+            # should be able to see when a client bypasses the server-managed
+            # session and injects messages directly. Log loudly so it's
+            # observable in usage audits and trace spans.
+            user_id = None
+            if req.user_name:
+                try:
+                    user_id = self._users.get_or_create_user(req.user_name, req.tenant_id).id
+                except Exception:
+                    user_id = None
+            logger.warning(
+                "client_supplied_history count=%d user_id=%s project_id=%s tenant_id=%s session_id=%s",
+                len(req.history),
+                user_id,
+                req.project_id,
+                req.tenant_id,
+                session_id,
+            )
             messages = req.history
         else:
             session_messages = self._history.get_session_messages(
@@ -1393,6 +1449,10 @@ class AIService:
             await asyncio.to_thread(self._save_chat_messages, req, session_id, user_id, content)
             self._schedule_memory_jobs(user_id, req.tenant_id, req.project_id, session_id, self._local)
             latency_ms = round((time.perf_counter() - started) * 1000, 3)
+            mem_prompt_tokens = 0
+            mem_completion_tokens = count_text_tokens(content)
+            mem_total_tokens = mem_completion_tokens
+            mem_cost_usd = 0.0
             self._usage.record(
                 UsageEvent(
                     tenant_id=req.tenant_id,
@@ -1406,10 +1466,10 @@ class AIService:
                     latency_ms=latency_ms,
                     status_code=200,
                     fallback_used=False,
-                    prompt_tokens=0,
-                    completion_tokens=count_text_tokens(content),
-                    total_tokens=count_text_tokens(content),
-                    cost_usd=0.0,
+                    prompt_tokens=mem_prompt_tokens,
+                    completion_tokens=mem_completion_tokens,
+                    total_tokens=mem_total_tokens,
+                    cost_usd=mem_cost_usd,
                 )
             )
             return ChatResponse(
@@ -1425,6 +1485,12 @@ class AIService:
                 fallback_used=False,
                 queue_wait_ms=0.0,
                 route_reason="memory_check_history",
+                usage={
+                    "prompt_tokens": mem_prompt_tokens,
+                    "completion_tokens": mem_completion_tokens,
+                    "total_tokens": mem_total_tokens,
+                    "cost_usd": mem_cost_usd,
+                },
             )
 
         messages, source_urls = self._prepare_messages_for_request(
@@ -1507,7 +1573,12 @@ class AIService:
                 route_reason="risk_clarification",
                 fallback_used=False,
                 sources=[],
-                usage=None,
+                usage={
+                    "prompt_tokens": prompt_tokens,
+                    "completion_tokens": completion_tokens,
+                    "total_tokens": total_tokens,
+                    "cost_usd": cost_usd,
+                },
             )
         messages, source_urls, route_reason = await self._apply_failure_risk_decision(
             decision=risk_decision,
@@ -1697,5 +1768,10 @@ class AIService:
             route_reason=route_reason,
             fallback_used=fallback_used,
             sources=source_urls,
-            usage=None,
+            usage={
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": total_tokens,
+                "cost_usd": cost_usd,
+            },
         )

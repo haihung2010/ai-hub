@@ -102,6 +102,12 @@ def isolated_db(request) -> None:
             raise RuntimeError(err)
         pytest.fail(err)
     init_db()
+    # Reset module-level pools that may have been opened by previous tests.
+    try:
+        from app.agents import tools as _agents_tools
+        _agents_tools.reset_pool()
+    except Exception:
+        pass
     with get_db_connection() as conn:
         conn.execute(f"TRUNCATE TABLE {', '.join(_TEST_TABLES)} CASCADE")
         conn.commit()
@@ -119,10 +125,14 @@ def settings() -> Settings:
         REQUEST_TIMEOUT_SECONDS=5.0,
         MAX_HISTORY_MESSAGES=5,
         LITE_MAX_HISTORY_MESSAGES=5,
-        API_KEY="test-api-key",
+        API_KEY="test-api-key-aaaaaaaaaa",
         RATE_LIMIT_PER_MINUTE=5,
         ALLOWED_HOSTS=["testserver", "localhost", "127.0.0.1", "api-aiserver.htechlabsvn.com"],
         BACKGROUND_LLAMA_CPP_ENABLED="false",
+        # Disable knowledge RAG in tests by default — it tries to download the
+        # FastEmbed model from HuggingFace on first use, which fails in unit
+        # tests. Tests that need RAG can override this fixture.
+        ENABLE_KNOWLEDGE_RAG=False,
     )
 
 

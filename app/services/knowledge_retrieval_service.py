@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from dataclasses import dataclass
 
@@ -8,6 +9,8 @@ from app.core.database import get_db_connection
 from app.models.knowledge import KnowledgeSearchResult
 from app.services.knowledge_embedding_service import KnowledgeEmbeddingService
 from app.services.rerank_service import RerankService
+
+logger = logging.getLogger(__name__)
 
 _WORD_RE = re.compile(r"[\wÀ-ỹ]+")
 
@@ -187,13 +190,29 @@ class KnowledgeRetrievalService:
         results = self._deduplicate_results(results)
 
         # Rerank if available and top score is not already high
+        # NOTE: rerank() is async but _hybrid_search is sync (called from thread).
+        # If the rerank call returns a coroutine (caller forgot to await), fall
+        # back to non-reranked results rather than crashing the search. (fixed
+        # 2026-06-08 — was causing /v1/knowledge/search to 500)
         if self._rerank and results:
             top_score = results[0].score
             if top_score < _HIGH_CONFIDENCE_THRESHOLD:
                 candidates = results[:_RERANK_CANDIDATE_K]
                 docs = [r.content for r in candidates]
-                reranked = self._rerank.rerank(query, docs)
-                results = [candidates[rr.index] for rr in reranked]
+                try:
+                    reranked = self._rerank.rerank(query, docs)
+                    if hasattr(reranked, "__await__"):
+                        # coroutine returned (caller didn't await) — can't await here
+                        # because we're in a sync thread. Skip rerank, return hybrid results.
+                        logger.warning(
+                            "rerank.rerank returned coroutine without await; "
+                            "falling back to non-reranked results (query=%r)",
+                            query[:60],
+                        )
+                    else:
+                        results = [candidates[rr.index] for rr in reranked]
+                except Exception as e:
+                    logger.warning("Rerank failed; falling back: %r", e)
 
         return results[:limit]
 

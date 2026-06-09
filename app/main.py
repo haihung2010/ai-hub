@@ -40,6 +40,7 @@ from app.routes import users as users_routes
 from app.routes import mcp_tools as mcp_tools_routes
 from app.routes import facebook_webhook as fb_webhook_routes
 from app.routes import ihi as ihi_routes
+from app.routes import chatwoot_webhook as chatwoot_routes
 from app.agents.crew_service import CrewService
 from app.core.database import _get_database_url
 from app.services.ai_service import AIService
@@ -151,11 +152,21 @@ def create_app(
 ) -> FastAPI:
     settings = settings or get_settings()
     configure_logging(settings.log_level, settings.security_log_file)
-    init_db()
     app_start_time = time.time()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        # Run schema init off the event loop. init_db() opens a sync
+        # psycopg connection and executes DDL — moving it here avoids
+        # blocking the import chain (and unit tests that import app.main
+        # without ever starting the server) and lets the FastAPI app
+        # object be constructed cleanly even if the DB is briefly down.
+        import asyncio
+        try:
+            await asyncio.to_thread(init_db)
+        except Exception as exc:
+            logger.error("init_db failed during startup: %s", exc)
+            raise
         timeout = httpx.Timeout(max(settings.request_timeout_seconds, settings.openrouter_timeout_seconds))
         async with httpx.AsyncClient(timeout=timeout) as client:
             if settings.llama_cpp_nodes:
@@ -474,6 +485,7 @@ def create_app(
     app.include_router(fb_webhook_routes.router)
     app.include_router(skills_routes.router)
     app.include_router(ihi_routes.router)
+    app.include_router(chatwoot_routes.router)
     # MCP server: expose all API endpoints as MCP tools
     try:
         from fastapi_mcp import FastApiMCP
