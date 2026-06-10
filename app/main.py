@@ -491,6 +491,9 @@ def create_app(
     # P1.5 — security headers (X-Content-Type-Options, HSTS, CSP, ...)
     from app.middleware.security_headers import SecurityHeadersMiddleware
     app.add_middleware(SecurityHeadersMiddleware)
+    # P1.3 — request context (binds request_id to structlog)
+    from app.middleware.request_context import RequestContextMiddleware
+    app.add_middleware(RequestContextMiddleware)
 
     @app.get("/")
     async def index():
