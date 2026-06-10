@@ -136,6 +136,24 @@ async def agent_bot_webhook(
     if not _verify_signature(raw, x_chatwoot_signature):
         raise HTTPException(status_code=401, detail="Invalid or missing X-Chatwoot-Signature")
 
+    # P1.6: dedup Chatwoot retries. If we've seen this message.id in the
+    # last 24h, return 200 immediately so Chatwoot doesn't think the
+    # delivery failed and re-send (which would post the AI reply twice).
+    try:
+        _peek = json.loads(raw)
+        _msg_id = (
+            (_peek.get("message") or {}).get("id")
+            or _peek.get("id")
+            or _peek.get("delivery_id")
+        )
+    except Exception:
+        _msg_id = None
+    if _msg_id is not None:
+        idem = getattr(request.app.state, "webhook_idempotency", None)
+        if idem is not None and idem.is_duplicate("chatwoot", str(_msg_id)):
+            logger.info("Chatwoot duplicate delivery suppressed message_id=%s", _msg_id)
+            return ChatwootAgentBotResponse(status="duplicate", reason="already_processed")
+
     try:
         payload_dict = json.loads(raw)
     except json.JSONDecodeError as e:

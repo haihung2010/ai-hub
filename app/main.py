@@ -373,6 +373,13 @@ def create_app(
             except Exception as exc:
                 logger.warning("Whisper service init failed: %s", exc)
                 app.state.whisper_service = None
+            # P1.6 — webhook idempotency (Redis SETNX, in-memory fallback)
+            try:
+                from app.middleware.webhook_idempotency import make_idempotency
+                app.state.webhook_idempotency = make_idempotency()
+            except Exception as exc:
+                logger.warning("Webhook idempotency init failed: %s", exc)
+                app.state.webhook_idempotency = None
             app.state.crew_service = (
                 CrewService(settings, _get_database_url())
                 if settings.enable_crew_agents

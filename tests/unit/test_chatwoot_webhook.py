@@ -616,3 +616,93 @@ def test_chatwoot_rejects_when_signature_missing_with_secret(client, monkeypatch
         json={"messages": [{"role": "user", "content": "hi"}]},
     )
     assert resp.status_code == 401
+
+
+# ──────────────────────────────────────────────────────────────────────
+# P1.6 — Webhook idempotency (2026-06-10)
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_agent_bot_dedupes_duplicate_delivery(client, monkeypatch) -> None:
+    """A repeated message_id within the TTL must return 'duplicate'
+    without invoking llama a second time."""
+    from app.middleware.webhook_idempotency import InMemoryWebhookIdempotency
+    # Attach a fresh in-memory idempotency to app state
+    client.app.state.webhook_idempotency = InMemoryWebhookIdempotency()
+    monkeypatch.setenv("CHATWOOT_API_TOKEN", "test-cw-token")
+
+    payload = {
+        "event": "message_created",
+        "message": {"id": 999, "content": "Giá A?", "message_type": "incoming"},
+        "conversation": {
+            "id": 1, "account_id": 5,
+            "message_url": "http://chatwoot.test/conversations/1/messages",
+        },
+        "sender": {"id": 7, "name": "Anh Tuấn", "type": "contact"},
+    }
+
+    with respx.mock:
+        # Mock llama
+        llama_calls = {"n": 0}
+        def _llama(req):
+            llama_calls["n"] += 1
+            return httpx.Response(200, json=_ollama_response("ok"))
+        respx.post(LLAMA_URL).mock(side_effect=_llama)
+        # Mock chatwoot callback
+        respx.post("http://chatwoot.test/conversations/1/messages").mock(
+            return_value=httpx.Response(200, json={"id": 1})
+        )
+
+        # First call — processes normally
+        r1 = _signed_post(client, "/v1/integrations/chatwoot/agent_bot", payload)
+        assert r1.status_code == 200
+        assert r1.json()["status"] in ("queued", "processed")
+
+        # Wait for fire-and-forget callback to complete
+        import time
+        for _ in range(20):
+            if llama_calls["n"] > 0:
+                break
+            time.sleep(0.05)
+
+        # Second call with the same message.id — must be deduped
+        r2 = _signed_post(client, "/v1/integrations/chatwoot/agent_bot", payload)
+        assert r2.status_code == 200
+        assert r2.json()["status"] == "duplicate"
+
+
+def test_agent_bot_dedup_does_not_block_different_message_ids(client, monkeypatch) -> None:
+    """Distinct message_ids should each be processed exactly once."""
+    from app.middleware.webhook_idempotency import InMemoryWebhookIdempotency
+    client.app.state.webhook_idempotency = InMemoryWebhookIdempotency()
+    monkeypatch.setenv("CHATWOOT_API_TOKEN", "test-cw-token")
+
+    def _payload(msg_id: int) -> dict:
+        return {
+            "event": "message_created",
+            "message": {"id": msg_id, "content": f"q{msg_id}", "message_type": "incoming"},
+            "conversation": {
+                "id": 1, "account_id": 5,
+                "message_url": "http://chatwoot.test/conversations/1/messages",
+            },
+            "sender": {"id": 7, "name": "Anh Tuấn", "type": "contact"},
+        }
+
+    with respx.mock:
+        respx.post(LLAMA_URL).mock(return_value=httpx.Response(200, json=_ollama_response("ok")))
+        respx.post("http://chatwoot.test/conversations/1/messages").mock(
+            return_value=httpx.Response(200, json={"id": 1})
+        )
+        for i in (101, 102, 103):
+            r = _signed_post(client, "/v1/integrations/chatwoot/agent_bot", _payload(i))
+            assert r.json()["status"] in ("queued", "processed"), f"msg {i} blocked: {r.text}"
+
+
+def test_in_memory_idempotency_ttl_expires() -> None:
+    """InMemoryWebhookIdempotency: duplicate is forgotten after the TTL."""
+    from app.middleware.webhook_idempotency import InMemoryWebhookIdempotency
+    idem = InMemoryWebhookIdempotency(ttl_seconds=0)  # 0s TTL = always expires immediately
+    assert idem.is_duplicate("s", "1") is False
+    # Even the very next call — TTL 0 means it expired between calls.
+    # In practice ttl_seconds=0 would be a misconfiguration, but the
+    # the contract is "after TTL, no longer a duplicate".

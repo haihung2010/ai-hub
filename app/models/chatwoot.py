@@ -125,7 +125,7 @@ class ChatwootAgentBotResponse(BaseModel):
     """Response to AgentBot webhook. 200 OK with empty body is enough — the
     actual reply is sent via callback to conversation.message_url.
     """
-    status: Literal["queued", "processed", "skipped"] = "queued"
+    status: Literal["queued", "processed", "skipped", "duplicate"] = "queued"
     reason: str | None = None
 
 
