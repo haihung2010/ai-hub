@@ -1,0 +1,22 @@
+name: security-audit
+
+# P1.7 (2026-06-10) — runs scripts/audit_secrets.sh on every push
+# and PR. Fails the build if a secret-like pattern is found in git
+# history. This is the cheap, fast check (a few seconds). For a
+# deeper scan use TruffleHog or gitleaks in a separate workflow.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history for git log -p
+      - name: Scan history for secrets
+        run: bash scripts/audit_secrets.sh
