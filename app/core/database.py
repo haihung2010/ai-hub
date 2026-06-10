@@ -462,6 +462,31 @@ def init_db() -> None:
         ]:
             conn.execute(stmt)
 
+        # P1.2: A2A audit log. Every JSON-RPC call lands a row here so
+        # operators can reconstruct the full call history for a tenant
+        # (compliance + forensic). Kept separate from usage_events so
+        # the schema for the two remains clean.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS a2a_audit_log (
+                id BIGSERIAL PRIMARY KEY,
+                ts TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                tenant_id TEXT,
+                api_key_id TEXT,
+                rpc_method TEXT NOT NULL,
+                request_id TEXT,
+                task_id TEXT,
+                status_code INT NOT NULL,
+                latency_ms INT NOT NULL,
+                err_id TEXT
+            )
+        """)
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_a2a_audit_tenant_ts ON a2a_audit_log (tenant_id, ts DESC)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_a2a_audit_method_ts ON a2a_audit_log (rpc_method, ts DESC)"
+        )
+
         conn.commit()
 
         # Add is_admin column if it doesn't exist

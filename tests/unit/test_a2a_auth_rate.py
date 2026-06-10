@@ -198,3 +198,81 @@ def test_a2a_internal_error_is_redacted(client, monkeypatch) -> None:
     import re
     m = re.search(r"err_id=([0-9a-f]{8})", msg)
     assert m, f"err_id missing from message: {msg!r}"
+
+
+# ──────────────────────────────────────────────────────────────────────
+# P1.2 — A2A audit log (2026-06-10)
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_a2a_jsonrpc_writes_audit_row(client) -> None:
+    """Every successful JSON-RPC call must land a row in a2a_audit_log."""
+    from app.core.database import get_db_connection
+
+    # Baseline: count rows before. We assert EXACTLY +1 row was added
+    # (robust against pytest-repeat which re-runs the test in the
+    # same DB session).
+    def _count_for(req_id: str) -> int:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT count(*) AS n FROM a2a_audit_log WHERE request_id = %s",
+                    (req_id,),
+                )
+                row = cur.fetchone()
+            conn.commit()
+        return int(row["n"])
+
+    before = _count_for("audit-1")
+    resp = client.post(
+        "/v1/a2a/jsonrpc",
+        json={"jsonrpc": "2.0", "id": "audit-1", "method": "ListTasks", "params": {}},
+    )
+    assert resp.status_code == 200
+    after = _count_for("audit-1")
+    assert after - before == 1, f"expected +1 audit row, got delta={after - before}"
+    # Verify the schema
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT rpc_method, request_id, status_code, latency_ms, err_id "
+                "FROM a2a_audit_log WHERE request_id = %s LIMIT 1",
+                ("audit-1",),
+            )
+            row = cur.fetchone()
+        conn.commit()
+    assert row["rpc_method"] == "ListTasks"
+    assert row["request_id"] == "audit-1"
+    assert row["status_code"] == 200
+    assert isinstance(row["latency_ms"], int) and row["latency_ms"] >= 0
+    assert row["err_id"] is None  # success path
+
+
+def test_a2a_jsonrpc_audit_row_records_err_id_on_exception(client, monkeypatch) -> None:
+    """When a handler raises (P1.4), the audit row records the err_id."""
+    from app.core.database import get_db_connection
+
+    import app.routes.a2a as a2a_routes
+    def _boom(rpc):  # noqa: ARG001
+        raise RuntimeError("internal blew up")
+    monkeypatch.setattr(a2a_routes, "_handle_list_tasks", _boom)
+
+    def _err_for(req_id: str) -> str | None:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT err_id FROM a2a_audit_log WHERE request_id = %s LIMIT 1",
+                    (req_id,),
+                )
+                row = cur.fetchone()
+            conn.commit()
+        return row["err_id"] if row else None
+
+    resp = client.post(
+        "/v1/a2a/jsonrpc",
+        json={"jsonrpc": "2.0", "id": "audit-err", "method": "ListTasks", "params": {}},
+    )
+    assert resp.status_code == 200
+    err_id = _err_for("audit-err")
+    assert err_id is not None
+    assert len(err_id) == 8

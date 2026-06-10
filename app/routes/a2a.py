@@ -40,11 +40,13 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 import uuid
 from typing import Any
 
 from fastapi import APIRouter, Header, HTTPException, Request
 
+from app.core.database import get_db_connection
 from app.models.a2a import (
     JsonRpcError,
     JsonRpcErrorCode,
@@ -57,6 +59,44 @@ from app.services import a2a_integration
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v1/a2a", tags=["a2a"])
+
+
+def _write_audit(
+    *,
+    tenant_id: str | None,
+    api_key_id: str | None,
+    rpc_method: str,
+    request_id: Any,
+    task_id: str | None,
+    status_code: int,
+    latency_ms: int,
+    err_id: str | None = None,
+) -> None:
+    """P1.2: persist a row to a2a_audit_log. Never raises — logging
+    must not break the request path."""
+    try:
+        with get_db_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO a2a_audit_log
+                    (tenant_id, api_key_id, rpc_method, request_id,
+                     task_id, status_code, latency_ms, err_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    tenant_id,
+                    api_key_id,
+                    rpc_method,
+                    str(request_id) if request_id is not None else None,
+                    task_id,
+                    status_code,
+                    latency_ms,
+                    err_id,
+                ),
+            )
+            conn.commit()
+    except Exception:
+        logger.exception("a2a_audit_log insert failed (tenant=%s method=%s)", tenant_id, rpc_method)
 
 
 @router.get("/agent-card", summary="A2A AgentCard discovery")
@@ -86,6 +126,7 @@ async def jsonrpc(
     """
     # X-API-KEY is enforced by global middleware, so if we get here the
     # request is authenticated. We don't double-check here.
+    start = time.monotonic()
     raw = await request.body()
     try:
         payload = json.loads(raw)
@@ -99,18 +140,23 @@ async def jsonrpc(
                    JsonRpcErrorCode.INVALID_REQUEST, f"Invalid request: {e}")
 
     service = request.app.state.ai_service
+    tenant_id = getattr(request.state, "api_key_tenant_id", None)
+    api_key_id = getattr(request.state, "api_key_id", None)
+    task_id: str | None = None
+    err_id: str | None = None
 
     try:
         if rpc.method == "SendMessage":
-            return await _handle_send_message(rpc, service)
-        if rpc.method == "GetTask":
-            return _handle_get_task(rpc)
-        if rpc.method == "ListTasks":
-            return _handle_list_tasks(rpc)
-        if rpc.method == "CancelTask":
-            return _handle_cancel_task(rpc)
-        return _err(rpc.id, JsonRpcErrorCode.METHOD_NOT_FOUND,
-                     f"Method not found: {rpc.method}")
+            response, task_id = await _handle_send_message(rpc, service)
+        elif rpc.method == "GetTask":
+            response = _handle_get_task(rpc)
+        elif rpc.method == "ListTasks":
+            response = _handle_list_tasks(rpc)
+        elif rpc.method == "CancelTask":
+            response = _handle_cancel_task(rpc)
+        else:
+            response = _err(rpc.id, JsonRpcErrorCode.METHOD_NOT_FOUND,
+                            f"Method not found: {rpc.method}")
     except Exception:
         # P1.4: do NOT echo the exception back to the client. A naive
         # f"{exc}" can leak file paths, internal IPs, or partial prompt
@@ -118,24 +164,43 @@ async def jsonrpc(
         # message and an err_id the user can quote in a support ticket.
         err_id = uuid.uuid4().hex[:8]
         logger.exception("A2A JSON-RPC handler error err_id=%s", err_id)
-        return _err(
+        response = _err(
             rpc.id,
             JsonRpcErrorCode.INTERNAL_ERROR,
             f"Internal error (err_id={err_id}). See server logs.",
         )
+    finally:
+        latency_ms = int((time.monotonic() - start) * 1000)
+        # P1.2: best-effort audit. Failure to write is logged, not raised.
+        _write_audit(
+            tenant_id=tenant_id,
+            api_key_id=api_key_id,
+            rpc_method=rpc.method,
+            request_id=rpc.id,
+            task_id=task_id,
+            status_code=200,  # JSON-RPC errors are 200
+            latency_ms=latency_ms,
+            err_id=err_id,
+        )
+    return response
 
 
-async def _handle_send_message(rpc: JsonRpcRequest, service) -> dict[str, Any]:
-    """SendMessage: build a Task, dispatch to AI Hub, return result."""
+async def _handle_send_message(rpc: JsonRpcRequest, service) -> tuple[dict[str, Any], str | None]:
+    """SendMessage: build a Task, dispatch to AI Hub, return (result, task_id).
+
+    Returns the JSON-RPC response dict AND the created task_id so the
+    audit logger (P1.2) can record which task was created.
+    """
     if not rpc.params:
-        return _err(rpc.id, JsonRpcErrorCode.INVALID_PARAMS, "Missing params")
+        return _err(rpc.id, JsonRpcErrorCode.INVALID_PARAMS, "Missing params"), None
     try:
         send_req = SendMessageRequest.model_validate(rpc.params)
     except Exception as e:
-        return _err(rpc.id, JsonRpcErrorCode.INVALID_PARAMS, f"Invalid SendMessage params: {e}")
+        return _err(rpc.id, JsonRpcErrorCode.INVALID_PARAMS, f"Invalid SendMessage params: {e}"), None
 
     task = await a2a_integration.send_message(service, send_req)
-    return JsonRpcResponse(jsonrpc="2.0", id=rpc.id, result=task).model_dump(exclude_none=True)
+    task_id = task.get("id") if isinstance(task, dict) else None
+    return JsonRpcResponse(jsonrpc="2.0", id=rpc.id, result=task).model_dump(exclude_none=True), task_id
 
 
 def _handle_get_task(rpc: JsonRpcRequest) -> dict[str, Any]:

@@ -34,7 +34,7 @@ _TEST_TABLES = [
     "memory_items", "memory_episodes", "memory_consolidations",
     "pinned_memories", "prediction_records",
     "messages", "sessions", "summaries", "users",
-    "api_keys",
+    "api_keys", "a2a_audit_log",
 ]
 
 # Production DSN matchers. Each entry is a function: DSN -> True if the
