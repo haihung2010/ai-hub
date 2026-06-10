@@ -27,11 +27,20 @@ Security (P0.5, 2026-06-10):
   roadmap). A2A's spec already supports JWT bearer tokens in the
   Authorization header, so the migration will not require a breaking
   change for compliant clients.
+
+Error redaction (P1.4, 2026-06-10):
+
+- Internal exceptions are NEVER sent to the client. The public response
+  only contains ``err_id`` (an 8-char hex) so the user can quote it
+  in a support ticket. The full exception (including stack trace) is
+  written to the logs and the audit table (P1.2) so operators can
+  diagnose without exposing internals to the world.
 """
 from __future__ import annotations
 
 import json
 import logging
+import uuid
 from typing import Any
 
 from fastapi import APIRouter, Header, HTTPException, Request
@@ -102,9 +111,18 @@ async def jsonrpc(
             return _handle_cancel_task(rpc)
         return _err(rpc.id, JsonRpcErrorCode.METHOD_NOT_FOUND,
                      f"Method not found: {rpc.method}")
-    except Exception as exc:
-        logger.exception("A2A JSON-RPC handler error: %r", exc)
-        return _err(rpc.id, JsonRpcErrorCode.INTERNAL_ERROR, f"Internal error: {exc}")
+    except Exception:
+        # P1.4: do NOT echo the exception back to the client. A naive
+        # f"{exc}" can leak file paths, internal IPs, or partial prompt
+        # content. Log full details server-side; reply with a generic
+        # message and an err_id the user can quote in a support ticket.
+        err_id = uuid.uuid4().hex[:8]
+        logger.exception("A2A JSON-RPC handler error err_id=%s", err_id)
+        return _err(
+            rpc.id,
+            JsonRpcErrorCode.INTERNAL_ERROR,
+            f"Internal error (err_id={err_id}). See server logs.",
+        )
 
 
 async def _handle_send_message(rpc: JsonRpcRequest, service) -> dict[str, Any]:

@@ -165,3 +165,36 @@ def test_jsonrpc_rate_limit_kicks_in_after_quota(client) -> None:
         json={"jsonrpc": "2.0", "id": "overflow", "method": "ListTasks", "params": {}},
     )
     assert resp.status_code == 429, resp.text
+
+
+# ──────────────────────────────────────────────────────────────────────
+# P1.4 — A2A error data redaction (2026-06-10)
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_a2a_internal_error_is_redacted(client, monkeypatch) -> None:
+    """When a handler raises, the public response must NOT echo the
+    exception text. It must include an err_id for support correlation.
+    """
+    # Force _handle_list_tasks (or any handler) to raise
+    import app.routes.a2a as a2a_routes
+    def _boom(rpc):  # noqa: ARG001
+        raise RuntimeError("SECRET-PATH-/home/admin/secrets.txt")
+    monkeypatch.setattr(a2a_routes, "_handle_list_tasks", _boom)
+    resp = client.post(
+        "/v1/a2a/jsonrpc",
+        json={"jsonrpc": "2.0", "id": "x", "method": "ListTasks", "params": {}},
+    )
+    assert resp.status_code == 200  # JSON-RPC errors are 200 with error envelope
+    body = resp.json()
+    assert body.get("error") is not None
+    msg = body["error"]["message"]
+    # Public message must NOT contain the raw exception
+    assert "SECRET-PATH" not in msg
+    assert "/home/admin" not in msg
+    # Must include an err_id for support correlation
+    assert "err_id=" in msg
+    # The err_id is 8 hex chars after err_id=
+    import re
+    m = re.search(r"err_id=([0-9a-f]{8})", msg)
+    assert m, f"err_id missing from message: {msg!r}"
