@@ -6,11 +6,66 @@ import json
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.models.skill import SkillEvaluationResult
 
 router = APIRouter(prefix="/v1/projects", tags=["skills"])
+
+# P1.8 (2026-06-10) — test_cases schema. We enforce this on BOTH
+# create and update to prevent a malicious admin from slipping in
+# a malformed JSON blob that later gets passed to the prompt
+# builder. The shape is intentionally small: input + expected_output
+# + optional note for human reviewers.
+_MAX_TEST_CASES = 50
+_MAX_TEST_CASE_INPUT_CHARS = 2000
+_MAX_TEST_CASE_EXPECTED_CHARS = 2000
+
+
+def _validate_test_cases(test_cases: list[dict], *, where: str) -> list[dict]:
+    """Reject malformed test_cases. Returns the (validated, possibly
+    normalised) list. Raises HTTPException(422) on any rule violation.
+    """
+    if not isinstance(test_cases, list):
+        raise HTTPException(
+            status_code=422,
+            detail=f"{where}: test_cases must be a list",
+        )
+    if len(test_cases) > _MAX_TEST_CASES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"{where}: at most {_MAX_TEST_CASES} test_cases allowed, got {len(test_cases)}",
+        )
+    out: list[dict] = []
+    for i, tc in enumerate(test_cases):
+        if not isinstance(tc, dict):
+            raise HTTPException(
+                status_code=422,
+                detail=f"{where}: test_cases[{i}] must be an object",
+            )
+        if "input" not in tc or not isinstance(tc["input"], str) or not tc["input"].strip():
+            raise HTTPException(
+                status_code=422,
+                detail=f"{where}: test_cases[{i}].input must be a non-empty string",
+            )
+        if len(tc["input"]) > _MAX_TEST_CASE_INPUT_CHARS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"{where}: test_cases[{i}].input exceeds {_MAX_TEST_CASE_INPUT_CHARS} chars",
+            )
+        if "expected_output" in tc and tc["expected_output"] is not None:
+            if not isinstance(tc["expected_output"], str):
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"{where}: test_cases[{i}].expected_output must be a string",
+                )
+            if len(tc["expected_output"]) > _MAX_TEST_CASE_EXPECTED_CHARS:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"{where}: test_cases[{i}].expected_output exceeds {_MAX_TEST_CASE_EXPECTED_CHARS} chars",
+                )
+        out.append(tc)
+    return out
 
 
 # ── Request/Response models ────────────────────────────────────────────────────
@@ -94,7 +149,7 @@ async def list_skills(project_id: str, request: Request, include_inactive: bool 
     """List all skills for a project."""
     from app.services.skill_service import SkillService
 
-    tenant_id = getattr(request.state, "api_key_tenant_id", "default")
+    tenant_id = getattr(request.state, "api_key_tenant_id", None) or "default"
     service = SkillService()
     skills = service.list_skills(tenant_id, project_id, include_inactive=include_inactive)
     return SkillListResponse(
@@ -108,7 +163,14 @@ async def create_skill(project_id: str, request: Request, payload: CreateSkillRe
     """Create a new skill for a project."""
     from app.services.skill_service import SkillService
 
-    tenant_id = getattr(request.state, "api_key_tenant_id", "default")
+    # P1.8: validate test_cases BEFORE persisting. Bad input is
+    # rejected at the API boundary, not on read.
+    payload.test_cases = _validate_test_cases(payload.test_cases, where="create")
+
+    # Master API key (no row in api_keys) yields api_key_tenant_id=None;
+    # fall back to "default" so the test client (and operator overrides)
+    # still work. Production callers always come from a row-backed key.
+    tenant_id = getattr(request.state, "api_key_tenant_id", None) or "default"
     service = SkillService()
     skill = service.create(
         tenant_id=tenant_id,
@@ -130,13 +192,28 @@ async def update_skill(
     request: Request,
     payload: UpdateSkillRequest,
 ) -> SkillResponse:
-    """Update an existing skill."""
+    """Update an existing skill.
+
+    Security (P1.8, 2026-06-10):
+    - project_id from the URL must match the stored project_id
+      (prevents a caller from one project editing skills in another)
+    - test_cases_json is re-validated on every PATCH (P1.8 fix).
+      Even if the original create went through, a PATCH cannot
+      sneak a malformed blob past the validator.
+    """
     from app.services.skill_service import SkillService
 
     service = SkillService()
     existing = service.get_skill(skill_id)
     if not existing or existing.project_id != project_id:
         raise HTTPException(status_code=404, detail="Skill not found")
+
+    # P1.8: re-validate test_cases whenever it's being updated.
+    # Without this, an attacker who got past create-time validation
+    # (e.g. by waiting for a future schema-bug) could overwrite
+    # test_cases with anything.
+    if payload.test_cases is not None:
+        payload.test_cases = _validate_test_cases(payload.test_cases, where="update")
 
     updated = service.update(
         skill_id=skill_id,
