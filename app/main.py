@@ -42,6 +42,7 @@ from app.routes import facebook_webhook as fb_webhook_routes
 from app.routes import ihi as ihi_routes
 from app.routes import chatwoot_webhook as chatwoot_routes
 from app.routes import a2a as a2a_routes
+from app.routes import audio as audio_routes
 from app.agents.crew_service import CrewService
 from app.core.database import _get_database_url
 from app.services.ai_service import AIService
@@ -361,6 +362,17 @@ def create_app(
             app.state.usage_service = usage
             app.state.failure_risk_service = failure_risk
             app.state.structmem_service = structmem
+            # Whisper service (P0.4 — gated by ENABLE_WHISPER; lazy-loaded model)
+            try:
+                from app.services.whisper_service import WhisperService
+                app.state.whisper_service = (
+                    WhisperService(model_size=settings.whisper_model_size)
+                    if settings.enable_whisper
+                    else None
+                )
+            except Exception as exc:
+                logger.warning("Whisper service init failed: %s", exc)
+                app.state.whisper_service = None
             app.state.crew_service = (
                 CrewService(settings, _get_database_url())
                 if settings.enable_crew_agents
@@ -488,6 +500,7 @@ def create_app(
     app.include_router(ihi_routes.router)
     app.include_router(chatwoot_routes.router)
     app.include_router(a2a_routes.router)
+    app.include_router(audio_routes.router)
     # MCP server: expose all API endpoints as MCP tools
     try:
         from fastapi_mcp import FastApiMCP

@@ -169,6 +169,10 @@ class Settings(BaseSettings):
     llama_cpp_nodes: list[str] = Field(default_factory=list, alias="LLAMA_CPP_NODES")
     enable_crew_agents: bool = Field(default=False, alias="ENABLE_CREW_AGENTS")
     crew_model: str = Field(default="local-gemma4-e4b-q4", alias="CREW_MODEL")
+    # P0.4: Whisper audio transcription (gated by ENABLE_WHISPER; off by
+    # default so the model isn't loaded on instances that don't need it).
+    enable_whisper: bool = Field(default=False, alias="ENABLE_WHISPER")
+    whisper_model_size: str = Field(default="large-v3-turbo", alias="WHISPER_MODEL_SIZE")
     google_api_key: str = Field(default="", alias="GOOGLE_API_KEY")
     google_ai_studio_api_key: str = Field(default="", alias="GOOGLE_AI_STUDIO_API_KEY")
     gemini_model: str = Field(default="gemini-2.0-flash", alias="GEMINI_MODEL")
