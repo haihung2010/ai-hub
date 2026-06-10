@@ -588,16 +588,35 @@ before hard-delete (30-day grace period).
 
 ## Open questions for user
 
-1. **OAuth 2.1 timing**: P0 → P1 → P2 vs. jumping to P2.1 sooner? OAuth is
-   the right long-term answer but bigger change.
-2. **Tenant ID derivation**: keep `cw_<account_id>` convention (Chatwoot
-   pattern) or use opaque UUIDs (more secure but breaks existing clients)?
-3. **PII redaction default**: redact (data loss, GDPR-safer) vs warn
-   (preserve data, requires user action)?
-4. **Per-tenant rate limit default**: 200 RPM (matches current 8
-   parallel slots) or 60 RPM (matches current per-key limit)?
-5. **PII data residency**: Vietnamese users in VN, EU users in EU, US in
-   US? Or single-region?
+1. **OAuth 2.1 timing**: ✅ **Defer to Sprint 2** (sau P1). X-API-KEY
+   van du 1-2 thang nua, de co thoi gian migrate clients. Giu duoc
+   backward compat 1 release.
+2. **Tenant ID derivation**: ✅ **UUID opaque** (new tenants). Current
+   `cw_<account_id>` convention giu lai cho existing tenants (backward
+   compat). New Chatwoot accounts get UUID4 via mapping table
+   `cw_tenant_map(account_id UUID)`. Production deployment: ALL
+   migrations complete by Q3 2026.
+3. **PII redaction default**: ✅ **Redact** (data loss, GDPR-safer).
+   PII (CCCD, phone, email, address) bi redact thanh `[REDACTED-XXX]`
+   truoc khi luu vao `messages.content` va `memory_items.content`.
+   `REDACT_PII=false` env override de disable (chi cho dev).
+4. **Per-tenant rate limit default**: ✅ **200 RPM** (match GPU
+   capacity 16 parallel slots). 1 tenant push 200 RPM, multiple tenants
+   shared 500+ RPM aggregate.
+5. **PII data residency**: ✅ **Multi-region per user location** (most
+   complex). Vietnamese users in VN-SG, EU users in EU-Frankfurt, US in
+   US-West. Multi-region deployment, geographic routing, regional
+   PostgreSQL. Implementation roadmap in P2.6.
+
+## Migration plan summary (concrete)
+
+| # | Decision | Implication | Migration path |
+|---|---|---|---|
+| 1 | OAuth deferred | Keep X-API-KEY | None (backward compat 1 release) |
+| 2 | UUID tenant | New tenants get UUID | Mapping table `cw_tenant_map` for legacy `cw_<id>` |
+| 3 | Redact PII | New middleware | Migration: re-process old messages to mask PII |
+| 4 | 200 RPM | New env var `TENANT_RATE_LIMIT_RPM` | None (default changed, per-tenant override via `api_keys.rpm_limit`) |
+| 5 | Multi-region | Phase 2 work | Add `region` column to all tables; replicas in EU/US |
 
 ## References
 
