@@ -214,6 +214,20 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         self._failure_tracker = failure_tracker
         self._allowed_hosts = {host.lower() for host in settings.allowed_hosts}
         self._api_keys = ApiKeyService()
+        # P1.1: per-tenant rate limiter (cumulative across all keys of
+        # the same tenant). Defaults to 200 RPM — matches 16 GPU slots
+        # at 1 req/s + 40% headroom.
+        try:
+            from app.middleware.tenant_rate_limit import make_tenant_rate_limiter
+            self._tenant_limiter = make_tenant_rate_limiter(
+                default_rpm=settings.tenant_rate_limit_rpm
+            )
+        except Exception as exc:
+            logger.warning("Tenant rate limiter init failed: %s", exc)
+            from app.middleware.tenant_rate_limit import InMemoryTenantRateLimiter
+            self._tenant_limiter = InMemoryTenantRateLimiter(
+                default_rpm=settings.tenant_rate_limit_rpm
+            )
 
     async def dispatch(self, request: Request, call_next: Callable[[Request], Response]) -> Response:
         path = request.url.path
@@ -296,6 +310,19 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 content={"detail": "rate limit exceeded"},
+                headers={"Retry-After": str(RATE_LIMIT_WINDOW_SECONDS)},
+            )
+
+        # P1.1: per-tenant rate limit (cumulative). Runs AFTER the
+        # per-key check so a single abusive key still hits the per-key
+        # limit first; this catches the "1000 keys, 60 RPM each"
+        # fan-out attack. Tenant ID is set on request.state above.
+        tenant_id = getattr(request.state, "api_key_tenant_id", None)
+        if tenant_id and not self._tenant_limiter.allow(tenant_id):
+            self._log_denial(client_ip, request.url.path, "tenant_rate_limit_exceeded")
+            return JSONResponse(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                content={"detail": "tenant rate limit exceeded"},
                 headers={"Retry-After": str(RATE_LIMIT_WINDOW_SECONDS)},
             )
 

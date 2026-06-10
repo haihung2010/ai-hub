@@ -106,6 +106,9 @@ class Settings(BaseSettings):
     provider_call_timeout_seconds: float = Field(default=0.0, ge=0.0, alias="PROVIDER_CALL_TIMEOUT_SECONDS")
     api_key: str = Field(min_length=16, alias="API_KEY")
     rate_limit_per_minute: int = Field(default=5, ge=1, alias="RATE_LIMIT_PER_MINUTE")
+    # P1.1: per-tenant rate limit (cumulative across all keys of the
+    # same tenant). 200 RPM matches 16 GPU slots with 40% headroom.
+    tenant_rate_limit_rpm: int = Field(default=200, ge=1, alias="TENANT_RATE_LIMIT_RPM")
     security_log_file: str = Field(default="security.log", alias="SECURITY_LOG_FILE")
     # Langfuse tracing — when LANGFUSE_PUBLIC_KEY is non-empty, every chat
     # request is traced (latency, token usage, retrieval hits, model id).
