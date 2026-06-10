@@ -481,6 +481,9 @@ def create_app(
         allow_headers=["X-API-KEY", "Content-Type"],
     )
     app.add_middleware(SecurityMiddleware, settings=settings, limiter=limiter, failure_tracker=failure_tracker)
+    # P1.5 — security headers (X-Content-Type-Options, HSTS, CSP, ...)
+    from app.middleware.security_headers import SecurityHeadersMiddleware
+    app.add_middleware(SecurityHeadersMiddleware)
 
     @app.get("/")
     async def index():
