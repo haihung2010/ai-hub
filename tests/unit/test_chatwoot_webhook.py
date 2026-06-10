@@ -284,6 +284,11 @@ def test_agent_bot_skips_empty_messages(client) -> None:
 
 def test_agent_bot_calls_back_to_message_url(client, monkeypatch) -> None:
     """When valid incoming message, AI Hub fires callback to Chatwoot."""
+    # P1.6 idempotency: clear any prior dedup state so pytest-repeat
+    # can run this test multiple times without the second run being
+    # suppressed as a "duplicate".
+    from app.middleware.webhook_idempotency import InMemoryWebhookIdempotency
+    client.app.state.webhook_idempotency = InMemoryWebhookIdempotency()
     monkeypatch.setenv("CHATWOOT_API_TOKEN", "test-cw-token")
 
     with respx.mock:
