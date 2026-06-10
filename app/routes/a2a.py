@@ -14,8 +14,19 @@ Two endpoints:
 Streaming (SendStreamingMessage via SSE) is NOT yet implemented — see
 docs/integrations/a2a.md for the roadmap.
 
-Auth: X-API-KEY (same as /v1/chat). The A2A standard supports OAuth/JWT
-but for v1 we use the simpler X-API-KEY scheme.
+Security (P0.5, 2026-06-10):
+
+- **Auth**: X-API-KEY is required. The endpoint is NOT public. The
+  AgentCard declares this so clients know to send the header.
+- **Rate limit**: 60 RPM per X-API-KEY, enforced by the global security
+  middleware (Redis sliding window with in-memory fallback). The same
+  limit applies to /v1/chat — A2A does not get a privileged quota.
+- **Auth failures**: tracked via the AuthFailureTracker; 5 failures
+  from a single IP block that IP for 60 seconds (see middleware config).
+- **OAuth 2.1**: deferred to a future sprint (P2.1 of the security
+  roadmap). A2A's spec already supports JWT bearer tokens in the
+  Authorization header, so the migration will not require a breaking
+  change for compliant clients.
 """
 from __future__ import annotations
 
