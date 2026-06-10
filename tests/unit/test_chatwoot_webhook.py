@@ -31,6 +31,30 @@ pytestmark = [pytest.mark.unit, pytest.mark.no_isolated_db]
 
 
 LLAMA_URL = "http://llama.test/v1/chat/completions"
+CHATWOOT_TEST_SECRET = "test-chatwoot-secret"
+
+
+def _sign(body: bytes) -> str:
+    """Return X-Chatwoot-Signature header for ``body`` using the test secret."""
+    return hmac.new(CHATWOOT_TEST_SECRET.encode(), body, hashlib.sha256).hexdigest()
+
+
+def _signed_post(client, url: str, payload: dict | None = None, **kwargs):
+    """POST a JSON payload to ``url`` with a valid Chatwoot HMAC signature.
+
+    Tests that need to exercise the signature behavior itself should NOT use
+    this helper — they should send a bad/missing signature on purpose. To do
+    that, pass ``headers={"X-Chatwoot-Signature": "bad"}`` and the helper will
+    keep your value via setdefault.
+    """
+    if payload is None:
+        body = b""
+    else:
+        body = json.dumps(payload).encode()
+    headers = kwargs.pop("headers", {}) or {}
+    headers.setdefault("X-Chatwoot-Signature", _sign(body))
+    headers.setdefault("Content-Type", "application/json")
+    return client.post(url, content=body, headers=headers, **kwargs)
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -59,7 +83,9 @@ def _ollama_response(content: str = "Xin chào! Tôi có thể giúp gì cho b�
 # ──────────────────────────────────────────────────────────────────────
 
 
-def test_health_returns_ok(client) -> None:
+def test_health_returns_ok(client, monkeypatch) -> None:
+    monkeypatch.delenv("CHATWOOT_WEBHOOK_SECRET", raising=False)
+    monkeypatch.delenv("CHATWOOT_API_TOKEN", raising=False)
     resp = client.get("/v1/integrations/chatwoot/health")
     assert resp.status_code == 200
     data = resp.json()
@@ -84,9 +110,10 @@ def test_custom_tool_maps_last_user_message_and_history(client) -> None:
             return httpx.Response(200, json=_ollama_response("Tôi giúp được!"))
 
         respx.post(LLAMA_URL).mock(side_effect=_handler)
-        resp = client.post(
+        resp = _signed_post(
+            client,
             "/v1/integrations/chatwoot/respond",
-            json={
+            {
                 "messages": [
                     {"role": "user", "content": "Tôi muốn hỏi về sản phẩm A"},
                     {"role": "assistant", "content": "Bạn muốn biết gì về sản phẩm A?"},
@@ -120,9 +147,10 @@ def test_custom_tool_tenant_mapping_prefixes_account_id(client) -> None:
             return httpx.Response(200, json=_ollama_response("ok"))
 
         respx.post(LLAMA_URL).mock(side_effect=_handler)
-        resp = client.post(
+        resp = _signed_post(
+            client,
             "/v1/integrations/chatwoot/respond",
-            json={
+            {
                 "messages": [{"role": "user", "content": "hi"}],
                 "account": {"id": 99},
                 "conversation": {"id": 5},
@@ -140,9 +168,10 @@ def test_custom_tool_tenant_mapping_prefixes_account_id(client) -> None:
 def test_custom_tool_tenant_override_wins(client) -> None:
     with respx.mock:
         respx.post(LLAMA_URL).mock(return_value=httpx.Response(200, json=_ollama_response("ok")))
-        resp = client.post(
+        resp = _signed_post(
+            client,
             "/v1/integrations/chatwoot/respond",
-            json={
+            {
                 "messages": [{"role": "user", "content": "hi"}],
                 "account": {"id": 99},  # would default to cw_99
                 "tenant_id": "my_custom_tenant",  # override
@@ -156,9 +185,10 @@ def test_custom_tool_handles_empty_messages_gracefully(client) -> None:
     """Empty messages list should not crash — defensive fallback to '(empty)'."""
     with respx.mock:
         respx.post(LLAMA_URL).mock(return_value=httpx.Response(200, json=_ollama_response("ok")))
-        resp = client.post(
+        resp = _signed_post(
+            client,
             "/v1/integrations/chatwoot/respond",
-            json={"messages": []},
+            {"messages": []},
         )
     # Returns 200 because the service defends by sending "(empty)" as the question
     assert resp.status_code == 200
@@ -167,9 +197,10 @@ def test_custom_tool_handles_empty_messages_gracefully(client) -> None:
 def test_custom_tool_handles_llama_error_returns_friendly_text(client) -> None:
     with respx.mock:
         respx.post(LLAMA_URL).mock(return_value=httpx.Response(500, text="upstream down"))
-        resp = client.post(
+        resp = _signed_post(
+            client,
             "/v1/integrations/chatwoot/respond",
-            json={"messages": [{"role": "user", "content": "hi"}]},
+            {"messages": [{"role": "user", "content": "hi"}]},
         )
     # Service catches the error and returns a friendly Vietnamese fallback
     assert resp.status_code == 200
@@ -219,9 +250,10 @@ def test_agent_bot_skips_outgoing_messages(client) -> None:
     with respx.mock:
         # We don't even expect llama to be called
         respx.post(LLAMA_URL).mock(return_value=httpx.Response(200, json=_ollama_response()))
-        resp = client.post(
+        resp = _signed_post(
+            client,
             "/v1/integrations/chatwoot/agent_bot",
-            json={
+            {
                 "event": "message_created",
                 "message": {"content": "Hello", "message_type": "outgoing"},
                 "conversation": {"id": 1, "message_url": "http://chatwoot.test/msg"},
@@ -236,9 +268,10 @@ def test_agent_bot_skips_outgoing_messages(client) -> None:
 def test_agent_bot_skips_empty_messages(client) -> None:
     with respx.mock:
         respx.post(LLAMA_URL).mock(return_value=httpx.Response(200, json=_ollama_response()))
-        resp = client.post(
+        resp = _signed_post(
+            client,
             "/v1/integrations/chatwoot/agent_bot",
-            json={
+            {
                 "event": "message_created",
                 "message": {"content": "", "message_type": "incoming"},
                 "conversation": {"id": 1, "message_url": "http://chatwoot.test/msg"},
@@ -270,9 +303,10 @@ def test_agent_bot_calls_back_to_message_url(client, monkeypatch) -> None:
         )
 
         # Use a valid URL that respx matches (we'll match by prefix in the route)
-        resp = client.post(
+        resp = _signed_post(
+            client,
             "/v1/integrations/chatwoot/agent_bot",
-            json={
+            {
                 "event": "message_created",
                 "message": {"id": 100, "content": "Giá sản phẩm A?", "message_type": "incoming"},
                 "conversation": {
@@ -304,9 +338,10 @@ def test_agent_bot_calls_back_to_message_url(client, monkeypatch) -> None:
 def test_agent_bot_handles_missing_message_url(client) -> None:
     with respx.mock:
         respx.post(LLAMA_URL).mock(return_value=httpx.Response(200, json=_ollama_response("reply")))
-        resp = client.post(
+        resp = _signed_post(
+            client,
             "/v1/integrations/chatwoot/agent_bot",
-            json={
+            {
                 "event": "message_created",
                 "message": {"content": "hi", "message_type": "incoming"},
                 "conversation": {"id": 1, "message_url": None},  # missing
@@ -319,15 +354,15 @@ def test_agent_bot_handles_missing_message_url(client) -> None:
     assert "no_message_url" in (data.get("reason") or "")
 
 
-def test_agent_bot_handles_missing_api_token(client) -> None:
+def test_agent_bot_handles_missing_api_token(client, monkeypatch) -> None:
     """If CHATWOOT_API_TOKEN not set, the AI still processed but reply drops."""
-    if os.environ.get("CHATWOOT_API_TOKEN"):
-        del os.environ["CHATWOOT_API_TOKEN"]
+    monkeypatch.delenv("CHATWOOT_API_TOKEN", raising=False)
     with respx.mock:
         respx.post(LLAMA_URL).mock(return_value=httpx.Response(200, json=_ollama_response("reply")))
-        resp = client.post(
+        resp = _signed_post(
+            client,
             "/v1/integrations/chatwoot/agent_bot",
-            json={
+            {
                 "event": "message_created",
                 "message": {"content": "hi", "message_type": "incoming"},
                 "conversation": {"id": 1, "message_url": "http://chatwoot.test/msg"},
@@ -346,19 +381,24 @@ def test_agent_bot_handles_missing_api_token(client) -> None:
 
 
 def test_custom_tool_400_on_invalid_json(client) -> None:
+    body = b"not json"
     resp = client.post(
         "/v1/integrations/chatwoot/respond",
-        content=b"not json",
-        headers={"Content-Type": "application/json"},
+        content=body,
+        headers={
+            "X-Chatwoot-Signature": _sign(body),
+            "Content-Type": "application/json",
+        },
     )
     assert resp.status_code == 400
 
 
 def test_custom_tool_422_on_schema_violation(client) -> None:
     """Missing required 'role' in message should fail validation."""
-    resp = client.post(
+    resp = _signed_post(
+        client,
         "/v1/integrations/chatwoot/respond",
-        json={"messages": [{"content": "hi"}]},  # missing role
+        {"messages": [{"content": "hi"}]},  # missing role
     )
     assert resp.status_code == 422
 
@@ -370,9 +410,10 @@ def test_custom_tool_422_on_schema_violation(client) -> None:
 
 def test_product_lookup_returns_empty_when_kb_disabled(client) -> None:
     """With ENABLE_KNOWLEDGE_RAG=False (test fixture), should return found=False."""
-    resp = client.post(
+    resp = _signed_post(
+        client,
         "/v1/integrations/chatwoot/tools/product_lookup",
-        json={"query": "Serum Vitamin C"},
+        {"query": "Serum Vitamin C"},
     )
     assert resp.status_code == 200
     data = resp.json()
@@ -382,18 +423,23 @@ def test_product_lookup_returns_empty_when_kb_disabled(client) -> None:
 
 
 def test_product_lookup_422_on_empty_query(client) -> None:
-    resp = client.post(
+    resp = _signed_post(
+        client,
         "/v1/integrations/chatwoot/tools/product_lookup",
-        json={"query": ""},
+        {"query": ""},
     )
     assert resp.status_code == 422
 
 
 def test_product_lookup_400_on_invalid_json(client) -> None:
+    body = b"not json"
     resp = client.post(
         "/v1/integrations/chatwoot/tools/product_lookup",
-        content=b"not json",
-        headers={"Content-Type": "application/json"},
+        content=body,
+        headers={
+            "X-Chatwoot-Signature": _sign(body),
+            "Content-Type": "application/json",
+        },
     )
     assert resp.status_code == 400
 
@@ -405,9 +451,10 @@ def test_product_lookup_400_on_invalid_json(client) -> None:
 
 def test_order_status_returns_not_configured_stub(client) -> None:
     """Stub returns a structured not_configured response."""
-    resp = client.post(
+    resp = _signed_post(
+        client,
         "/v1/integrations/chatwoot/tools/order_status",
-        json={"order_id": "ORD-12345", "contact_email": "test@example.com"},
+        {"order_id": "ORD-12345", "contact_email": "test@example.com"},
     )
     assert resp.status_code == 200
     data = resp.json()
@@ -420,9 +467,10 @@ def test_order_status_returns_not_configured_stub(client) -> None:
 
 
 def test_order_status_422_on_empty_order_id(client) -> None:
-    resp = client.post(
+    resp = _signed_post(
+        client,
         "/v1/integrations/chatwoot/tools/order_status",
-        json={"order_id": ""},
+        {"order_id": ""},
     )
     assert resp.status_code == 422
 
@@ -434,9 +482,10 @@ def test_order_status_422_on_empty_order_id(client) -> None:
 
 def test_escalate_human_returns_ticket_id(client) -> None:
     """Returns a ticket_id and priority-estimated response time."""
-    resp = client.post(
+    resp = _signed_post(
+        client,
         "/v1/integrations/chatwoot/tools/escalate_human",
-        json={
+        {
             "conversation_id": 42,
             "reason": "Customer wants a refund > $50",
             "contact_id": 7,
@@ -459,9 +508,10 @@ def test_escalate_human_eta_per_priority(client) -> None:
     """Each priority maps to a specific ETA."""
     expected = {"urgent": 5, "high": 15, "medium": 30, "low": 60}
     for priority, expected_eta in expected.items():
-        resp = client.post(
+        resp = _signed_post(
+            client,
             "/v1/integrations/chatwoot/tools/escalate_human",
-            json={
+            {
                 "conversation_id": 100,
                 "reason": f"test priority={priority}",
                 "priority": priority,
@@ -472,9 +522,10 @@ def test_escalate_human_eta_per_priority(client) -> None:
 
 
 def test_escalate_human_default_priority_is_medium(client) -> None:
-    resp = client.post(
+    resp = _signed_post(
+        client,
         "/v1/integrations/chatwoot/tools/escalate_human",
-        json={
+        {
             "conversation_id": 100,
             "reason": "default priority test",
         },
@@ -484,9 +535,10 @@ def test_escalate_human_default_priority_is_medium(client) -> None:
 
 
 def test_escalate_human_422_on_missing_reason(client) -> None:
-    resp = client.post(
+    resp = _signed_post(
+        client,
         "/v1/integrations/chatwoot/tools/escalate_human",
-        json={"conversation_id": 1, "reason": ""},
+        {"conversation_id": 1, "reason": ""},
     )
     assert resp.status_code == 422
 
@@ -496,25 +548,22 @@ def test_escalate_human_422_on_missing_reason(client) -> None:
 # ──────────────────────────────────────────────────────────────────────
 
 
-def test_product_lookup_rejects_bad_signature(client, monkeypatch) -> None:
-    monkeypatch.setenv("CHATWOOT_WEBHOOK_SECRET", "secret123")
-    resp = client.post(
+def test_product_lookup_rejects_bad_signature(client) -> None:
+    resp = _signed_post(
+        client,
         "/v1/integrations/chatwoot/tools/product_lookup",
-        json={"query": "test"},
+        {"query": "test"},
         headers={"X-Chatwoot-Signature": "bad"},
     )
     assert resp.status_code == 401
 
 
-def test_escalate_human_accepts_valid_signature(client, monkeypatch) -> None:
-    import hmac as _hmac
-    import hashlib as _hashlib
-    monkeypatch.setenv("CHATWOOT_WEBHOOK_SECRET", "secret123")
+def test_escalate_human_accepts_valid_signature(client) -> None:
     body = json.dumps({
         "conversation_id": 1,
         "reason": "test",
     }).encode()
-    sig = _hmac.new(b"secret123", body, _hashlib.sha256).hexdigest()
+    sig = hmac.new(CHATWOOT_TEST_SECRET.encode(), body, hashlib.sha256).hexdigest()
     resp = client.post(
         "/v1/integrations/chatwoot/tools/escalate_human",
         content=body,
@@ -524,3 +573,46 @@ def test_escalate_human_accepts_valid_signature(client, monkeypatch) -> None:
         },
     )
     assert resp.status_code == 200
+
+
+# ──────────────────────────────────────────────────────────────────────
+# P0.1 — HMAC required in production (security policy)
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_chatwoot_rejects_when_secret_unset_in_production(client, monkeypatch) -> None:
+    """When CHATWOOT_WEBHOOK_SECRET is unset and CHATWOOT_ALLOW_INSECURE != true,
+    Chatwoot requests MUST be rejected even with a valid signature.
+    """
+    monkeypatch.delenv("CHATWOOT_WEBHOOK_SECRET", raising=False)
+    monkeypatch.delenv("CHATWOOT_ALLOW_INSECURE", raising=False)
+    resp = _signed_post(
+        client,
+        "/v1/integrations/chatwoot/respond",
+        {"messages": [{"role": "user", "content": "hi"}]},
+    )
+    assert resp.status_code == 401
+
+
+def test_chatwoot_allows_when_allow_insecure_set(client, monkeypatch) -> None:
+    """When CHATWOOT_ALLOW_INSECURE=true, Chatwoot works without secret (dev mode)."""
+    monkeypatch.delenv("CHATWOOT_WEBHOOK_SECRET", raising=False)
+    monkeypatch.setenv("CHATWOOT_ALLOW_INSECURE", "true")
+    with respx.mock:
+        respx.post(LLAMA_URL).mock(return_value=httpx.Response(200, json=_ollama_response("ok")))
+        resp = client.post(
+            "/v1/integrations/chatwoot/respond",
+            json={"messages": [{"role": "user", "content": "hi"}]},
+        )
+    assert resp.status_code == 200
+
+
+def test_chatwoot_rejects_when_signature_missing_with_secret(client, monkeypatch) -> None:
+    """When secret IS set but signature header is missing, reject."""
+    monkeypatch.setenv("CHATWOOT_WEBHOOK_SECRET", "secret123")
+    monkeypatch.delenv("CHATWOOT_ALLOW_INSECURE", raising=False)
+    resp = client.post(
+        "/v1/integrations/chatwoot/respond",
+        json={"messages": [{"role": "user", "content": "hi"}]},
+    )
+    assert resp.status_code == 401

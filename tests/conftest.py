@@ -136,6 +136,20 @@ def settings() -> Settings:
     )
 
 
+@pytest.fixture(autouse=True)
+def chatwoot_test_env(monkeypatch) -> None:
+    """Set CHATWOOT_WEBHOOK_SECRET for tests so HMAC enforcement is testable.
+
+    The P0.1 fix made HMAC mandatory unless CHATWOOT_ALLOW_INSECURE=true.
+    Tests that don't care about auth can rely on the secret being set so
+    they pass a valid signature (built via hmac.new in the test).
+    Tests that DO want to assert auth behavior set/delete these env vars
+    explicitly via monkeypatch.
+    """
+    monkeypatch.setenv("CHATWOOT_WEBHOOK_SECRET", "test-chatwoot-secret")
+    monkeypatch.delenv("CHATWOOT_ALLOW_INSECURE", raising=False)
+
+
 @pytest.fixture
 def client(settings: Settings) -> Iterator[TestClient]:
     limiter = InMemoryRateLimiter(limit=settings.rate_limit_per_minute)

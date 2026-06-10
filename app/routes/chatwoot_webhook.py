@@ -55,13 +55,25 @@ def _get_webhook_secret() -> str:
 def _verify_signature(raw_body: bytes, signature: str | None) -> bool:
     """Verify X-Chatwoot-Signature header against HMAC-SHA256(raw_body, secret).
 
-    If no secret configured (dev mode), skip verification. In production
-    always configure CHATWOOT_WEBHOOK_SECRET and pass signature from
-    Chatwoot's webhook (or Captain Custom Tool).
+    Security policy (P0 fix, 2026-06-09):
+    - If CHATWOOT_WEBHOOK_SECRET is unset, REFUSE the request
+      unless CHATWOOT_ALLOW_INSECURE=true (dev mode only).
+    - In production, the secret MUST be set. Operators are expected
+      to configure the secret alongside CHATWOOT_API_TOKEN.
+    - This prevents an attacker who has learned the webhook URL from
+      invoking AI tools (and running up the GPU bill) without the
+      Chatwoot-side shared secret.
     """
     secret = _get_webhook_secret()
     if not secret:
-        return True  # dev mode: no verification
+        if os.environ.get("CHATWOOT_ALLOW_INSECURE", "").lower() == "true":
+            return True  # dev mode: explicitly opted in
+        logger.error(
+            "Chatwoot HMAC secret not configured and CHATWOOT_ALLOW_INSECURE "
+            "is not 'true'. Rejecting request — set CHATWOOT_WEBHOOK_SECRET "
+            "in production."
+        )
+        return False
     if not signature:
         return False
     expected = hmac.new(secret.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
