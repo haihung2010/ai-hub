@@ -77,6 +77,23 @@ async def chat_endpoint(payload: ChatRequest, request: Request) -> ChatResponse 
             return JSONResponse(status_code=403, content={"detail": "external provider not allowed for this key"})
         payload.allow_external = False
 
+    # P3.2 (2026-06-11) — per-model_mode rate limit. Lighter models
+    # (Lite) get a looser cap; heavier (External = cloud) get a
+    # tighter one. The check is per-tenant-and-model_mode so two
+    # different modes from the same tenant don't share a bucket.
+    tenant_id = getattr(request.state, "api_key_tenant_id", None) or "default"
+    mm_limiter = getattr(request.app.state, "model_mode_rate_limiter", None)
+    if mm_limiter is not None:
+        if not mm_limiter.allow(tenant_id, payload.model_mode):
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "detail": f"model_mode '{payload.model_mode}' rate limit exceeded",
+                    "limit_rpm": mm_limiter.limit_for(payload.model_mode),
+                },
+                headers={"Retry-After": "60"},
+            )
+
     # Load shedding: reject when all GPU workers (primary + background) are saturated
     total_busy = service.current_queue_waiting()
     total_capacity = service._settings.gpu_concurrency + service._settings.background_llama_cpp_parallel

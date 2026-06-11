@@ -473,6 +473,13 @@ def create_app(
             except Exception as exc:
                 logger.warning("Webhook idempotency init failed: %s", exc)
                 app.state.webhook_idempotency = None
+            # P3.2 — per-model_mode rate limit (Lite/Normal/External)
+            try:
+                from app.middleware.model_mode_rate_limit import make_model_mode_rate_limiter
+                app.state.model_mode_rate_limiter = make_model_mode_rate_limiter()
+            except Exception as exc:
+                logger.warning("model_mode rate limiter init failed: %s", exc)
+                app.state.model_mode_rate_limiter = None
             app.state.crew_service = (
                 CrewService(settings, _get_database_url())
                 if settings.enable_crew_agents
