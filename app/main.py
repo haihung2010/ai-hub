@@ -637,6 +637,9 @@ def create_app(
     app.include_router(chatwoot_routes.router)
     app.include_router(a2a_routes.router)
     app.include_router(audio_routes.router)
+    # P2.1 — OAuth 2.1 Client Credentials grant
+    from app.routes import oauth as oauth_routes
+    app.include_router(oauth_routes.router)
     # MCP server: expose all API endpoints as MCP tools
     try:
         from fastapi_mcp import FastApiMCP

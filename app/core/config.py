@@ -176,6 +176,11 @@ class Settings(BaseSettings):
     # default so the model isn't loaded on instances that don't need it).
     enable_whisper: bool = Field(default=False, alias="ENABLE_WHISPER")
     whisper_model_size: str = Field(default="large-v3-turbo", alias="WHISPER_MODEL_SIZE")
+    # P2.1 (2026-06-10) — OAuth 2.1 foundation. HS256 signing key
+    # for issued access tokens. If unset, falls back to API_KEY
+    # (NOT recommended for production — set a 32+ char random
+    # value via OAUTH_JWT_SECRET so you can rotate it independently).
+    oauth_jwt_secret: str = Field(default="", alias="OAUTH_JWT_SECRET")
     google_api_key: str = Field(default="", alias="GOOGLE_API_KEY")
     google_ai_studio_api_key: str = Field(default="", alias="GOOGLE_AI_STUDIO_API_KEY")
     gemini_model: str = Field(default="gemini-2.0-flash", alias="GEMINI_MODEL")
