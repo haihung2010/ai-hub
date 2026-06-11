@@ -50,11 +50,17 @@ class HistoryService:
         user_id: str | None = None,
         is_summarized: bool = False,
     ) -> None:
+        # P2.5 (2026-06-10): run content through the Vietnamese PII
+        # classifier before persisting. In REDACT mode (default), PII
+        # is replaced with [REDACTED-XXX] tags. In WARN mode, the
+        # content is written unchanged but a detection log is emitted.
+        from app.services.pii_classifier import process_text
+        content_to_save, _report = process_text(content)
         with get_db_connection() as conn:
             conn.execute(
                 "INSERT INTO messages (tenant_id, session_id, role, content, user_id, is_summarized) "
                 "VALUES (%s, %s, %s, %s, %s, %s)",
-                (tenant_id, session_id, role, content, user_id, int(is_summarized)),
+                (tenant_id, session_id, role, content_to_save, user_id, int(is_summarized)),
             )
             conn.commit()
 
