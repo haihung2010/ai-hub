@@ -74,9 +74,56 @@ def _get_pool() -> ConnectionPool:
 
 
 @contextmanager
-def get_db_connection():
+def get_db_connection(tenant_id: str | None = None):
+    """Yield a connection. If ``tenant_id`` is set, the connection's
+    ``app.current_tenant`` GUC is bound for the duration of the
+    transaction, so any table with RLS enabled will filter rows by
+    tenant.
+
+    Without a ``tenant_id`` arg, behavior is unchanged — every
+    caller (admin queries, tests, etc.) sees everything. P2.2
+    (2026-06-10) — see ``docs/security/rls.md`` for the policy.
+    """
     with _get_pool().connection() as conn:
+        if tenant_id is not None:
+            # SET LOCAL is per-transaction and released on COMMIT/ROLLBACK.
+            # We don't issue a COMMIT here — the caller's context
+            # manager does that. The ``app.current_tenant`` name is
+            # arbitrary; we use the ``app.`` prefix to signal it's
+            # not a built-in Postgres GUC.
+            #
+            # NB: SET LOCAL doesn't accept parameter binding, so we
+            # have to interpolate the value. We use psycopg's
+            # sql.Identifier-style escaping is not available here;
+            # instead we use a strict whitelist (alphanumeric +
+            # hyphen/underscore) to defang SQL injection.
+            if not all(c.isalnum() or c in "-_." for c in tenant_id):
+                raise ValueError(
+                    f"invalid tenant_id for SET LOCAL: {tenant_id!r}"
+                )
+            conn.execute(f"SET LOCAL app.current_tenant = '{tenant_id}'")
         yield conn
+
+
+# P2.2 (2026-06-10) — list of user-scoped tables that get RLS
+# policies. Adding a new tenant-scoped table? Add it here + create
+# a matching policy in init_db().
+RLS_TABLES: list[str] = [
+    "messages",
+    "memory_items",
+    "memory_episodes",
+    "memory_consolidations",
+    "memory_boundaries",
+    "pinned_memories",
+    "summaries",
+    "sessions",
+    "usage_events",
+    "failure_risk_events",
+    "prediction_records",
+    "fanpage_facts",
+    "api_keys",
+    "skills",
+]
 
 
 def _column_exists(conn, table: str, column: str) -> bool:
@@ -614,5 +661,38 @@ def init_db() -> None:
                 exc,
             )
             conn.rollback()
+
+    # P2.2 (2026-06-10) — enable Row Level Security on tenant-scoped
+    # tables. Each table gets a policy that lets rows through only
+    # when ``current_setting('app.current_tenant', true)`` matches
+    # the row's tenant_id. The second arg ``true`` to current_setting
+    # makes it return NULL (not raise) if the GUC isn't set — so
+    # superusers and code paths that forget to bind the GUC see
+    # zero rows instead of the whole table.
+    try:
+        with get_db_connection() as _rls_conn:
+            for _table in RLS_TABLES:
+                # Idempotent: ENABLE ROW LEVEL SECURITY is a no-op
+                # if already enabled.
+                _rls_conn.execute(f"ALTER TABLE {_table} ENABLE ROW LEVEL SECURITY")
+                # CREATE POLICY IF NOT EXISTS isn't a thing in PG
+                # pre-15, so we use DO $$ BEGIN ... EXCEPTION ...
+                # to skip the duplicate-policy error. PG 15+ has
+                # CREATE POLICY ... IF NOT EXISTS.
+                _rls_conn.execute(
+                    f"""
+                    DO $$
+                    BEGIN
+                        CREATE POLICY {_table}_tenant_isolation ON {_table}
+                            USING (tenant_id = current_setting('app.current_tenant', true));
+                    EXCEPTION
+                        WHEN duplicate_object THEN NULL;
+                    END $$;
+                    """
+                )
+            _rls_conn.commit()
+            logger.info("Row Level Security enabled on %d tables", len(RLS_TABLES))
+    except Exception as exc:
+        logger.warning("RLS enablement failed (RLS not active): %s", exc)
 
     logger.info("Database initialized (PostgreSQL)")
