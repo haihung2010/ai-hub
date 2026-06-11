@@ -624,6 +624,9 @@ def create_app(
     # P1.3 — request context (binds request_id to structlog)
     from app.middleware.request_context import RequestContextMiddleware
     app.add_middleware(RequestContextMiddleware)
+    # P3.4 — CSRF for browser-facing flows (admin HTML, /v1/admin/*)
+    from app.middleware.csrf import CSRFMiddleware
+    app.add_middleware(CSRFMiddleware)
 
     @app.get("/")
     async def index():
