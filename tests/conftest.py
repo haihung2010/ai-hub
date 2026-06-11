@@ -2,6 +2,16 @@
 
 from __future__ import annotations
 
+# Module-level env defaults. These run BEFORE the test file
+# imports `from app.main import create_app`, so the module-level
+# `app = create_app()` (used by `uvicorn app.main:app`) is built
+# with these settings. P3.4 (2026-06-11) — CSRF is disabled by
+# default for tests because programmatic clients (httpx,
+# TestClient) don't send X-CSRF-Token. The CSRF tests opt-in by
+# setting CSRF_ENABLED=true via their own autouse fixture.
+import os as _os
+_os.environ.setdefault("CSRF_ENABLED", "false")
+
 from collections.abc import Iterator
 import os
 from typing import Any
@@ -16,6 +26,18 @@ from app.core.config import Settings
 from app.core.database import get_db_connection, init_db
 from app.main import create_app
 from app.middleware.security import AuthFailureTracker, InMemoryRateLimiter
+
+
+def pytest_configure(config):
+    """Pytest hook: runs before any test collection. We use it
+    to set env vars that must be in place BEFORE the test files
+    import `app.main` (which triggers a module-level
+    `app = create_app()` call). Setting env in a fixture is
+    too late because the import has already happened.
+    """
+    import os
+    os.environ.setdefault("CSRF_ENABLED", "false")
+    os.environ.setdefault("CHATWOOT_WEBHOOK_SECRET", "test-chatwoot-secret")
 
 
 def ensure_user(user_id: str, tenant_id: str = "default", name: str | None = None) -> None:
@@ -148,6 +170,10 @@ def chatwoot_test_env(monkeypatch) -> None:
     """
     monkeypatch.setenv("CHATWOOT_WEBHOOK_SECRET", "test-chatwoot-secret")
     monkeypatch.delenv("CHATWOOT_ALLOW_INSECURE", raising=False)
+    # P3.4 — disable CSRF for programmatic test clients. The CSRF
+    # tests set CSRF_ENABLED=true explicitly to exercise the
+    # middleware; the rest of the test suite doesn't send tokens.
+    monkeypatch.setenv("CSRF_ENABLED", "false")
 
 
 @pytest.fixture

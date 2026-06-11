@@ -3,6 +3,14 @@ from __future__ import annotations
 
 import pytest
 
+
+@pytest.fixture(autouse=True)
+def _enable_csrf(monkeypatch) -> None:
+    """The global conftest disables CSRF for programmatic clients.
+    The CSRF tests need it enabled to exercise the middleware."""
+    monkeypatch.setenv("CSRF_ENABLED", "true")
+
+
 pytestmark = [pytest.mark.unit, pytest.mark.no_isolated_db]
 
 

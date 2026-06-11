@@ -626,7 +626,7 @@ def create_app(
     app.add_middleware(RequestContextMiddleware)
     # P3.4 — CSRF for browser-facing flows (admin HTML, /v1/admin/*)
     from app.middleware.csrf import CSRFMiddleware
-    app.add_middleware(CSRFMiddleware)
+    app.add_middleware(CSRFMiddleware, enabled=settings.csrf_enabled)
 
     @app.get("/")
     async def index():
@@ -678,4 +678,20 @@ def create_app(
     return app
 
 
+# Module-level app for `uvicorn app.main:app`. Built once at import
+# time using the default Settings. Tests do NOT go through this
+# code path — they build their own app via `create_app(settings=...)`
+# in the `client` fixture, so CSRF_ENABLED etc. can be controlled
+# per-test via the env. (P3.4 — keep this OUT of the test-time
+# import chain so the autouse fixture's monkeypatch wins.)
 app = create_app()
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=app.state.settings.app_port if hasattr(app.state, "settings") else 8000,
+        log_level="info",
+    )

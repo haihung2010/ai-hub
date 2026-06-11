@@ -81,9 +81,20 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         (or form field). They must match.
     """
 
-    def __init__(self, app, *, browser_paths: Iterable[str] | None = None) -> None:
-        super().__init__(app)
-        self._paths = tuple(browser_paths) if browser_paths else DEFAULT_BROWSER_PATHS
+    def __init__(self, app, *, browser_paths: Iterable[str] | None = None, enabled: bool = True) -> None:
+        # P3.4 (2026-06-11): if CSRF is disabled (e.g. unit tests),
+        # pass a no-op dispatch to BaseHTTPMiddleware so the framework
+        # actually uses it. Reassigning self.dispatch on the instance
+        # is a no-op because BaseHTTPMiddleware.__init__ has already
+        # captured dispatch_func in its closure.
+        if enabled:
+            super().__init__(app)
+            self._paths = tuple(browser_paths) if browser_paths else DEFAULT_BROWSER_PATHS
+        else:
+            async def _noop(request, call_next):
+                return await call_next(request)
+            super().__init__(app, dispatch=_noop)
+            self._paths = ()
 
     async def dispatch(self, request: Request, call_next) -> Response:
         if not _paths_match(request.url.path, self._paths):

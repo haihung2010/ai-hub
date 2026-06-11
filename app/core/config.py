@@ -181,6 +181,10 @@ class Settings(BaseSettings):
     # (NOT recommended for production — set a 32+ char random
     # value via OAUTH_JWT_SECRET so you can rotate it independently).
     oauth_jwt_secret: str = Field(default="", alias="OAUTH_JWT_SECRET")
+    # P3.4 (2026-06-11) — CSRF protection for browser-facing flows.
+    # Set CSRF_ENABLED=false to disable (e.g. in unit tests where
+    # programmatic clients don't have CSRF tokens). Default ON.
+    csrf_enabled: bool = Field(default=True, alias="CSRF_ENABLED")
     google_api_key: str = Field(default="", alias="GOOGLE_API_KEY")
     google_ai_studio_api_key: str = Field(default="", alias="GOOGLE_AI_STUDIO_API_KEY")
     gemini_model: str = Field(default="gemini-2.0-flash", alias="GEMINI_MODEL")
