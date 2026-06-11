@@ -20,6 +20,22 @@ def _get_database_url() -> str:
     return url
 
 
+def _get_effective_sslmode(url: str) -> str:
+    """Parse the sslmode query param out of a psycopg URL.
+
+    Returns "disable" if the param is missing or the URL is unparseable.
+    P2.3 fix: we surface this at startup so operators can verify the
+    effective security level without having to read the URL by hand.
+    """
+    try:
+        from urllib.parse import urlparse, parse_qs
+        parsed = urlparse(url)
+        params = parse_qs(parsed.query)
+        return (params.get("sslmode") or ["disable"])[0]
+    except Exception:
+        return "disable"
+
+
 def _get_pool() -> ConnectionPool:
     global _pool
     if _pool is None:
@@ -28,8 +44,17 @@ def _get_pool() -> ConnectionPool:
         # Override via DB_POOL_MAX_SIZE env var if needed.
         import os
         max_size = int(os.environ.get("DB_POOL_MAX_SIZE", "20"))
+        url = _get_database_url()
+        sslmode = _get_effective_sslmode(url)
+        if sslmode == "disable":
+            logger.warning(
+                "DATABASE_URL has no sslmode param — connection is "
+                "UNENCRYPTED. Add ?sslmode=require (dev) or ?sslmode=verify-full (prod)."
+            )
+        else:
+            logger.info("DATABASE_URL sslmode=%s", sslmode)
         _pool = ConnectionPool(
-            _get_database_url(),
+            url,
             min_size=2,
             max_size=max_size,
             kwargs={"row_factory": dict_row},
@@ -38,7 +63,7 @@ def _get_pool() -> ConnectionPool:
         try:
             with _pool.connection() as conn:
                 conn.execute("SELECT 1").fetchone()
-            logger.info("PostgreSQL pool warmed up successfully")
+            logger.info("PostgreSQL pool warmed up successfully (sslmode=%s)", sslmode)
         except Exception as exc:
             _pool = None
             raise RuntimeError(
