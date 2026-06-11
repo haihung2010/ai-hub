@@ -1064,3 +1064,86 @@ async def cache_stats() -> dict[str, object]:
     """
     from app.services.response_cache import get_stats
     return get_stats()
+
+
+# ── P2.6: GDPR data export + erasure (2026-06-10) ─────────────────────
+
+
+@router.get("/users/{user_id}/data-export", dependencies=[Depends(require_admin)])
+async def data_export_user(user_id: str):
+    """Return every row that references ``user_id`` as JSON.
+
+    Implements GDPR Article 15 (right of access). Large for
+    active users — caller may want to write to disk and email
+    a signed URL rather than render inline.
+    """
+    from app.services.gdpr_service import data_export_user
+    data = data_export_user(user_id)
+    if data is None:
+        raise HTTPException(status_code=404, detail=f"User not found: {user_id}")
+    return data
+
+
+@router.post("/users/{user_id}/gdpr-delete", dependencies=[Depends(require_admin)])
+async def request_user_deletion(
+    user_id: str,
+    request: Request,
+    grace_days: int = 30,
+):
+    """Schedule a hard-delete in ``grace_days`` days (default 30).
+
+    Idempotent. The user can cancel any time before the deadline
+    via /users/{user_id}/gdpr-cancel. The actual hard-delete runs
+    on the daily scheduler once the deadline passes.
+    """
+    from app.services.gdpr_service import request_deletion
+    result = request_deletion(user_id, grace_days=max(1, min(int(grace_days), 365)))
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"User not found: {user_id}")
+    return result
+
+
+@router.post("/users/{user_id}/gdpr-cancel", dependencies=[Depends(require_admin)])
+async def cancel_user_deletion(user_id: str):
+    """Cancel a pending GDPR deletion. No-op if none pending."""
+    from app.services.gdpr_service import cancel_deletion
+    result = cancel_deletion(user_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"User not found: {user_id}")
+    return result
+
+
+@router.delete("/users/{user_id}", dependencies=[Depends(require_admin)])
+async def force_delete_user(
+    user_id: str,
+    request: Request,
+    confirm: bool = False,
+):
+    """IRREVERSIBLE — hard-delete a user RIGHT NOW.
+
+    The ``confirm=true`` query param is required so a typo can't
+    wipe data. Use /gdpr-delete for the 30-day-grace flow;
+    use this endpoint only when the user explicitly opts out of
+    the grace period.
+    """
+    from app.services.gdpr_service import hard_delete_user, get_user_gdpr_status
+    if not confirm:
+        raise HTTPException(
+            status_code=400,
+            detail="Pass ?confirm=true to confirm. This action is IRREVERSIBLE.",
+        )
+    status = get_user_gdpr_status(user_id)
+    if status is None:
+        raise HTTPException(status_code=404, detail=f"User not found: {user_id}")
+    summary = hard_delete_user(user_id)
+    return {"deleted": True, "summary": summary}
+
+
+@router.get("/users/{user_id}/gdpr-status", dependencies=[Depends(require_admin)])
+async def user_gdpr_status(user_id: str):
+    """Return the current GDPR state of a user."""
+    from app.services.gdpr_service import get_user_gdpr_status
+    status = get_user_gdpr_status(user_id)
+    if status is None:
+        raise HTTPException(status_code=404, detail=f"User not found: {user_id}")
+    return status

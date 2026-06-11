@@ -153,6 +153,39 @@ async def _rotation_reminder_job() -> None:
         )
 
 
+async def _gdpr_hard_delete_sweep() -> None:
+    """P2.6 (2026-06-10): hard-delete users whose 30-day grace has expired.
+
+    Runs daily at 03:13. Lists pending deletions whose
+    scheduled_for is in the past and calls hard_delete_user on
+    each. Failures are logged, not propagated, so one bad user
+    doesn't block the rest of the sweep.
+    """
+    from app.services.gdpr_service import (
+        hard_delete_user,
+        list_pending_deletions,
+    )
+    try:
+        pending = list_pending_deletions(limit=500)
+    except Exception:
+        logger.exception("gdpr sweep: list_pending_deletions failed")
+        return
+    if not pending:
+        logger.info("gdpr sweep: no pending deletions")
+        return
+    for row in pending:
+        if row["gdpr_delete_scheduled_for"] is None:
+            continue
+        try:
+            summary = hard_delete_user(row["user_id"])
+            logger.info(
+                "gdpr sweep: hard-deleted user_id=%s name=%s summary=%s",
+                row["user_id"], row["name"], summary,
+            )
+        except Exception:
+            logger.exception("gdpr sweep: hard_delete_user failed for %s", row["user_id"])
+
+
 class _SchedulerDBProxy:
     """Adapter so PeriodicSummarizer can call db.fetch_all / db.execute."""
     def __init__(self, db_module):
@@ -502,10 +535,20 @@ def create_app(
                     id="key_rotation_reminder",
                     replace_existing=True,
                 )
+                # P2.6 (2026-06-10) — GDPR hard-delete sweep.
+                # Runs daily at 03:13 (off-peak) to delete any user
+                # whose gdpr_delete_scheduled_for has passed.
+                scheduler.add_job(
+                    _gdpr_hard_delete_sweep,
+                    CronTrigger.from_crontab("13 3 * * *"),
+                    id="gdpr_hard_delete_sweep",
+                    replace_existing=True,
+                )
                 if not scheduler.running:
                     scheduler.start()
                 app.state.scheduler = scheduler
                 logger.info("key rotation reminder scheduler started (daily 09:07)")
+                logger.info("gdpr hard-delete sweep scheduler started (daily 03:13)")
             except Exception as e:
                 logger.warning("failed to start key rotation reminder scheduler: %s", e)
             logger.info("ai-hub started on port %s", settings.app_port)

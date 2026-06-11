@@ -540,6 +540,32 @@ def init_db() -> None:
         )
         conn.commit()
 
+        # P2.6 (2026-06-10) — GDPR data export + erasure.
+        # gdpr_delete_requested_at: when the user (or admin) requested
+        #   the deletion. NULL = no pending request.
+        # gdpr_delete_scheduled_for: when the hard-delete will run.
+        #   Set to requested_at + 30 days by default; admin can
+        #   cancel any time before this fires.
+        # gdpr_deleted_at: when the hard-delete actually ran. Once
+        #   set, the user_id can never be referenced again (foreign
+        #   keys are no longer meaningful because the row is gone).
+        if not _column_exists(conn, "users", "gdpr_delete_requested_at"):
+            logger.info("Adding gdpr columns to users")
+            conn.execute(
+                "ALTER TABLE users ADD COLUMN gdpr_delete_requested_at TIMESTAMP"
+            )
+            conn.commit()
+        if not _column_exists(conn, "users", "gdpr_delete_scheduled_for"):
+            conn.execute(
+                "ALTER TABLE users ADD COLUMN gdpr_delete_scheduled_for TIMESTAMP"
+            )
+            conn.commit()
+        if not _column_exists(conn, "users", "gdpr_deleted_at"):
+            conn.execute(
+                "ALTER TABLE users ADD COLUMN gdpr_deleted_at TIMESTAMP"
+            )
+            conn.commit()
+
         if not _column_exists(conn, "knowledge_cards", "linked_card_ids"):
             logger.info("Adding linked_card_ids column to knowledge_cards")
             conn.execute("ALTER TABLE knowledge_cards ADD COLUMN linked_card_ids TEXT NOT NULL DEFAULT '[]'")
