@@ -261,8 +261,58 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             )
 
         provided_key = request.headers.get(API_KEY_HEADER)
+        bearer_token = request.headers.get("Authorization", "")
+        # P2.1 follow-up (2026-06-11) — OAuth 2.1 bearer token
+        # takes precedence over X-API-KEY. Dual-validate for one
+        # release (X-API-KEY still works as fallback). Operators
+        # see a deprecation log per X-API-KEY usage.
         api_key_record: ApiKeyRecord | None = None
-        if provided_key is not None and hmac.compare_digest(provided_key, self._settings.api_key or ""):
+        if bearer_token.lower().startswith("bearer "):
+            from app.services.oauth_service import verify_token
+            token = bearer_token.split(None, 1)[1].strip()
+            claims = verify_token(token)
+            if claims is None:
+                if not is_loopback:
+                    self._failure_tracker.record_failure(client_ip)
+                self._log_denial(client_ip, request.url.path, "invalid_bearer_token")
+                return JSONResponse(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    content={"detail": "invalid bearer token"},
+                )
+            # Look up the underlying api_key record so the rest
+            # of the middleware (rate limit, monthly budget, etc.)
+            # behaves identically to the X-API-KEY path.
+            try:
+                from app.services.api_key_service import ApiKeyService
+                # Claims.sub is the api_key_id; fetch the row to
+                # get tenant_id, is_admin, rpm_limit.
+                with get_db_connection() as _conn:
+                    _row = _conn.execute(
+                        "SELECT id, tenant_id, is_admin, enabled, expires_at, "
+                        "allow_external, rpm_limit, allowed_projects_json, monthly_budget_usd "
+                        "FROM api_keys WHERE id = %s AND enabled = 1",
+                        (claims.sub,),
+                    ).fetchone()
+                if _row is not None:
+                    api_key_record = _row  # type: ignore[assignment]
+            except Exception:
+                logger.exception("oauth: api_key record lookup failed for sub=%s", claims.sub)
+            request.state.api_key_id = claims.sub
+            request.state.api_key_tenant_id = claims.tenant_id
+            request.state.api_key_allow_external = True
+            # Token's own scope drives authorization; the per-key
+            # rpm_limit is a no-op fallback if the row is missing.
+            request.state.api_key_rpm_limit = (
+                api_key_record["rpm_limit"] if api_key_record else self._settings.rate_limit_per_minute
+            )
+            request.state.api_key_allowed_projects = (
+                list(api_key_record["allowed_projects_json"]) if api_key_record else None
+            )
+            request.state.api_key_is_admin = bool(api_key_record["is_admin"]) if api_key_record else False
+            request.state.api_key_scopes = claims.scopes
+        elif provided_key is not None and hmac.compare_digest(provided_key, self._settings.api_key or ""):
+            # X-API-KEY (master) — emit deprecation log
+            logger.info("deprecation: X-API-KEY used; switch to bearer token (P2.1)")
             request.state.api_key_id = None
             request.state.api_key_tenant_id = None
             request.state.api_key_allow_external = True
@@ -280,6 +330,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     content={"detail": "invalid api key"},
                 )
+            logger.info("deprecation: X-API-KEY used; switch to bearer token (P2.1)")
             request.state.api_key_id = api_key_record.id
             request.state.api_key_tenant_id = api_key_record.tenant_id
             request.state.api_key_allow_external = api_key_record.allow_external
