@@ -544,7 +544,7 @@ async def list_api_keys(request: Request):
     sql = """
         SELECT
             k.id, k.name, k.tenant_id, u.name as owner_name, k.enabled, k.rpm_limit,
-            k.monthly_budget_usd, k.is_admin,
+            k.monthly_budget_usd, k.is_admin, k.last_rotated_at, k.created_at,
             COALESCE(SUM(e.cost_usd), 0) as current_spend
         FROM api_keys k
         LEFT JOIN users u ON k.owner_user_id = u.id
@@ -555,6 +555,57 @@ async def list_api_keys(request: Request):
     with get_db_connection() as conn:
         rows = conn.execute(sql).fetchall()
         return [dict(row) for row in rows]
+
+
+# ── P2.4: secret rotation (2026-06-10) ───────────────────────────────
+
+
+@router.get("/keys/rotation-status", dependencies=[Depends(require_admin)])
+async def api_key_rotation_status(request: Request, rotation_days: int = 90):
+    """Return every API key whose last_rotated_at is older than
+    ``rotation_days`` days, plus a summary count.
+
+    Ops hits this endpoint weekly. For each stale key:
+      1. PATCH it (or call /keys/{id}/rotate — see below) to mint a
+         new raw_key.
+      2. Distribute the new raw_key to the client.
+      3. The old raw_key stops working immediately.
+
+    Cadence policy: see docs/security/secret-rotation.md.
+    """
+    from app.services.api_key_service import ApiKeyService
+    rotation_days = max(1, min(int(rotation_days), 365))
+    svc = ApiKeyService()
+    stale = svc.get_rotation_status(rotation_days=rotation_days)
+    return {
+        "rotation_days": rotation_days,
+        "stale_count": len(stale),
+        "stale_keys": stale,
+    }
+
+
+@router.post("/keys/{key_id}/rotate", dependencies=[Depends(require_admin)])
+async def rotate_api_key(key_id: str, request: Request):
+    """Mint a new raw_key for ``key_id``, in place.
+
+    The new raw_key is returned ONCE in this response. The caller
+    MUST store it now — there is no way to recover it later. The
+    old raw_key stops working immediately because the row's
+    key_hash changes.
+
+    P2.4 (2026-06-10) — see docs/security/secret-rotation.md for the
+    full operator runbook.
+    """
+    from app.services.api_key_service import ApiKeyService
+    result = ApiKeyService().rotate_key(key_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"API key not found: {key_id}")
+    kid, new_raw_key = result
+    return {
+        "key_id": kid,
+        "new_raw_key": new_raw_key,
+        "warning": "Store the new_raw_key now. It will not be shown again.",
+    }
 
 
 @router.get("/management/sessions", dependencies=[Depends(require_admin)])

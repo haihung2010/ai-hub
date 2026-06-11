@@ -520,6 +520,26 @@ def init_db() -> None:
             conn.execute("ALTER TABLE api_keys ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0")
             conn.commit()
 
+        # P2.4 (2026-06-10) — secret rotation policy. Track when each
+        # API key was last rotated so the scheduler can warn operators
+        # before the rotation deadline passes. Default NULL means
+        # "never rotated" → effectively (now - created_at) days old.
+        if not _column_exists(conn, "api_keys", "last_rotated_at"):
+            logger.info("Adding last_rotated_at column to api_keys")
+            conn.execute(
+                "ALTER TABLE api_keys ADD COLUMN last_rotated_at TIMESTAMP"
+            )
+            conn.commit()
+        # Backfill: for rows that pre-date the migration, treat
+        # last_rotated_at as the row's created_at (so existing keys
+        # start their rotation clock from when they were created,
+        # not from today).
+        conn.execute(
+            "UPDATE api_keys SET last_rotated_at = created_at "
+            "WHERE last_rotated_at IS NULL"
+        )
+        conn.commit()
+
         if not _column_exists(conn, "knowledge_cards", "linked_card_ids"):
             logger.info("Adding linked_card_ids column to knowledge_cards")
             conn.execute("ALTER TABLE knowledge_cards ADD COLUMN linked_card_ids TEXT NOT NULL DEFAULT '[]'")

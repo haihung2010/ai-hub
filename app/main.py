@@ -93,6 +93,66 @@ class _SchedulerAIServiceProxy:
         return await svc.summarize(text=text, model_override=model_override, user_id=user_id, session_id=session_id)
 
 
+async def _rotation_reminder_job() -> None:
+    """P2.4 (2026-06-10): daily reminder for stale API keys + env-managed secrets.
+
+    Reads api_keys rows whose last_rotated_at is older than 90 days
+    and logs a WARNING for each. Also pings the operator about the
+    MiniMax + webhook HMAC + DB password rotation deadlines (those
+    live in env, not in api_keys, so they're a "did you remember"
+    reminder, not a per-row check).
+    """
+    from app.services.api_key_service import (
+        ApiKeyService,
+        DEFAULT_API_KEY_ROTATION_DAYS,
+        DEFAULT_DB_PASSWORD_ROTATION_DAYS,
+        DEFAULT_MINIMAX_KEY_ROTATION_DAYS,
+        DEFAULT_WEBHOOK_HMAC_ROTATION_DAYS,
+    )
+    try:
+        stale = ApiKeyService().get_rotation_status(
+            rotation_days=DEFAULT_API_KEY_ROTATION_DAYS
+        )
+    except Exception:
+        logger.exception("key rotation reminder: get_rotation_status failed")
+        return
+    if not stale:
+        logger.info(
+            "key rotation reminder: all %d-day API keys are fresh",
+            DEFAULT_API_KEY_ROTATION_DAYS,
+        )
+        return
+    for k in stale:
+        logger.warning(
+            "key rotation reminder: api_key id=%s name=%s tenant=%s "
+            "days_since_rotation=%s (deadline=%sd)",
+            k["id"], k["name"], k["tenant_id"],
+            k["days_since_rotation"], DEFAULT_API_KEY_ROTATION_DAYS,
+        )
+    # Env-managed secrets — check presence and warn if env var is set
+    # but we have no record of when it was set.
+    import os
+    env_secrets = {
+        "MINIMAX_API_KEY": ("minimax", DEFAULT_MINIMAX_KEY_ROTATION_DAYS),
+        "CHATWOOT_WEBHOOK_SECRET": ("webhook", DEFAULT_WEBHOOK_HMAC_ROTATION_DAYS),
+        "DB password (DATABASE_URL)": ("db", DEFAULT_DB_PASSWORD_ROTATION_DAYS),
+    }
+    for env_name, (kind, days) in env_secrets.items():
+        # We can only see whether the env var is set; the rotation
+        # date has to be tracked out-of-band (e.g. a sticky note in
+        # the ops runbook). Just log a periodic "did you rotate?"
+        # reminder.
+        if kind == "minimax" and not os.environ.get(env_name):
+            continue
+        if kind == "webhook" and not os.environ.get(env_name):
+            continue
+        logger.warning(
+            "key rotation reminder: %s (env-managed) — verify it was "
+            "rotated within the last %d days. See docs/security/secret-rotation.md",
+            env_name, days,
+        )
+
+
 class _SchedulerDBProxy:
     """Adapter so PeriodicSummarizer can call db.fetch_all / db.execute."""
     def __init__(self, db_module):
@@ -407,6 +467,7 @@ def create_app(
             )
             app.state.ai_service_ref = weakref.ref(app.state.ai_service)
             # Adaptive routing: APScheduler for periodic IHI rollups (added 2026-06-07)
+            scheduler: AsyncIOScheduler | None = None
             if settings.adaptive_routing_enabled:
                 try:
                     scheduler = AsyncIOScheduler()
@@ -423,11 +484,30 @@ def create_app(
                         id="ihi_rollup",
                         replace_existing=True,
                     )
-                    scheduler.start()
-                    app.state.scheduler = scheduler
                     logger.info("periodic summary scheduler started: cron=%s", settings.periodic_summary_cron)
                 except Exception as e:
                     logger.warning("failed to start periodic summary scheduler: %s", e)
+                    scheduler = None
+
+            # P2.4 (2026-06-10) — secret rotation reminder.
+            # Independent of adaptive_routing_enabled so that operators
+            # who disabled adaptive routing still get the reminder.
+            # Runs daily at 09:07 local time.
+            try:
+                if scheduler is None:
+                    scheduler = AsyncIOScheduler()
+                scheduler.add_job(
+                    _rotation_reminder_job,
+                    CronTrigger.from_crontab("7 9 * * *"),
+                    id="key_rotation_reminder",
+                    replace_existing=True,
+                )
+                if not scheduler.running:
+                    scheduler.start()
+                app.state.scheduler = scheduler
+                logger.info("key rotation reminder scheduler started (daily 09:07)")
+            except Exception as e:
+                logger.warning("failed to start key rotation reminder scheduler: %s", e)
             logger.info("ai-hub started on port %s", settings.app_port)
             logger.info(
                 "failure_risk mode: log_only=%s enable_actions=%s "
