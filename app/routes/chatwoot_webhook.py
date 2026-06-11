@@ -52,7 +52,11 @@ def _get_webhook_secret() -> str:
     return os.environ.get("CHATWOOT_WEBHOOK_SECRET", "")
 
 
-def _verify_signature(raw_body: bytes, signature: str | None) -> bool:
+def _verify_signature(
+    raw_body: bytes,
+    signature: str | None,
+    timestamp_header: str | None = None,
+) -> bool:
     """Verify X-Chatwoot-Signature header against HMAC-SHA256(raw_body, secret).
 
     Security policy (P0 fix, 2026-06-09):
@@ -63,6 +67,17 @@ def _verify_signature(raw_body: bytes, signature: str | None) -> bool:
     - This prevents an attacker who has learned the webhook URL from
       invoking AI tools (and running up the GPU bill) without the
       Chatwoot-side shared secret.
+
+    Replay protection (P3.3, 2026-06-11):
+    - If the X-Chatwoot-Timestamp header is present (newer Chatwoot
+      versions include it), the timestamp must be within
+      ``WEBHOOK_TIMESTAMP_WINDOW_SECONDS`` (default 300s = 5min)
+      of the current time. This blocks an attacker who captured a
+      valid (signature, body) pair from replaying it later.
+    - If the header is missing, the check is skipped for backward
+      compatibility with older Chatwoot versions, but a warning is
+      logged. Operators can set WEBHOOK_REQUIRE_TIMESTAMP=true to
+      fail-closed on missing headers.
     """
     secret = _get_webhook_secret()
     if not secret:
@@ -75,6 +90,29 @@ def _verify_signature(raw_body: bytes, signature: str | None) -> bool:
         )
         return False
     if not signature:
+        return False
+    # P3.3: timestamp window (replay protection). If the header is
+    # present, it must be within WEBHOOK_TIMESTAMP_WINDOW_SECONDS
+    # of now. Compare with abs() so future-dated timestamps are
+    # also rejected (defends against clock-skew abuse).
+    if timestamp_header is not None:
+        try:
+            ts = int(timestamp_header)
+        except (TypeError, ValueError):
+            logger.warning("chatwoot: malformed X-Chatwoot-Timestamp header")
+            return False
+        import time as _t
+        now = int(_t.time())
+        window = int(os.environ.get("WEBHOOK_TIMESTAMP_WINDOW_SECONDS", "300"))
+        if abs(now - ts) > window:
+            logger.warning(
+                "chatwoot: timestamp out of window (delta=%ds, window=%ds)",
+                now - ts, window,
+            )
+            return False
+    elif os.environ.get("WEBHOOK_REQUIRE_TIMESTAMP", "").lower() in ("1", "true", "yes"):
+        # Operator opted into fail-closed: missing timestamp = reject.
+        logger.warning("chatwoot: missing X-Chatwoot-Timestamp (required by config)")
         return False
     expected = hmac.new(secret.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
     return hmac.compare_digest(signature, expected)
@@ -97,9 +135,10 @@ async def _read_raw_body(request: Request) -> bytes:
 async def respond_custom_tool(
     request: Request,
     x_chatwoot_signature: str | None = Header(default=None, alias="X-Chatwoot-Signature"),
+    x_chatwoot_timestamp: str | None = Header(default=None, alias="X-Chatwoot-Timestamp"),
 ) -> ChatwootCustomToolResponse:
     raw = await _read_raw_body(request)
-    if not _verify_signature(raw, x_chatwoot_signature):
+    if not _verify_signature(raw, x_chatwoot_signature, x_chatwoot_timestamp):
         raise HTTPException(status_code=401, detail="Invalid or missing X-Chatwoot-Signature")
 
     try:
@@ -131,9 +170,10 @@ async def respond_custom_tool(
 async def agent_bot_webhook(
     request: Request,
     x_chatwoot_signature: str | None = Header(default=None, alias="X-Chatwoot-Signature"),
+    x_chatwoot_timestamp: str | None = Header(default=None, alias="X-Chatwoot-Timestamp"),
 ) -> ChatwootAgentBotResponse:
     raw = await _read_raw_body(request)
-    if not _verify_signature(raw, x_chatwoot_signature):
+    if not _verify_signature(raw, x_chatwoot_signature, x_chatwoot_timestamp):
         raise HTTPException(status_code=401, detail="Invalid or missing X-Chatwoot-Signature")
 
     # P1.6: dedup Chatwoot retries. If we've seen this message.id in the
@@ -253,9 +293,10 @@ async def health() -> dict[str, Any]:
 async def tool_product_lookup(
     request: Request,
     x_chatwoot_signature: str | None = Header(default=None, alias="X-Chatwoot-Signature"),
+    x_chatwoot_timestamp: str | None = Header(default=None, alias="X-Chatwoot-Timestamp"),
 ) -> ProductLookupResponse:
     raw = await _read_raw_body(request)
-    if not _verify_signature(raw, x_chatwoot_signature):
+    if not _verify_signature(raw, x_chatwoot_signature, x_chatwoot_timestamp):
         raise HTTPException(status_code=401, detail="Invalid or missing X-Chatwoot-Signature")
     try:
         payload = json.loads(raw)
@@ -296,9 +337,10 @@ async def tool_product_lookup(
 async def tool_order_status(
     request: Request,
     x_chatwoot_signature: str | None = Header(default=None, alias="X-Chatwoot-Signature"),
+    x_chatwoot_timestamp: str | None = Header(default=None, alias="X-Chatwoot-Timestamp"),
 ) -> OrderStatusResponse:
     raw = await _read_raw_body(request)
-    if not _verify_signature(raw, x_chatwoot_signature):
+    if not _verify_signature(raw, x_chatwoot_signature, x_chatwoot_timestamp):
         raise HTTPException(status_code=401, detail="Invalid or missing X-Chatwoot-Signature")
     try:
         payload = json.loads(raw)
@@ -335,9 +377,10 @@ async def tool_order_status(
 async def tool_escalate_human(
     request: Request,
     x_chatwoot_signature: str | None = Header(default=None, alias="X-Chatwoot-Signature"),
+    x_chatwoot_timestamp: str | None = Header(default=None, alias="X-Chatwoot-Timestamp"),
 ) -> EscalateHumanResponse:
     raw = await _read_raw_body(request)
-    if not _verify_signature(raw, x_chatwoot_signature):
+    if not _verify_signature(raw, x_chatwoot_signature, x_chatwoot_timestamp):
         raise HTTPException(status_code=401, detail="Invalid or missing X-Chatwoot-Signature")
     try:
         payload = json.loads(raw)

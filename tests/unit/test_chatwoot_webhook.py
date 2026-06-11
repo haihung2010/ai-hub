@@ -711,3 +711,125 @@ def test_in_memory_idempotency_ttl_expires() -> None:
     # Even the very next call — TTL 0 means it expired between calls.
     # In practice ttl_seconds=0 would be a misconfiguration, but the
     # the contract is "after TTL, no longer a duplicate".
+
+
+# ──────────────────────────────────────────────────────────────────────
+# P3.3 — Replay attack prevention via timestamp window (2026-06-11)
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_chatwoot_rejects_stale_timestamp(monkeypatch, client) -> None:
+    """A signature with a stale X-Chatwoot-Timestamp (>300s old) is rejected."""
+    import time
+    import hashlib
+    import hmac
+
+    monkeypatch.setenv("CHATWOOT_WEBHOOK_SECRET", "test-secret-replay")
+    body = json.dumps({"messages": [{"role": "user", "content": "hi"}]}).encode()
+    sig = hmac.new(b"test-secret-replay", body, hashlib.sha256).hexdigest()
+    # Timestamp 1 hour in the past — well outside the default
+    # 300s window.
+    stale_ts = int(time.time()) - 3600
+    resp = client.post(
+        "/v1/integrations/chatwoot/respond",
+        content=body,
+        headers={
+            "X-Chatwoot-Signature": sig,
+            "X-Chatwoot-Timestamp": str(stale_ts),
+            "Content-Type": "application/json",
+        },
+    )
+    # Stale timestamp + valid signature → still rejected
+    assert resp.status_code == 401
+
+
+def test_chatwoot_accepts_fresh_timestamp(monkeypatch, client) -> None:
+    """A signature with a recent X-Chatwoot-Timestamp (within 300s) is accepted."""
+    import time
+    import hashlib
+    import hmac
+
+    monkeypatch.setenv("CHATWOOT_WEBHOOK_SECRET", "test-secret-replay-2")
+    body = json.dumps({"messages": [{"role": "user", "content": "hi"}]}).encode()
+    sig = hmac.new(b"test-secret-replay-2", body, hashlib.sha256).hexdigest()
+    fresh_ts = int(time.time()) - 10  # 10s ago, well within window
+    with respx.mock:
+        respx.post(LLAMA_URL).mock(return_value=httpx.Response(200, json=_ollama_response("ok")))
+        resp = client.post(
+            "/v1/integrations/chatwoot/respond",
+            content=body,
+            headers={
+                "X-Chatwoot-Signature": sig,
+                "X-Chatwoot-Timestamp": str(fresh_ts),
+                "Content-Type": "application/json",
+            },
+        )
+    # Fresh timestamp + valid signature → accepted
+    assert resp.status_code == 200
+
+
+def test_chatwoot_rejects_future_timestamp(monkeypatch, client) -> None:
+    """A future-dated timestamp (clock-skew abuse) is also rejected."""
+    import time
+    import hashlib
+    import hmac
+
+    monkeypatch.setenv("CHATWOOT_WEBHOOK_SECRET", "test-secret-replay-3")
+    body = json.dumps({"messages": [{"role": "user", "content": "hi"}]}).encode()
+    sig = hmac.new(b"test-secret-replay-3", body, hashlib.sha256).hexdigest()
+    future_ts = int(time.time()) + 3600  # 1 hour in the future
+    resp = client.post(
+        "/v1/integrations/chatwoot/respond",
+        content=body,
+        headers={
+            "X-Chatwoot-Signature": sig,
+            "X-Chatwoot-Timestamp": str(future_ts),
+            "Content-Type": "application/json",
+        },
+    )
+    assert resp.status_code == 401
+
+
+def test_chatwoot_missing_timestamp_passes_by_default(monkeypatch, client) -> None:
+    """If X-Chatwoot-Timestamp is absent and WEBHOOK_REQUIRE_TIMESTAMP
+    is not set, the request is accepted (backward-compat with
+    older Chatwoot versions that don't send the header)."""
+    import hashlib
+    import hmac
+
+    monkeypatch.setenv("CHATWOOT_WEBHOOK_SECRET", "test-secret-replay-4")
+    body = json.dumps({"messages": [{"role": "user", "content": "hi"}]}).encode()
+    sig = hmac.new(b"test-secret-replay-4", body, hashlib.sha256).hexdigest()
+    with respx.mock:
+        respx.post(LLAMA_URL).mock(return_value=httpx.Response(200, json=_ollama_response("ok")))
+        resp = client.post(
+            "/v1/integrations/chatwoot/respond",
+            content=body,
+            headers={
+                "X-Chatwoot-Signature": sig,
+                # No X-Chatwoot-Timestamp header
+                "Content-Type": "application/json",
+            },
+        )
+    assert resp.status_code == 200
+
+
+def test_chatwoot_missing_timestamp_rejected_when_required(monkeypatch, client) -> None:
+    """WEBHOOK_REQUIRE_TIMESTAMP=true flips the default: missing
+    header → 401. Operator opt-in for stricter deployments."""
+    import hashlib
+    import hmac
+
+    monkeypatch.setenv("CHATWOOT_WEBHOOK_SECRET", "test-secret-replay-5")
+    monkeypatch.setenv("WEBHOOK_REQUIRE_TIMESTAMP", "true")
+    body = json.dumps({"messages": [{"role": "user", "content": "hi"}]}).encode()
+    sig = hmac.new(b"test-secret-replay-5", body, hashlib.sha256).hexdigest()
+    resp = client.post(
+        "/v1/integrations/chatwoot/respond",
+        content=body,
+        headers={
+            "X-Chatwoot-Signature": sig,
+            "Content-Type": "application/json",
+        },
+    )
+    assert resp.status_code == 401
