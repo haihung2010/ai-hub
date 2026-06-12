@@ -1,0 +1,647 @@
+{
+  "test_name": "ai-hub-comprehensive-30min",
+  "started_at": "2026-06-12T16:11:02.029098+00:00",
+  "ended_at": "2026-06-12T17:07:22.203581+00:00",
+  "total_duration_seconds": 3380.174483,
+  "throughput_turns_per_min": 25.38330504283616,
+  "config": {
+    "base_url": "http://127.0.0.1:8000",
+    "api_key": "1XteCCQ_s_UbrqOGEIYybmDBnokWhxYap90D6_Jojx8",
+    "llama_url": "http://127.0.0.1:8080",
+    "concurrency": 4,
+    "phase1_turns_per_user": 10,
+    "phase2_users_total": 100,
+    "phase2_turns_per_user": 10,
+    "phase3_rounds": 3,
+    "phase3_users_per_round": 10,
+    "phase3_gap_seconds": 150,
+    "kb_card_count": 75,
+    "report_dir": "reports",
+    "error_rate_threshold": 0.05,
+    "memory_recall_threshold": 0.7,
+    "cache_speedup_threshold": 0.1,
+    "total_runtime_cap_seconds": 2100,
+    "request_delay_seconds": 1.1
+  },
+  "phases": [
+    {
+      "name": "phase1_warmup",
+      "started_at": "2026-06-12T16:11:02.031864+00:00",
+      "ended_at": "2026-06-12T16:14:03.095014+00:00",
+      "duration_seconds": 181.06316863899974,
+      "extra": {
+        "users": 10,
+        "turns_per_user": 10
+      }
+    },
+    {
+      "name": "phase2_rotate",
+      "started_at": "2026-06-12T16:14:03.095067+00:00",
+      "ended_at": "2026-06-12T16:48:12.980257+00:00",
+      "duration_seconds": 2049.8867016139993,
+      "extra": {
+        "users": 100,
+        "turns_per_user": 10
+      }
+    },
+    {
+      "name": "phase3_recall",
+      "started_at": "2026-06-12T16:48:12.984022+00:00",
+      "ended_at": "2026-06-12T17:07:22.199782+00:00",
+      "duration_seconds": 1149.2157931640004,
+      "extra": {
+        "rounds": 3,
+        "users_per_round": 10
+      }
+    }
+  ],
+  "memory_recalls": [
+    {
+      "user": "stress_an_00",
+      "round": 1,
+      "facts_asked": 10,
+      "facts_recalled": 5,
+      "recall_pct": 50.0,
+      "missed_facts": [
+        "quần",
+        "giày",
+        "váy",
+        "size",
+        "đổi trả"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_an_00\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, chúng ta đã tập trung vào việc bạn hỏi về các thông tin chi tiết của sản phẩm, cụ thể là:\\n\\n*   **Giao hàng (Delivery)**\\n*   **Bảo hành (Warrant"
+    },
+    {
+      "user": "stress_bình_00",
+      "round": 1,
+      "facts_asked": 10,
+      "facts_recalled": 3,
+      "recall_pct": 30.0,
+      "missed_facts": [
+        "áo",
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "giá",
+        "giao hàng"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_bình_00\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Tôi nhớ rằng cuộc trò chuyện trước đó tập trung vào việc bạn hỏi về các thuộc tính cụ thể của một sản phẩm, bao gồm:\\n\\n*   **Bảo hành**\\n*   **Size**\\n*   **Loại đế (da hay ca"
+    },
+    {
+      "user": "stress_chi_00",
+      "round": 1,
+      "facts_asked": 10,
+      "facts_recalled": 4,
+      "recall_pct": 40.0,
+      "missed_facts": [
+        "quần",
+        "giày",
+        "váy",
+        "size",
+        "giao hàng",
+        "đổi trả"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_chi_00\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Dựa trên bản tóm tắt cuộc trò chuyện, đây là những điểm chính đã được thảo luận:\\n\\n**Thông tin đã được xác nhận:**\\n*   **Giá:** 250,000 VND.\\n*   **Bảo hành:** 3 tháng.\\n*   *"
+    },
+    {
+      "user": "stress_dũng_00",
+      "round": 1,
+      "facts_asked": 10,
+      "facts_recalled": 2,
+      "recall_pct": 20.0,
+      "missed_facts": [
+        "áo",
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "size",
+        "giao hàng",
+        "đổi trả"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_dũng_00\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, chúng ta đã thảo luận về các thông tin chi tiết của một sản phẩm, bao gồm:\\n\\n1.  **Giá cả (Giá):** Bạn đã hỏi về giá.\\n2.  **Màu sắc:** Bạn đã "
+    },
+    {
+      "user": "stress_em_00",
+      "round": 1,
+      "facts_asked": 10,
+      "facts_recalled": 2,
+      "recall_pct": 20.0,
+      "missed_facts": [
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "size",
+        "giao hàng",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_em_00\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, chúng ta đã thảo luận về các yêu cầu mơ hồ liên quan đến:\\n\\n1.  **Sale/Khuyến mãi** (\\\"Có sale?\\\").\\n2.  **Chất liệu** (\\\"Chất liệu?\\\").\\n3.  **C"
+    },
+    {
+      "user": "stress_phương_00",
+      "round": 1,
+      "facts_asked": 10,
+      "facts_recalled": 2,
+      "recall_pct": 20.0,
+      "missed_facts": [
+        "áo",
+        "giày",
+        "váy",
+        "túi",
+        "giá",
+        "giao hàng",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_phương_00\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, bạn đã hỏi về:\\n\\n*   **Kích cỡ (Size)**.\\n*   **Quần short nữ**.\\n*   **Kiểu dáng** (ống suông hay ôm).\\n*   **Các chương trình khuyến mãi/sa"
+    },
+    {
+      "user": "stress_giang_00",
+      "round": 1,
+      "facts_asked": 10,
+      "facts_recalled": 2,
+      "recall_pct": 20.0,
+      "missed_facts": [
+        "áo",
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "giá",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_giang_00\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, các yêu cầu của bạn đều mang tính **giao dịch** và tập trung vào việc tìm kiếm thông tin chi tiết về một sản phẩm cụ thể.\\n\\n**Tóm tắt các chủ "
+    },
+    {
+      "user": "stress_hà_00",
+      "round": 1,
+      "facts_asked": 10,
+      "facts_recalled": 1,
+      "recall_pct": 10.0,
+      "missed_facts": [
+        "áo",
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "giá",
+        "giao hàng",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_hà_00\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, bạn đã hỏi về các thông tin chi tiết của một sản phẩm mà bạn chưa xác định rõ. Cụ thể, bạn đã hỏi về:\\n\\n1.  **Màu sắc** (\\\"Có mấy màu?\\\").\\n2.  *"
+    },
+    {
+      "user": "stress_khánh_00",
+      "round": 1,
+      "facts_asked": 10,
+      "facts_recalled": 2,
+      "recall_pct": 20.0,
+      "missed_facts": [
+        "áo",
+        "quần",
+        "giày",
+        "túi",
+        "size",
+        "giao hàng",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_khánh_00\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, chúng ta đã thảo luận về các yêu cầu chung chung như:\\n\\n*   **Kiểu dáng/Chi tiết:** Các câu hỏi về kiểu cổ, xếp ly, và các loại trang phục cụ "
+    },
+    {
+      "user": "stress_linh_00",
+      "round": 1,
+      "facts_asked": 10,
+      "facts_recalled": 3,
+      "recall_pct": 30.0,
+      "missed_facts": [
+        "quần",
+        "giày",
+        "túi",
+        "size",
+        "giao hàng",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_linh_00\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước, các câu hỏi của bạn tập trung vào các **thuộc tính cụ thể của sản phẩm**, bao gồm:\\n\\n1.  **Màu sắc**\\n2.  **Quà tặng**\\n3.  **Chính sách đánh bóng"
+    },
+    {
+      "user": "stress_an_01",
+      "round": 2,
+      "facts_asked": 10,
+      "facts_recalled": 1,
+      "recall_pct": 10.0,
+      "missed_facts": [
+        "áo",
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "size",
+        "giao hàng",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_an_01\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước, các chủ đề chính được thảo luận bao gồm:\\n\\n*   **Màu sắc, chất liệu vải, tính năng, giá cả và khả năng chống nước** (nhưng không có sản phẩm cụ thể)"
+    },
+    {
+      "user": "stress_bình_01",
+      "round": 2,
+      "facts_asked": 10,
+      "facts_recalled": 4,
+      "recall_pct": 40.0,
+      "missed_facts": [
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "giao hàng",
+        "đổi trả"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_bình_01\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước, chúng ta đã tập trung vào việc thu thập thông tin chi tiết về sản phẩm **\\\"Áo thun đen basic\\\"** và các thông tin liên quan:\\n\\n**Thông tin đã xác "
+    },
+    {
+      "user": "stress_chi_01",
+      "round": 2,
+      "facts_asked": 10,
+      "facts_recalled": 2,
+      "recall_pct": 20.0,
+      "missed_facts": [
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "size",
+        "giao hàng",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_chi_01\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện này, chúng ta đã thảo luận về sản phẩm **\\\"Áo thun be basic\\\"** và các câu hỏi mở liên quan đến:\\n\\n1.  **Phụ kiện:** Hỏi về dây buộc.\\n2.  **Phối đồ:** Hỏ"
+    },
+    {
+      "user": "stress_dũng_01",
+      "round": 2,
+      "facts_asked": 10,
+      "facts_recalled": 4,
+      "recall_pct": 40.0,
+      "missed_facts": [
+        "áo",
+        "giày",
+        "váy",
+        "túi",
+        "size",
+        "đổi trả"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_dũng_01\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Chắc chắn rồi. Dưới đây là tóm tắt các chủ đề chính chúng ta đã thảo luận trong cuộc trò chuyện này:\\n\\n**1. Chủ đề ban đầu (Quần short nữ):**\\n*   **Các loại:** Athletic Short"
+    },
+    {
+      "user": "stress_em_01",
+      "round": 2,
+      "facts_asked": 10,
+      "facts_recalled": 2,
+      "recall_pct": 20.0,
+      "missed_facts": [
+        "áo",
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "size",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_em_01\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, các chủ đề chính mà chúng ta đã thảo luận xoay quanh các câu hỏi chung chung mà không có ngữ cảnh cụ thể, bao gồm:\\n\\n1.  **Logistics/Vận chuyển:*"
+    },
+    {
+      "user": "stress_phương_01",
+      "round": 2,
+      "facts_asked": 10,
+      "facts_recalled": 2,
+      "recall_pct": 20.0,
+      "missed_facts": [
+        "áo",
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "giao hàng",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_phương_01\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Dựa trên lịch sử trò chuyện, đây là tóm tắt những điểm chính:\\n\\n**Mục tiêu chính của cuộc trò chuyện là:** Người dùng đang cố gắng tìm hiểu các thông tin chi tiết (như có ló"
+    },
+    {
+      "user": "stress_giang_01",
+      "round": 2,
+      "facts_asked": 10,
+      "facts_recalled": 2,
+      "recall_pct": 20.0,
+      "missed_facts": [
+        "áo",
+        "giày",
+        "túi",
+        "size",
+        "giá",
+        "giao hàng",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_giang_01\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Chắc chắn rồi. Dưới đây là tóm tắt tổng hợp cuộc hội thoại của chúng ta:\\n\\n**Chủ đề chính ban đầu:** Tìm kiếm thông tin về **quần short nữ** và sau đó chuyển sang tìm kiếm **"
+    },
+    {
+      "user": "stress_hà_01",
+      "round": 2,
+      "facts_asked": 10,
+      "facts_recalled": 4,
+      "recall_pct": 40.0,
+      "missed_facts": [
+        "quần",
+        "giày",
+        "túi",
+        "giao hàng",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_hà_01\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, chúng ta đã thảo luận về các chủ đề sau:\\n\\n1.  **Sản phẩm quan tâm:** Áo sơ mi trắng (white dress shirt) và váy công sở ngắn (short office dress)"
+    },
+    {
+      "user": "stress_khánh_01",
+      "round": 2,
+      "facts_asked": 10,
+      "facts_recalled": 5,
+      "recall_pct": 50.0,
+      "missed_facts": [
+        "váy",
+        "túi",
+        "giao hàng",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_khánh_01\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, chúng ta đã thảo luận về việc tìm kiếm thông tin chi tiết về các sản phẩm thời trang, cụ thể là:\\n\\n1.  **Giày tây nam:** Vấn đề về sự tồn tại "
+    },
+    {
+      "user": "stress_linh_01",
+      "round": 2,
+      "facts_asked": 10,
+      "facts_recalled": 2,
+      "recall_pct": 20.0,
+      "missed_facts": [
+        "áo",
+        "giày",
+        "váy",
+        "size",
+        "giá",
+        "giao hàng",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_linh_01\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, các chủ đề chính mà bạn đã hỏi bao gồm:\\n\\n1.  **Túi xách da nữ** (\\\"Có túi xách da nữ không?\\\").\\n2.  **Chương trình khuyến mãi/sale** (\\\"Có sa"
+    },
+    {
+      "user": "stress_an_02",
+      "round": 3,
+      "facts_asked": 10,
+      "facts_recalled": 3,
+      "recall_pct": 30.0,
+      "missed_facts": [
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "giá",
+        "giao hàng",
+        "đổi trả"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_an_02\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Tôi nhớ được các chủ đề chính mà chúng ta đã thảo luận trong cuộc trò chuyện này. Mục tiêu chung của cuộc trò chuyện là **xác định thông tin chi tiết** để đưa ra lời khuyên chính"
+    },
+    {
+      "user": "stress_bình_02",
+      "round": 3,
+      "facts_asked": 10,
+      "facts_recalled": 2,
+      "recall_pct": 20.0,
+      "missed_facts": [
+        "áo",
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "giao hàng",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_bình_02\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, các câu hỏi của bạn tập trung vào các thông tin chi tiết về một sản phẩm mà bạn chưa xác định rõ. Cụ thể, bạn đã hỏi về:\\n\\n*   **Chất liệu**\\n*"
+    },
+    {
+      "user": "stress_chi_02",
+      "round": 3,
+      "facts_asked": 10,
+      "facts_recalled": 1,
+      "recall_pct": 10.0,
+      "missed_facts": [
+        "áo",
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "giá",
+        "giao hàng",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_chi_02\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, bạn đã hỏi về các thông tin chung chung mà **không đề cập đến bất kỳ sản phẩm cụ thể nào**.\\n\\nCác câu hỏi của bạn bao gồm:\\n\\n*   \\\"Hãng nào?\\\" "
+    },
+    {
+      "user": "stress_dũng_02",
+      "round": 3,
+      "facts_asked": 10,
+      "facts_recalled": 5,
+      "recall_pct": 50.0,
+      "missed_facts": [
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "giao hàng"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_dũng_02\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, các câu hỏi của bạn đều tập trung vào các thông tin chi tiết về một sản phẩm, bao gồm:\\n\\n*   **Chi tiết sản phẩm:** Hỏi về xếp ly, chất liệu, b"
+    },
+    {
+      "user": "stress_em_02",
+      "round": 3,
+      "facts_asked": 10,
+      "facts_recalled": 3,
+      "recall_pct": 30.0,
+      "missed_facts": [
+        "áo",
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "giá",
+        "giao hàng"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_em_02\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, bạn đã hỏi về các thông tin chi tiết của một sản phẩm, cụ thể là:\\n\\n1.  **Sale/Khuyến mãi:** Bạn hỏi về chương trình sale.\\n2.  **Đổi size:** Bạn"
+    },
+    {
+      "user": "stress_phương_02",
+      "round": 3,
+      "facts_asked": 10,
+      "facts_recalled": 1,
+      "recall_pct": 10.0,
+      "missed_facts": [
+        "áo",
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "size",
+        "giao hàng",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_phương_02\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, trọng tâm của cuộc thảo luận là việc bạn liên tục hỏi về **\\\"Giá?\\\"**.\\n\\n**Tóm tắt các điểm chính:**\\n\\n1.  **Nhu cầu chính của bạn:** Bạn có"
+    },
+    {
+      "user": "stress_giang_02",
+      "round": 3,
+      "facts_asked": 10,
+      "facts_recalled": 2,
+      "recall_pct": 20.0,
+      "missed_facts": [
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "giá",
+        "giao hàng",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_giang_02\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, chúng ta đã tập trung vào việc hỏi về **\\\"Áo thun be basic\\\"** và các thông tin sau:\\n\\n1.  **Kích cỡ (Size):** Bạn đã hỏi về các size có sẵn.\\"
+    },
+    {
+      "user": "stress_hà_02",
+      "round": 3,
+      "facts_asked": 10,
+      "facts_recalled": 4,
+      "recall_pct": 40.0,
+      "missed_facts": [
+        "áo",
+        "giày",
+        "váy",
+        "túi",
+        "giao hàng",
+        "bảo hành"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_hà_02\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Tôi nhớ các chủ đề chính mà chúng ta đã thảo luận trong cuộc trò chuyện này:\\n\\n1.  **Quần tây nam:** Bạn đã hỏi về sự có sẵn, kiểu dáng, và tính ứng dụng (đi biển).\\n2.  **Chất "
+    },
+    {
+      "user": "stress_khánh_02",
+      "round": 3,
+      "facts_asked": 10,
+      "facts_recalled": 1,
+      "recall_pct": 10.0,
+      "missed_facts": [
+        "áo",
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "giá",
+        "giao hàng",
+        "đổi trả",
+        "bảo hành"
+      ],
+      "response_preview": "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (2072 tokens) exceeds the available context size (2048 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_size_error\\\",\\\"n_prompt_tokens\\\":2072,\\\"n_ctx\\\":2048}}\"}"
+    },
+    {
+      "user": "stress_linh_02",
+      "round": 3,
+      "facts_asked": 10,
+      "facts_recalled": 1,
+      "recall_pct": 10.0,
+      "missed_facts": [
+        "áo",
+        "quần",
+        "giày",
+        "váy",
+        "túi",
+        "size",
+        "giá",
+        "giao hàng",
+        "đổi trả"
+      ],
+      "response_preview": "{\"project_id\":\"playground\",\"session_id\":\"stress_linh_02\",\"model\":\"local-gemma4-e2b-q4-bg\",\"provider\":\"llama_cpp\",\"content\":\"Trong cuộc trò chuyện trước đó, chúng ta đã thảo luận về các thông tin chi tiết của một sản phẩm, bao gồm:\\n\\n*   **Chi tiết sản phẩm:** Kích thước, lớp lót/đệm, màu sắc.\\n*   "
+    }
+  ],
+  "metrics_summary": {
+    "total_requests": 1430,
+    "errors": 40,
+    "error_rate": 0.027972027972027972,
+    "p50_latency_ms": 659,
+    "p95_latency_ms": 2586,
+    "p99_latency_ms": 4527,
+    "cache_speedup_pct": {
+      "áo thun trắng": -72.87524366471735,
+      "túi xách da": 12.450113467407462,
+      "quần jean xanh": -309.26243567753005,
+      "giày thể thao": -3.9455009934714758,
+      "váy maxi hoa": -23.461981566820285
+    },
+    "memory_recall_avg_pct": 25.666666666666668
+  },
+  "top_errors": [
+    {
+      "error": "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (2055 tokens) exceeds the available context size (2048 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_s",
+      "count": 3
+    },
+    {
+      "error": "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (2053 tokens) exceeds the available context size (2048 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_s",
+      "count": 2
+    },
+    {
+      "error": "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (2135 tokens) exceeds the available context size (2048 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_s",
+      "count": 2
+    },
+    {
+      "error": "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (2133 tokens) exceeds the available context size (2048 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_s",
+      "count": 2
+    },
+    {
+      "error": "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (2056 tokens) exceeds the available context size (2048 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_s",
+      "count": 2
+    },
+    {
+      "error": "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (2057 tokens) exceeds the available context size (2048 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_s",
+      "count": 2
+    },
+    {
+      "error": "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (2078 tokens) exceeds the available context size (2048 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_s",
+      "count": 1
+    },
+    {
+      "error": "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (2075 tokens) exceeds the available context size (2048 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_s",
+      "count": 1
+    },
+    {
+      "error": "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (1916 tokens) exceeds the available context size (1536 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_s",
+      "count": 1
+    },
+    {
+      "error": "{\"detail\":\"upstream error: llama.cpp 400: {\\\"error\\\":{\\\"code\\\":400,\\\"message\\\":\\\"request (2096 tokens) exceeds the available context size (2048 tokens), try increasing it\\\",\\\"type\\\":\\\"exceed_context_s",
+      "count": 1
+    }
+  ],
+  "verdict": "FAIL",
+  "criteria": {
+    "error_rate_threshold": 0.05,
+    "memory_recall_threshold": 0.7,
+    "cache_speedup_threshold": 0.1
+  }
+}
