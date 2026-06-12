@@ -143,9 +143,26 @@ docker compose logs -f app
 curl http://localhost:8000/health
 ```
 
-## Multi-Model GPU Architecture (16GB VRAM, 2026-06-06 config)
+## Multi-Model GPU Architecture
 
-*   **Primary Chat (Port 8080)**: `Gemma 4 12B Q4_K_M` (parallel=12, ctx=8K, --cache-type-k/v q4_0). Peak 259 tok/s, p95 @20 users 7.4s, quality 7.6/10. Sustained 158 tok/s over 10 min @ 20 concurrent.
+### 16GB target (RTX 5060 Ti 16GB, RTX 4060 Ti 16GB) — `scripts/start_5060ti_16gb.sh`
+
+Tuned for a single 16GB card. Replaces the 2026-06-06 multi-port setup
+which assumed 24GB+. Lower parallel + smaller ctx to leave 5GB
+headroom for mmproj lazy-load and OS buffers.
+
+*   **Primary Chat (Port 8080)**: `Gemma 4 12B Q4_K_M` (parallel=4, ctx=6K, --cache-type-k/v q4_0, --mlock). Single-process single-GPU. Estimated: ~110-120 tok/s sustained @ 4 concurrent, p95 < 2s.
+*   **Multimodal (optional)**: append `MMPROJ=/path/to/mmproj.gguf` to enable. Lazy-loads on first image request. ~2.5GB when loaded.
+*   **No separate background model** (saves 3GB) — operator can opt in by adding a second llama.cpp process on a different port if they have a multi-GPU setup.
+*   **No separate reranker** (saves 1GB) — uses LLM-based scoring instead.
+* **mlock is on by default** — pins model in RAM. Set `NOMLOCK=1` if system RAM < 24GB.
+* **Memory budget validation**: `validate_memory_budget()` runs at startup. Logs WARNING if model + KV cache + overhead exceeds `GPU_MEMORY_BUDGET_MIB` (default 16384). Warns TIGHT if <1GB headroom.
+* **ctx overflow guard**: `_check_ctx_overflow()` in chat service estimates input tokens (Vietnamese-aware: 3 chars/token) and raises HTTPException(413) instead of letting llama.cpp silently truncate the tail of the prompt.
+* **Override for 24GB+ cards**: set `GPU_MEMORY_BUDGET_MIB=24576` and use `scripts/start_12b_q4_p4.sh` (or the old 24GB-tuned config).
+
+### 24GB+ target (legacy multi-model) — `scripts/start_12b_q4_p4.sh`
+
+*   **Primary Chat (Port 8080)**: `Gemma 4 12B Q4_K_M` (parallel=8, ctx=8K, --cache-type-k/v q4_0). Peak 259 tok/s, p95 @20 users 7.4s, quality 7.6/10. Sustained 158 tok/s over 10 min @ 20 concurrent.
 *   **Background Memory (Port 8081)**: `E4B Q4` (parallel=8). Handles memory extraction (summary, structmem, crew) — latency-tolerant.
 *   **Multimodal (Port 8083)**: `E2B Q4` + mmproj (parallel=40, ctx=8K). Handles image input. ~2.5GB VRAM.
 *   **Reranker (Port 8082)**: `bge-reranker-v2-m3`. Re-scores RAG results.
