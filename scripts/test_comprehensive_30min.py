@@ -862,3 +862,57 @@ class Phase2Rotate(PhaseRunner):
             duration_seconds=time.monotonic() - t_start,
             extra={"users": len(plan), "turns_per_user": self.cfg.phase2_turns_per_user},
         )
+
+
+class Phase3Recall(PhaseRunner):
+    """Round 1-3: chọn 10 user từ phase 1, wait, memory check, continue 10 câu."""
+
+    async def run(self) -> PhaseResult:
+        started = datetime.now(timezone.utc)
+        t_start = time.monotonic()
+        instances = all_user_instances(self.cfg.phase3_rounds)
+        topics = all_topics()
+        for round_idx in range(self.cfg.phase3_rounds):
+            print(f"  [phase3] round {round_idx+1}/{self.cfg.phase3_rounds}, sleeping {self.cfg.phase3_gap_seconds}s for memory consolidation...")
+            await asyncio.sleep(self.cfg.phase3_gap_seconds)
+            users_this_round = instances[
+                round_idx * self.cfg.phase3_users_per_round : (round_idx + 1) * self.cfg.phase3_users_per_round
+            ]
+            for persona in users_this_round:
+                # Memory check question
+                memory_q = "Bạn còn nhớ tôi đã hỏi gì trong cuộc trò chuyện trước đó không? Hãy tóm tắt giúp tôi."
+                status, body, lat = await self.client.chat(
+                    user=persona.user_id,
+                    message=memory_q,
+                    session_id=persona.user_id,
+                    topic="<memory_check>",
+                    phase=f"phase3_recall_r{round_idx+1}",
+                    turn=0,
+                )
+                # Baseline clothing keywords: response should mention ≥70% if memory works
+                baseline_facts = ("áo", "quần", "giày", "váy", "túi",
+                                  "size", "giá", "giao hàng", "đổi trả", "bảo hành")
+                matched, total, missed = check_key_facts(body, baseline_facts)
+                await self.metrics.record_recall(
+                    persona.user_id, round_idx + 1, total, matched, missed
+                )
+                # Continue 10 câu
+                for turn in range(1, self.cfg.phase1_turns_per_user + 1):
+                    topic = random.choice(topics)
+                    question = random.choice(topic.questions)
+                    await self.client.chat(
+                        user=persona.user_id,
+                        message=question.text,
+                        session_id=persona.user_id,
+                        topic=topic.name,
+                        phase=f"phase3_continue_r{round_idx+1}",
+                        turn=turn,
+                    )
+        ended = datetime.now(timezone.utc)
+        return PhaseResult(
+            name="phase3_recall",
+            started_at=started.isoformat(),
+            ended_at=ended.isoformat(),
+            duration_seconds=time.monotonic() - t_start,
+            extra={"rounds": self.cfg.phase3_rounds, "users_per_round": self.cfg.phase3_users_per_round},
+        )
