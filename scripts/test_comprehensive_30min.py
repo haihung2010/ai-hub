@@ -940,10 +940,10 @@ class ReportGenerator:
             or s["memory_recall_avg_pct"] >= self.cfg.memory_recall_threshold * 100
         )
         speedups = s.get("cache_speedup_pct", {}) or {}
-        pass_speedup = True  # observe only, never fail
-        if speedups:
-            avg_speedup = statistics.mean(speedups.values())
-            pass_speedup = avg_speedup >= self.cfg.cache_speedup_threshold * 100
+        # Cache speedup is observed only — never blocks PASS.
+        # The plan notes "observe only, never fail". We still compute it for
+        # the report, but verdict logic ignores it.
+        pass_speedup = True
 
         if pass_error and pass_recall and pass_speedup:
             verdict = "PASS"
@@ -952,13 +952,18 @@ class ReportGenerator:
         else:
             verdict = "FAIL"
 
+        # Convert Path → str for JSON serialization
+        cfg_dict = asdict(self.cfg)
+        if "report_dir" in cfg_dict:
+            cfg_dict["report_dir"] = str(cfg_dict["report_dir"])
+
         return {
             "test_name": "ai-hub-comprehensive-30min",
             "started_at": started_at.isoformat(),
             "ended_at": ended_at.isoformat(),
             "total_duration_seconds": total_duration,
             "throughput_turns_per_min": throughput,
-            "config": asdict(self.cfg),
+            "config": cfg_dict,
             "phases": [asdict(r) for r in self.phase_results],
             "metrics_summary": s,
             "top_errors": self._top_errors(10),
@@ -988,3 +993,102 @@ class ReportGenerator:
             json.dump(report, f, indent=2, ensure_ascii=False)
         tmp.rename(json_path)
         return json_path, log_path
+
+
+# ── Main ─────────────────────────────────────────────────────────────────
+async def _run_full(cfg: Config, log: logging.Logger, phases_filter: set[int] | None) -> dict:
+    metrics = MetricsCollector()
+    report_gen = ReportGenerator(cfg, metrics)
+    started = datetime.now(timezone.utc)
+
+    async with HealthChecker(cfg) as h:
+        await h.assert_healthy()
+    async with ChatClient(cfg, metrics, log) as client:
+        if not phases_filter or 1 in phases_filter:
+            print("[main] Phase 1: warmup (10 personas × 10 turns)")
+            result = await Phase1Warmup(cfg, client, metrics, log).run()
+            report_gen.add_phase(result)
+            print(f"  done in {result.duration_seconds:.1f}s")
+
+        if not phases_filter or 2 in phases_filter:
+            print("[main] Phase 2: rotate (100 user, 5 cache topics)")
+            result = await Phase2Rotate(cfg, client, metrics, log).run()
+            report_gen.add_phase(result)
+            print(f"  done in {result.duration_seconds:.1f}s")
+
+        if not phases_filter or 3 in phases_filter:
+            print("[main] Phase 3: memory recall + continue (3 rounds × 10 user)")
+            result = await Phase3Recall(cfg, client, metrics, log).run()
+            report_gen.add_phase(result)
+            print(f"  done in {result.duration_seconds:.1f}s")
+
+    ended = datetime.now(timezone.utc)
+    report = report_gen.build(started, ended)
+    json_path, log_path = report_gen.write(report)
+    print(f"\n[main] Report: {json_path}")
+    print(f"[main] Verdict: {report['verdict']}")
+    print(f"[main] Error rate: {report['metrics_summary']['error_rate']*100:.1f}% (threshold {cfg.error_rate_threshold*100:.0f}%)")
+    if report['metrics_summary']['memory_recall_avg_pct'] is not None:
+        print(f"[main] Memory recall: {report['metrics_summary']['memory_recall_avg_pct']:.1f}% (threshold {cfg.memory_recall_threshold*100:.0f}%)")
+    print(f"[main] Throughput: {report['throughput_turns_per_min']:.1f} turns/min")
+    return report
+
+
+async def _run_dry_run(cfg: Config) -> dict:
+    """Synthetic data — no HTTP — to exercise the report pipeline."""
+    metrics = MetricsCollector()
+    for i in range(50):
+        await metrics.record_request(RequestMetric(
+            user=f"dry_user_{i%5}", turn=i, topic="áo thun trắng", phase="p1",
+            latency_ms=4000 + i*10, status=200, error=None,
+            timestamp=datetime.now(timezone.utc).isoformat()))
+    rg = ReportGenerator(cfg, metrics)
+    report = rg.build(datetime.now(timezone.utc), datetime.now(timezone.utc))
+    return report, rg
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="ai-hub 30-min comprehensive test")
+    parser.add_argument("--quick", action="store_true", help="Quick smoke (5 user × 5 q, 5 KB cards)")
+    parser.add_argument("--phases", type=str, default=None, help="Comma-separated phase numbers to run (e.g. '1,2')")
+    parser.add_argument("--dry-run", action="store_true", help="Skip HTTP, generate synthetic report")
+    args = parser.parse_args()
+
+    log = logging.getLogger("comprehensive_test")
+    log.setLevel(logging.INFO)
+    handler = logging.FileHandler("/tmp/comprehensive_test.log")
+    handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+    log.addHandler(handler)
+
+    cfg = Config.from_env()
+    if args.quick:
+        cfg.phase1_turns_per_user = 5
+        cfg.phase2_users_total = 5
+        cfg.phase2_turns_per_user = 3
+        cfg.kb_card_count = 5
+        cfg.phase3_rounds = 1
+        cfg.phase3_users_per_round = 2
+        cfg.phase3_gap_seconds = 10
+    phases_filter = set(int(p) for p in args.phases.split(",")) if args.phases else None
+
+    if args.dry_run:
+        report, rg = asyncio.run(_run_dry_run(cfg))
+        path, _ = rg.write(report)
+        print(f"[dry-run] Synthetic report: {path}")
+        return 0
+
+    try:
+        report = asyncio.run(_run_full(cfg, log, phases_filter))
+        return 0 if report["verdict"] != "FAIL" else 1
+    except RuntimeError as e:
+        print(f"[main] ABORT: {e}")
+        return 2
+    except Exception as e:
+        log.exception("test failed")
+        print(f"[main] CRASH: {e!r}")
+        traceback.print_exc()
+        return 3
+
+
+if __name__ == "__main__":
+    sys.exit(main())
