@@ -33,14 +33,21 @@ def verify_facebook_signature(request: Request, body: bytes) -> bool:
     using the app secret. We must verify the raw bytes (NOT a re-serialized
     dict) so JSON whitespace differences don't break the digest.
 
-    If ``FACEBOOK_APP_SECRET`` is not configured we log a warning and return
-    True so a missing config does not crash the webhook — but operators
-    should configure it. Setting the env var is the only way to harden this.
+    Security policy (P0.1 parity, 2026-06-11):
+    - If FACEBOOK_APP_SECRET is unset, REFUSE the request
+      unless FACEBOOK_ALLOW_INSECURE=true (dev mode only).
+    - In production, the secret MUST be set.
     """
     secret = os.environ.get("FACEBOOK_APP_SECRET", "")
     if not secret:
-        logger.warning("facebook signature not verified: FACEBOOK_APP_SECRET not configured")
-        return True
+        if os.environ.get("FACEBOOK_ALLOW_INSECURE", "").lower() == "true":
+            return True  # dev mode: explicitly opted in
+        logger.error(
+            "Facebook HMAC secret not configured and FACEBOOK_ALLOW_INSECURE "
+            "is not 'true'. Rejecting request — set FACEBOOK_APP_SECRET "
+            "in production."
+        )
+        return False
     sig = request.headers.get("X-Hub-Signature-256", "")
     if not sig:
         return False
@@ -92,6 +99,36 @@ async def webhook_event(request: Request, body: dict[str, Any] = {}):
     raw = await request.body()
     if not verify_facebook_signature(request, raw):
         raise HTTPException(status_code=403, detail="invalid signature")
+
+    # P1.6 parity (2026-06-11) — dedup Facebook retries. The same
+    # delivery may be POSTed multiple times; we don't want to reply
+    # to the customer twice. Use a stable dedup key derived from
+    # the entry id + message mid, which Facebook keeps unique
+    # per delivery. Idempotency storage lives on app.state (same
+    # place the Chatwoot webhook uses).
+    delivery_id = None
+    try:
+        entries = body.get("entry", []) if isinstance(body, dict) else []
+        if entries:
+            entry_id = entries[0].get("id", "")
+            # First message mid we can find; Facebook retries with
+            # the same payload so the same mid is stable.
+            for e in entries:
+                for m in e.get("messaging", []) or []:
+                    msg = m.get("message") or {}
+                    mid = msg.get("mid")
+                    if mid:
+                        delivery_id = f"{entry_id}:{mid}"
+                        break
+                if delivery_id:
+                    break
+    except Exception:
+        delivery_id = None
+    if delivery_id:
+        idem = getattr(request.app.state, "webhook_idempotency", None)
+        if idem is not None and idem.is_duplicate("facebook", delivery_id):
+            logger.info("Facebook duplicate delivery suppressed id=%s", delivery_id)
+            return {"status": "duplicate", "reason": "already_processed"}
 
     if body.get("object") != "page":
         return {"status": "ignored"}

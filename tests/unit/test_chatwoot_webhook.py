@@ -833,3 +833,65 @@ def test_chatwoot_missing_timestamp_rejected_when_required(monkeypatch, client) 
         },
     )
     assert resp.status_code == 401
+
+
+# ──────────────────────────────────────────────────────────────────────
+# P1.6 + P0.1 parity — Facebook webhook hardening (2026-06-11)
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_facebook_rejects_when_secret_unset_in_production(monkeypatch, client) -> None:
+    """When FACEBOOK_APP_SECRET is unset and FACEBOOK_ALLOW_INSECURE != 'true',
+    Facebook webhook requests MUST be rejected even with a valid signature."""
+    monkeypatch.delenv("FACEBOOK_APP_SECRET", raising=False)
+    monkeypatch.delenv("FACEBOOK_ALLOW_INSECURE", raising=False)
+    resp = client.post(
+        "/webhooks/facebook",
+        json={"object": "page", "entry": []},
+    )
+    assert resp.status_code == 403
+
+
+def test_facebook_allows_when_allow_insecure_set(monkeypatch, client) -> None:
+    """When FACEBOOK_ALLOW_INSECURE=true, Facebook webhook works without secret."""
+    monkeypatch.delenv("FACEBOOK_APP_SECRET", raising=False)
+    monkeypatch.setenv("FACEBOOK_ALLOW_INSECURE", "true")
+    resp = client.post(
+        "/webhooks/facebook",
+        json={"object": "page", "entry": []},
+    )
+    # entry=[] is empty so we get {"status": "ignored"} — but the
+    # request itself was not 403'd, meaning the signature check
+    # was permissive. The "object != 'page'" branch is the
+    # other ignore case.
+    assert resp.status_code == 200
+
+
+def test_facebook_rejects_when_signature_missing_with_secret(monkeypatch, client) -> None:
+    """When FACEBOOK_APP_SECRET IS set but X-Hub-Signature-256 is missing, reject."""
+    monkeypatch.setenv("FACEBOOK_APP_SECRET", "fb-secret-123")
+    resp = client.post(
+        "/webhooks/facebook",
+        json={"object": "page", "entry": []},
+    )
+    assert resp.status_code == 403
+
+
+def test_facebook_dedupes_duplicate_delivery(monkeypatch, client) -> None:
+    """Same Facebook delivery_id within TTL → 'duplicate' on second hit."""
+    from app.middleware.webhook_idempotency import InMemoryWebhookIdempotency
+    client.app.state.webhook_idempotency = InMemoryWebhookIdempotency()
+    monkeypatch.setenv("FACEBOOK_ALLOW_INSECURE", "true")
+    payload = {
+        "object": "page",
+        "entry": [{"id": "fb-entry-1", "messaging": [{"message": {"mid": "m_abc"}}]}],
+    }
+    # First call — processes normally (or returns "ignored" if entry
+    # is empty, but here it's not)
+    r1 = client.post("/webhooks/facebook", json=payload)
+    assert r1.status_code == 200
+    assert r1.json()["status"] != "duplicate"
+    # Second call with the same payload — must be deduped
+    r2 = client.post("/webhooks/facebook", json=payload)
+    assert r2.status_code == 200
+    assert r2.json()["status"] == "duplicate"
