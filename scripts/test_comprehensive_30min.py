@@ -816,3 +816,49 @@ class Phase1Warmup(PhaseRunner):
             duration_seconds=time.monotonic() - t_start,
             extra={"users": len(PERSONAS), "turns_per_user": self.cfg.phase1_turns_per_user},
         )
+
+
+class Phase2Rotate(PhaseRunner):
+    """100 user instances, 10 câu/user, 5 cache topics repeated ≥3 lần."""
+
+    def _build_user_plan(self) -> list[tuple[UserPersona, list[Topic]]]:
+        """For each user: 1 cache topic (or None) + 9 other topics (no repeat)."""
+        # instances per persona, at least 1 even for small user counts
+        per_persona = max(1, self.cfg.phase2_users_total // len(PERSONAS))
+        instances = all_user_instances(per_persona)[: self.cfg.phase2_users_total]
+        cache_topics = [t for t in all_topics() if t.is_cache_test]
+        non_cache = [t for t in all_topics() if not t.is_cache_test]
+        plan: list[tuple[UserPersona, list[Topic]]] = []
+        for i, persona in enumerate(instances):
+            user_topics: list[Topic] = []
+            if i < len(cache_topics) * 5:  # 5 cache topics × 5 instances = 25 users see cache
+                user_topics.append(cache_topics[i % len(cache_topics)])
+            remaining = self.cfg.phase2_turns_per_user - len(user_topics)
+            user_topics.extend(random.sample(non_cache, min(remaining, len(non_cache))))
+            random.shuffle(user_topics)
+            plan.append((persona, user_topics))
+        return plan
+
+    async def run(self) -> PhaseResult:
+        started = datetime.now(timezone.utc)
+        t_start = time.monotonic()
+        plan = self._build_user_plan()
+        for persona, topics in plan:
+            for turn, topic in enumerate(topics[:self.cfg.phase2_turns_per_user]):
+                question = random.choice(topic.questions)
+                await self.client.chat(
+                    user=persona.user_id,
+                    message=question.text,
+                    session_id=persona.user_id,
+                    topic=topic.name,
+                    phase="phase2_rotate",
+                    turn=turn,
+                )
+        ended = datetime.now(timezone.utc)
+        return PhaseResult(
+            name="phase2_rotate",
+            started_at=started.isoformat(),
+            ended_at=ended.isoformat(),
+            duration_seconds=time.monotonic() - t_start,
+            extra={"users": len(plan), "turns_per_user": self.cfg.phase2_turns_per_user},
+        )
