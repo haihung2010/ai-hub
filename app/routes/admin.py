@@ -20,14 +20,34 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def require_admin(request: Request) -> None:
-    """Reject the request unless the authenticated API key has admin privileges.
+    """Reject the request unless the authenticated principal has admin privileges.
 
-    The security middleware sets ``request.state.api_key_is_admin`` for both
-    the static master key (always admin) and DB-backed virtual keys (per-key
-    ``is_admin`` flag). Routes under ``/v1/admin`` are sensitive — they expose
-    usage data, allow minting API keys, deleting knowledge cards, and running
-    arbitrary SELECT SQL — so non-admin keys must be denied with 403.
+    Two paths grant admin access (P2.1 followup, 2026-06-11):
+    1. X-API-KEY (legacy): the security middleware sets
+       ``api_key_is_admin=True`` for the master key and for any
+       DB-backed key with ``is_admin=1``.
+    2. OAuth 2.1 bearer token: the middleware binds the token's
+       scopes to ``api_key_scopes``; this check verifies the
+       ``admin`` scope is present. Non-admin bearer tokens
+       (e.g. ``scope=chat``) get 403 here even if the underlying
+       api_keys row has ``is_admin=1`` — the explicit scope
+       contract wins.
+
+    Routes under ``/v1/admin`` are sensitive — they expose usage
+    data, allow minting API keys, deleting knowledge cards, and
+    running arbitrary SELECT SQL — so non-admin keys must be
+    denied with 403.
     """
+    scopes = getattr(request.state, "api_key_scopes", None)
+    if scopes is not None:
+        # OAuth bearer path — explicit scope check
+        if "admin" not in scopes:
+            raise HTTPException(
+                status_code=403,
+                detail="admin scope required for this endpoint",
+            )
+        return
+    # X-API-KEY path — fall back to the api_key_is_admin flag
     if not getattr(request.state, "api_key_is_admin", False):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

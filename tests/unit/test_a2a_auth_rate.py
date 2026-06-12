@@ -371,3 +371,52 @@ def test_no_auth_header_still_401(client) -> None:
     bare = TestClient(app)
     resp = bare.get("/v1/a2a/agent-card")
     assert resp.status_code in (401, 403)
+
+
+# ──────────────────────────────────────────────────────────────────────
+# P2.1 follow-up — OAuth scope check on /v1/admin/* (2026-06-11)
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_bearer_token_without_admin_scope_rejected_for_admin(client) -> None:
+    """A bearer token with scope=chat must NOT be able to call
+    /v1/admin/* endpoints. The OAuth scope contract wins over
+    the underlying api_key's is_admin flag."""
+    from app.services.api_key_service import ApiKeyService
+    from app.services.oauth_service import issue_token
+    svc = ApiKeyService()
+    # is_admin=True would normally grant access — but the scope
+    # is restricted to "chat" only. The scope check should deny.
+    kid, _ = svc.create_key(
+        name=_uniq("oauth-scope-deny"),
+        tenant_id=_uniq("oauth-deny-t"),
+        is_admin=True,
+    )
+    tok = issue_token(api_key_id=kid, tenant_id="oauth-deny-t-xyz", scopes=["chat"])
+    resp = client.get(
+        "/v1/admin/queue",
+        headers={"Authorization": f"Bearer {tok.access_token}"},
+    )
+    assert resp.status_code == 403
+    assert "admin" in resp.json()["detail"].lower()
+
+
+def test_bearer_token_with_admin_scope_passes(client) -> None:
+    """A bearer token with scope=admin DOES get through."""
+    from app.services.api_key_service import ApiKeyService
+    from app.services.oauth_service import issue_token
+    svc = ApiKeyService()
+    kid, _ = svc.create_key(name=_uniq("oauth-scope-ok"), tenant_id=_uniq("oauth-ok-t"))
+    tok = issue_token(api_key_id=kid, tenant_id="oauth-ok-t-xyz", scopes=["chat", "admin", "a2a"])
+    resp = client.get(
+        "/v1/admin/queue",
+        headers={"Authorization": f"Bearer {tok.access_token}"},
+    )
+    assert resp.status_code == 200
+
+
+def test_x_api_key_admin_flag_still_works(client) -> None:
+    """Backward-compat: the X-API-KEY master key (is_admin=True
+    via the static flag) still gets through to /v1/admin/*."""
+    resp = client.get("/v1/admin/queue")
+    assert resp.status_code == 200
