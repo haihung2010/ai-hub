@@ -450,3 +450,52 @@ class MetricsCollector:
             "cache_speedup_pct": speedups,
             "memory_recall_avg_pct": avg_recall,
         }
+
+
+# ── Health ───────────────────────────────────────────────────────────────
+class HealthChecker:
+    def __init__(self, cfg: Config) -> None:
+        self.cfg = cfg
+        self.session: aiohttp.ClientSession | None = None
+
+    async def __aenter__(self) -> "HealthChecker":
+        self.session = aiohttp.ClientSession(headers=self.cfg.headers())
+        return self
+
+    async def __aexit__(self, *exc) -> None:
+        if self.session:
+            await self.session.close()
+
+    async def check_ai_hub(self) -> tuple[bool, str]:
+        try:
+            async with self.session.get(
+                f"{self.cfg.base_url}/health", timeout=aiohttp.ClientTimeout(total=10)
+            ) as resp:
+                if resp.status != 200:
+                    return False, f"status={resp.status}"
+                body = await resp.text()
+                if '"status":"ok"' in body or '"status": "ok"' in body:
+                    return True, "ok"
+                return False, f"unexpected body: {body[:100]}"
+        except Exception as e:
+            return False, f"exception: {e!r}"
+
+    async def check_llama(self) -> tuple[bool, str]:
+        try:
+            async with self.session.get(
+                f"{self.cfg.llama_url}/health", timeout=aiohttp.ClientTimeout(total=10)
+            ) as resp:
+                if resp.status == 200:
+                    return True, "ok"
+                return False, f"status={resp.status}"
+        except Exception as e:
+            return False, f"exception: {e!r}"
+
+    async def assert_healthy(self) -> None:
+        ah_ok, ah_msg = await self.check_ai_hub()
+        if not ah_ok:
+            raise RuntimeError(f"ai-hub not healthy: {ah_msg}")
+        ll_ok, ll_msg = await self.check_llama()
+        if not ll_ok:
+            raise RuntimeError(f"llama.cpp not healthy: {ll_msg}")
+        print(f"[health] ai-hub={ah_msg}, llama.cpp={ll_msg}")
