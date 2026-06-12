@@ -25,23 +25,37 @@ class SkillRecord:
     eval_score: float = 0.0
 
     @staticmethod
-    def from_row(row: tuple) -> SkillRecord:
+    def from_row(row) -> SkillRecord:
+        """Build a SkillRecord from a psycopg row.
+
+        Accepts BOTH tuple rows (legacy) AND dict rows (psycopg3
+        dict_row, which is what ``get_db_connection`` actually
+        returns). Tuple access via ``row[0]`` raised KeyError on
+        dict rows, which broke every PATCH /admin/skills/{id}
+        call before P1.8's fix. Dict access via ``row["col"]``
+        works for both because tuples also support integer keys.
+        """
+        def _g(key, idx, default=""):
+            if isinstance(row, dict):
+                return row.get(key, default)
+            return row[idx] if idx < len(row) else default
+
         return SkillRecord(
-            id=row[0],
-            tenant_id=row[1],
-            project_id=row[2],
-            name=row[3],
-            description=row[4] or "",
-            trigger_patterns_json=row[5] or "[]",
-            prompt_template=row[6] or "",
-            expected_behavior=row[7] or "",
-            test_cases_json=row[8] or "[]",
-            version=row[9] or 1,
-            is_active=bool(row[10]),
-            created_at=row[11],
-            updated_at=row[12],
-            last_evaluated_at=row[13],
-            eval_score=row[14] if row[14] is not None else 0.0,
+            id=_g("id", 0),
+            tenant_id=_g("tenant_id", 1),
+            project_id=_g("project_id", 2),
+            name=_g("name", 3),
+            description=_g("description", 4, "") or "",
+            trigger_patterns_json=_g("trigger_patterns_json", 5, "[]") or "[]",
+            prompt_template=_g("prompt_template", 6, "") or "",
+            expected_behavior=_g("expected_behavior", 7, "") or "",
+            test_cases_json=_g("test_cases_json", 8, "[]") or "[]",
+            version=_g("version", 9, 1) or 1,
+            is_active=bool(_g("is_active", 10, True)),
+            created_at=_g("created_at", 11),
+            updated_at=_g("updated_at", 12),
+            last_evaluated_at=_g("last_evaluated_at", 13),
+            eval_score=_g("eval_score", 14, 0.0) if _g("eval_score", 14, 0.0) is not None else 0.0,
         )
 
 

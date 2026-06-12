@@ -157,3 +157,51 @@ def test_patch_skill_404_on_unknown_id(client) -> None:
         json={"description": "x"},
     )
     assert r.status_code == 404
+
+
+# ──────────────────────────────────────────────────────────────────────
+# P1.8 followup — actual PATCH endpoint works (the skill_service
+# tuple/dict bug was a pre-existing crash; this test pins the fix).
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_patch_skill_endpoint_actually_updates(client) -> None:
+    """End-to-end: PATCH /admin/skills/{id} returns 200 and the
+    row is updated. The pre-existing tuple/dict bug crashed this
+    with KeyError because skill_service.from_row() used row[0]
+    on a dict_row from psycopg3."""
+    project_id = _unique("patch-proj-fix")
+    name = _unique("Patch target fix")
+    # Create
+    r = client.post(
+        f"/v1/projects/{project_id}/skills",
+        json={"name": name, "description": "initial"},
+    )
+    assert r.status_code in (200, 201), r.text
+    skill_id = r.json()["id"]
+
+    # PATCH
+    r2 = client.patch(
+        f"/v1/projects/{project_id}/skills/{skill_id}",
+        json={"description": "updated", "is_active": False},
+    )
+    assert r2.status_code == 200, f"PATCH crashed (KeyError?): {r2.text}"
+    data = r2.json()
+    assert data["description"] == "updated"
+    assert data["is_active"] is False
+
+
+def test_get_skill_endpoint_works(client) -> None:
+    """GET /admin/skills/{id} also uses from_row — verify it works."""
+    project_id = _unique("get-proj-fix")
+    name = _unique("Get target fix")
+    r = client.post(
+        f"/v1/projects/{project_id}/skills",
+        json={"name": name},
+    )
+    assert r.status_code in (200, 201)
+    skill_id = r.json()["id"]
+
+    r2 = client.get(f"/v1/projects/{project_id}/skills/{skill_id}")
+    assert r2.status_code == 200
+    assert r2.json()["id"] == skill_id
