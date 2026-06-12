@@ -59,6 +59,7 @@ class Config:
     memory_recall_threshold: float
     cache_speedup_threshold: float
     total_runtime_cap_seconds: int
+    request_delay_seconds: float = 1.1  # throttle to ~54 rpm under 60 rpm Lite cap
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -88,6 +89,7 @@ class Config:
             memory_recall_threshold=float(os.getenv("AIHUB_TEST_RECALL_THRESHOLD", "0.70")),
             cache_speedup_threshold=float(os.getenv("AIHUB_TEST_CACHE_SPEEDUP", "0.10")),
             total_runtime_cap_seconds=int(os.getenv("AIHUB_TEST_RUNTIME_CAP", "2100")),
+            request_delay_seconds=float(os.getenv("AIHUB_TEST_REQUEST_DELAY", "1.1")),
         )
 
     def headers(self) -> dict[str, str]:
@@ -408,13 +410,14 @@ class MetricsCollector:
                 occ_idx = sum(len(v) for v in occ.latencies_by_occurrence.values()) + 1
                 occ.add(occ_idx, m.latency_ms)
 
-    async def record_recall(self, user: str, round_idx: int, asked: int, recalled: int, missed: list[str]) -> None:
+    async def record_recall(self, user: str, round_idx: int, asked: int, recalled: int, missed: list[str], response_text: str = "") -> None:
         async with self._lock:
             self.memory_recalls.append({
                 "user": user, "round": round_idx,
                 "facts_asked": asked, "facts_recalled": recalled,
                 "recall_pct": (recalled / asked * 100.0) if asked else 0.0,
                 "missed_facts": missed,
+                "response_preview": response_text[:300],
             })
 
     def summary(self) -> dict:
@@ -767,6 +770,11 @@ class ChatClient:
                     timestamp=datetime.now(timezone.utc).isoformat(),
                 ))
                 return 598, "", latency_ms
+            finally:
+                # Throttle to stay under ai-hub's per-model_mode rate limit
+                # (Lite = 60 rpm, so 1.1s sleep ≈ 54 rpm)
+                if self.cfg.request_delay_seconds > 0:
+                    await asyncio.sleep(self.cfg.request_delay_seconds)
 
 
 @dataclass
@@ -894,7 +902,7 @@ class Phase3Recall(PhaseRunner):
                                   "size", "giá", "giao hàng", "đổi trả", "bảo hành")
                 matched, total, missed = check_key_facts(body, baseline_facts)
                 await self.metrics.record_recall(
-                    persona.user_id, round_idx + 1, total, matched, missed
+                    persona.user_id, round_idx + 1, total, matched, missed, body
                 )
                 # Continue 10 câu
                 for turn in range(1, self.cfg.phase1_turns_per_user + 1):
@@ -965,6 +973,7 @@ class ReportGenerator:
             "throughput_turns_per_min": throughput,
             "config": cfg_dict,
             "phases": [asdict(r) for r in self.phase_results],
+            "memory_recalls": list(self.metrics.memory_recalls),
             "metrics_summary": s,
             "top_errors": self._top_errors(10),
             "verdict": verdict,
