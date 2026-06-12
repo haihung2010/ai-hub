@@ -499,3 +499,200 @@ class HealthChecker:
         if not ll_ok:
             raise RuntimeError(f"llama.cpp not healthy: {ll_msg}")
         print(f"[health] ai-hub={ah_msg}, llama.cpp={ll_msg}")
+
+
+# ── Knowledge Seeder ─────────────────────────────────────────────────────
+@dataclass
+class KnowledgeCard:
+    title: str
+    content: str
+    domain: str = "clothing"
+    tags: list[str] = field(default_factory=list)
+
+
+def _gen_product_cards() -> list[KnowledgeCard]:
+    """50 product cards: 10 products × 5 categories (áo, quần, váy, giày, phụ kiện).
+
+    Mỗi product có 5 biến thể màu → 50 cards total.
+    """
+    # 10 product templates × 5 categories
+    # Format: (category, name_template, base_price, material, sizes, warranty_months, color_count)
+    product_templates: list[tuple[str, str, int, str, str, int, int]] = [
+        # áo (10)
+        ("áo", "Áo thun {color} basic", 250000, "100% cotton", "S,M,L,XL", 3, 5),
+        ("áo", "Áo sơ mi {color} công sở", 320000, "cotton pha polyester", "S,M,L,XL", 3, 5),
+        ("áo", "Áo khoác {color} mùa đông", 750000, "polyester chống nước", "M,L,XL", 12, 4),
+        ("áo", "Áo len {color} cổ lọ", 480000, "len Merino", "S,M,L", 6, 4),
+        ("áo", "Áo polo {color} nam", 350000, "cotton cá sấu", "M,L,XL,XXL", 3, 5),
+        ("áo", "Áo blazer {color} nữ", 890000, "vải tuytsi", "S,M,L", 6, 4),
+        ("áo", "Áo hoodie {color} unisex", 420000, "nỉ bông", "M,L,XL", 3, 5),
+        ("áo", "Áo tank top {color} thể thao", 180000, "polyester co giãn", "S,M,L,XL", 3, 4),
+        ("áo", "Áo vest {color} nam công sở", 1200000, "vải wool pha", "M,L,XL", 12, 3),
+        ("áo", "Áo dài {color} truyền thống", 950000, "lụa tằm", "S,M,L,XL", 6, 5),
+        # quần (10)
+        ("quần", "Quần jean {color} ống suông", 450000, "denim cotton", "28,29,30,31,32", 6, 5),
+        ("quần", "Quần tây {color} nam", 550000, "kaki", "28,30,32,34", 6, 4),
+        ("quần", "Quần short {color} nữ", 180000, "cotton", "S,M,L", 3, 5),
+        ("quần", "Quần jogger {color} unisex", 320000, "nỉ", "M,L,XL", 3, 5),
+        ("quần", "Quần legging {color} nữ", 220000, "polyester co giãn", "S,M,L,XL", 3, 4),
+        ("quần", "Quần culottes {color} dài", 380000, "voan", "S,M,L", 3, 4),
+        ("quần", "Quần kaki {color} nam", 420000, "kaki dày", "28,30,32,34", 6, 4),
+        ("quần", "Quần yếm {color} nữ", 350000, "denim", "S,M,L", 3, 5),
+        ("quần", "Quần baggy {color} unisex", 380000, "cotton pha linen", "M,L,XL", 3, 5),
+        ("quần", "Quần lót {color} cotton", 95000, "cotton 100%", "M,L,XL", 1, 4),
+        # váy (10)
+        ("váy", "Váy {color} dài maxi", 380000, "voan", "S,M,L", 3, 5),
+        ("váy", "Váy {color} ngắn công sở", 280000, "kaki", "S,M,L", 3, 4),
+        ("váy", "Váy {color} dạ hội", 1500000, "lụa + ren", "S,M,L", 6, 4),
+        ("váy", "Váy {color} chữ A", 320000, "cotton", "S,M,L,XL", 3, 5),
+        ("váy", "Váy {color} xòe vintage", 450000, "cotton họa tiết", "S,M,L", 3, 5),
+        ("váy", "Váy {color} body ôm", 380000, "thun gân", "S,M,L", 3, 4),
+        ("váy", "Váy {color} yếm", 290000, "denim", "S,M,L", 3, 4),
+        ("váy", "Váy {color} tennis", 420000, "polyester", "S,M,L,XL", 3, 4),
+        ("váy", "Váy {color} midi", 350000, "voan", "S,M,L", 3, 5),
+        ("váy", "Váy {color} wrap", 390000, "cotton", "S,M,L,XL", 3, 5),
+        # giày (10)
+        ("giày", "Giày thể thao {color} Nike Air", 1200000, "upper mesh + đế cao su", "39,40,41,42,43", 12, 5),
+        ("giày", "Giày tây {color} nam", 900000, "da bò", "39,40,41,42,43", 12, 4),
+        ("giày", "Sandal {color} nữ", 280000, "da tổng hợp + đế eva", "36,37,38,39", 3, 5),
+        ("giày", "Giày cao gót {color}", 480000, "da bò + đế cao su", "36,37,38,39", 3, 4),
+        ("giày", "Boots {color} cổ cao", 850000, "da bò + lông", "37,38,39,40,41", 12, 4),
+        ("giày", "Sneaker {color} trắng basic", 650000, "canvas + đế cao su", "36,37,38,39,40,41,42,43", 6, 5),
+        ("giày", "Oxford {color} nam công sở", 1100000, "da bò", "39,40,41,42,43", 12, 3),
+        ("giày", "Loafer {color} nữ", 520000, "da bò", "36,37,38,39", 6, 4),
+        ("giày", "Dép tổ ong {color}", 95000, "nhựa eva", "36,37,38,39,40,41,42", 1, 5),
+        ("giày", "Slip-on {color} vải", 320000, "canvas", "37,38,39,40,41", 3, 5),
+        # phụ kiện (10)
+        ("phụ kiện", "Túi xách {color} da bò", 1200000, "da bò thật", "30x25x12cm", 24, 4),
+        ("phụ kiện", "Mũ lưỡi trai {color}", 150000, "cotton", "free size", 1, 5),
+        ("phụ kiện", "Thắt lưng {color} da", 280000, "da bò", "90cm-110cm", 6, 4),
+        ("phụ kiện", "Kính mát {color} unisex", 380000, "nhựa + kính polar", "free size", 6, 4),
+        ("phụ kiện", "Dây chuyền {color} bạc", 450000, "bạc 925", "45cm", 6, 4),
+        ("phụ kiện", "Khăn {color} lụa", 220000, "lụa tằm", "50x50cm", 1, 5),
+        ("phụ kiện", "Găng tay {color} len", 120000, "len", "free size", 1, 4),
+        ("phụ kiện", "Tất {color} cotton", 45000, "cotton", "free size", 0, 5),
+        ("phụ kiện", "Ví {color} da nam", 480000, "da bò", "11x9cm", 12, 4),
+        ("phụ kiện", "Túi đeo chéo {color} vải", 350000, "canvas + da PU", "20x15x5cm", 3, 5),
+    ]
+    colors = ["trắng", "đen", "xám", "xanh navy", "be"]
+    cards: list[KnowledgeCard] = []
+    for cat, name_tmpl, price, material, sizes, warranty, color_count in product_templates:
+        for color in colors[:5]:  # always 5 colors → 50 product cards total
+            cards.append(KnowledgeCard(
+                title=name_tmpl.format(color=color),
+                content=(
+                    f"{name_tmpl.format(color=color)} chất liệu {material}, "
+                    f"size {sizes}, giá {price:,}đ. "
+                    f"Bảo hành {warranty} tháng. Đổi trả trong 7 ngày nếu lỗi. "
+                    f"Freeship đơn từ 300k. Phù hợp {cat} thời trang."
+                ),
+                tags=[cat, color, "quần áo", name_tmpl.split()[0].lower()],
+            ))
+    return cards
+
+
+def _gen_faq_cards() -> list[KnowledgeCard]:
+    """25 FAQ cards: 8 base topics × 3 variants + 1 extra = 25 cards."""
+    # 8 base FAQ topics × 3 variants ("", " chi tiết", " cập nhật 2026")
+    faq_templates: list[tuple[str, str, list[str]]] = [
+        ("Chính sách đổi trả", "Đổi trả trong 7 ngày nếu sản phẩm lỗi hoặc không đúng size. Sản phẩm phải còn nguyên tag, chưa giặt. Phí ship đổi trả 30.000đ/lần. Hoàn tiền trong 3-5 ngày làm việc qua chuyển khoản.", ["đổi trả", "bảo hành", "policy"]),
+        ("Bảng size quần áo", "Size S: 45-55kg, 150-160cm. Size M: 55-65kg, 160-167cm. Size L: 65-75kg, 167-175cm. Size XL: 75-85kg, 175-180cm. Size XXL: trên 85kg hoặc 180cm trở lên. Mỗi sản phẩm có bảng size riêng, vui lòng tham khảo.", ["size", "bảng size", "quần áo"]),
+        ("Phí vận chuyển", "Freeship cho đơn từ 300.000đ nội thành HCM, HN. Đơn dưới 300k: 25.000đ. Tỉnh khác: 35.000đ, freeship từ 500.000đ. Giao hỏa tốc 4 giờ nội thành: +50.000đ.", ["shipping", "vận chuyển", "freeship"]),
+        ("Phương thức thanh toán", "Hỗ trợ COD (thanh toán khi nhận hàng), chuyển khoản ngân hàng, ví MoMo, ZaloPay, VnPay, thẻ tín dụng quốc tế. Trả góp 0% với đơn từ 3 triệu qua thẻ tín dụng.", ["payment", "thanh toán", "COD"]),
+        ("Bảo hành sản phẩm", "Bảo hành 3-24 tháng tùy sản phẩm (chi tiết trong mô tả). Lỗi sản xuất được đổi mới miễn phí. Không bảo hành hư hỏng do sử dụng sai cách, bảo quản không đúng.", ["bảo hành", "warranty", "đổi mới"]),
+        ("Chương trình khuyến mãi", "Sale lớn định kỳ: 1/1, 14/2, 8/3, 30/4, 1/5, 2/9, 20/10, 11/11, 12/12. Giảm giá 20-50%. Flash sale mỗi thứ 6 hàng tuần từ 20h-22h. Mã freeship cho khách mới.", ["sale", "khuyến mãi", "voucher"]),
+        ("Chương trình loyalty", "Tích điểm 5% giá trị đơn hàng cho thành viên. 1000 điểm = 50.000đ. Hạng thành viên: Thường (0-5tr/năm), Bạc (5-15tr), Vàng (15-50tr), Kim Cương (>50tr). Ưu đãi riêng cho hạng Vàng+.", ["loyalty", "thành viên", "tích điểm"]),
+        ("Hỗ trợ khách hàng", "Hotline: 1900-xxxx (8h-22h hàng ngày). Email: support@example.vn. Chat trực tuyến trên website 24/7. Fanpage Facebook và Zalo OA phản hồi trong 1 giờ giờ hành chính.", ["hỗ trợ", "liên hệ", "hotline"]),
+    ]
+    variants = ["", " chi tiết", " cập nhật 2026"]
+    cards: list[KnowledgeCard] = []
+    for title, content, tags in faq_templates:
+        for variant in variants:
+            cards.append(KnowledgeCard(
+                title=title + variant,
+                content=content,
+                tags=tags,
+            ))
+    # Thêm 1 card đặc biệt về vận chuyển quốc tế
+    cards.append(KnowledgeCard(
+        title="Vận chuyển quốc tế",
+        content="Ship quốc tế qua DHL, FedEx, Viettel Post. Phí tính theo cân nặng và quốc gia, từ 500.000đ/kg. Thời gian 5-10 ngày làm việc. Hỗ trợ khai hải quan. Không hỗ trợ đổi trả đơn quốc tế.",
+        tags=["international", "vận chuyển quốc tế", "DHL"],
+    ))
+    return cards
+
+
+class KnowledgeSeeder:
+    def __init__(self, cfg: Config, log: logging.Logger) -> None:
+        self.cfg = cfg
+        self.log = log
+        self.session: aiohttp.ClientSession | None = None
+
+    async def __aenter__(self) -> "KnowledgeSeeder":
+        # CSRF middleware requires cookie + matching X-CSRF-Token header.
+        # unsafe=True allows cookie storage on 127.0.0.1 (otherwise jar is empty).
+        jar = aiohttp.CookieJar(unsafe=True)
+        self.session = aiohttp.ClientSession(headers=self.cfg.headers(), cookie_jar=jar)
+        return self
+
+    async def __aexit__(self, *exc) -> None:
+        if self.session:
+            await self.session.close()
+
+    async def seed(self, n: int) -> tuple[int, int]:
+        """Generate n cards + upload. Returns (success_count, fail_count).
+
+        Combines 50 product cards + 25 FAQ cards (75 total available).
+        Uses n if smaller, else all 75.
+        """
+        all_cards = _gen_product_cards() + _gen_faq_cards()
+        # Plan calls for 50 product + 25 FAQ = 75 total. Trim products to 50 if needed.
+        products = all_cards[:50]
+        faqs = all_cards[50:75]
+        cards = (products + faqs)[:n]
+        # Bootstrap CSRF: do a GET to mint the cookie, capture token, send on POST
+        try:
+            async with self.session.get(
+                f"{self.cfg.base_url}/v1/admin/knowledge/cards",
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as r:
+                csrf_morsel = r.cookies.get("csrf_token")
+                csrf_token = csrf_morsel.value if csrf_morsel else None
+        except Exception as e:
+            self.log.warning(f"csrf bootstrap failed: {e!r}")
+            csrf_token = None
+
+        ok, fail = 0, 0
+        for i, card in enumerate(cards):
+            payload = {
+                "project_id": "playground",
+                "tenant_id": "default",
+                "title": card.title,
+                "content": card.content,
+                "domain": card.domain,
+                "tags": card.tags,
+            }
+            headers = {}
+            if csrf_token:
+                headers["X-CSRF-Token"] = csrf_token
+            try:
+                async with self.session.post(
+                    f"{self.cfg.base_url}/v1/admin/knowledge/upload",
+                    json=payload,
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=30),
+                ) as resp:
+                    if resp.status < 300:
+                        ok += 1
+                        if (i + 1) % 10 == 0:
+                            print(f"  [seed] {i+1}/{len(cards)} uploaded")
+                    else:
+                        fail += 1
+                        body_text = await resp.text()
+                        self.log.error(f"seed fail [{resp.status}]: {card.title} | {body_text[:200]}")
+            except Exception as e:
+                fail += 1
+                self.log.error(f"seed exception: {card.title} | {e!r}")
+        # Wait for embeddings to finish (best-effort)
+        await asyncio.sleep(2)
+        return ok, fail
