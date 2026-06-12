@@ -559,6 +559,9 @@ def create_app(
             except Exception as e:
                 logger.warning("failed to start key rotation reminder scheduler: %s", e)
             logger.info("ai-hub started on port %s", settings.app_port)
+            # P1.5-followup (2026-06-12) — emit memory budget sanity check
+            from app.core.config import validate_memory_budget
+            validate_memory_budget(settings)
             logger.info(
                 "failure_risk mode: log_only=%s enable_actions=%s "
                 "enable_search_action=%s high_threshold=%.2f medium_threshold=%.2f",

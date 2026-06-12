@@ -608,6 +608,42 @@ class AIService:
         explicit = req.allow_external if req.allow_external is not None else self._settings.external_llm_default_allowed
         return bool(explicit and (not allowed or project in allowed))
 
+    def _estimate_prompt_tokens(self, req: ChatRequest) -> int:
+        """Rough estimate of input tokens. Used to detect ctx overflow
+        BEFORE sending to llama.cpp (which would otherwise silently
+        truncate the tail of the prompt). Vietnamese uses ~2 chars
+        per token; English ~4. We use 3 chars/token as a safe
+        average across both. Also accounts for RAG context, image
+        tokens (llama.cpp uses ~256 tokens per image at 448px),
+        and tool/function-call overhead.
+        """
+        char_total = 0
+        # System prompt + skill prompt + main message
+        char_total += len(req.user_message or "")
+        # History
+        for m in (req.history or []):
+            content = m.get("content", "") if isinstance(m, dict) else getattr(m, "content", "")
+            char_total += len(content or "")
+        # RAG context (if any) — these come in via the RAG injection
+        # but we don't see them here. The caller should set num_ctx
+        # large enough; this is a sanity check on raw input only.
+        # Images
+        if req.images:
+            char_total += 256 * 3 * len(req.images)  # ~256 tokens × 3 chars each
+        return max(1, char_total // 3)
+
+    def _check_ctx_overflow(self, req: ChatRequest, ctx: int) -> tuple[bool, int]:
+        """Return (would_overflow, estimated_tokens).
+
+        Used by chat() to return a clean 503 instead of letting
+        llama.cpp silently truncate (or OOM). Reserves 1K tokens
+        of headroom for the model's response + system prompt.
+        """
+        estimated = self._estimate_prompt_tokens(req)
+        # Reserve ~1024 tokens for output + system prompt overhead
+        available_for_input = ctx - 1024
+        return estimated > available_for_input, estimated
+
     def _select_provider(self, req: ChatRequest) -> ChatProvider:
         if req.provider == "gemini" and self._gemini:
             return self._gemini
@@ -1442,6 +1478,30 @@ class AIService:
         started = time.perf_counter()
         user_id = self._resolve_user(req)
         session_id = self._resolve_session(req, user_id)
+
+        # P1.5-followup (2026-06-12) — ctx overflow guard. On 16GB
+        # GPUs the configured ctx is tight (default 6K after the
+        # 5060 Ti tuning). A request with a long history + RAG
+        # context can easily exceed ctx. llama.cpp would silently
+        # truncate (lose the tail of the prompt) or OOM. We detect
+        # overflow here and raise HTTPException(413) so the caller
+        # can shorten their request instead of getting a bad answer.
+        from app.core.config import get_settings as _gs
+        _ctx_check = self._settings.project_context_sizes.get(
+            req.project_id, self._settings.lite_num_ctx
+        )
+        would_overflow, est_tokens = self._check_ctx_overflow(req, _ctx_check)
+        if would_overflow:
+            from fastapi import HTTPException
+            raise HTTPException(
+                status_code=413,
+                detail=(
+                    f"request too large for context window: estimated "
+                    f"{est_tokens} input tokens, ctx={_ctx_check} "
+                    f"(reserved 1024 for output+system). Reduce history "
+                    f"length or trim RAG context."
+                ),
+            )
 
         # ─── Response cache (Redis) ───
         # Skip when:

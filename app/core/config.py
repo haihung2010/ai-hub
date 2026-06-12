@@ -68,6 +68,18 @@ class Settings(BaseSettings):
     request_timeout_seconds: float = Field(default=60.0, alias="REQUEST_TIMEOUT_SECONDS")
     max_history_messages: int = Field(default=20, alias="MAX_HISTORY_MESSAGES")
     gpu_concurrency: int = Field(default=8, ge=1, alias="GPU_CONCURRENCY")
+    # P1.5-followup (2026-06-12) — target GPU memory budget in MiB.
+    # Used by validate_memory_budget() at startup to warn if the
+    # configured model + ctx + parallel combo won't fit. Defaults
+    # to 16GB target (RTX 5060 Ti 16GB, RTX 4060 Ti 16GB). Set
+    # GPU_MEMORY_BUDGET_MIB=24576 for 24GB cards.
+    gpu_memory_budget_mib: int = Field(default=16384, ge=4096, alias="GPU_MEMORY_BUDGET_MIB")
+    # Estimated VRAM (MiB) of the loaded model file at the configured
+    # quantization. AI Hub doesn't load the model itself (llama.cpp
+    # does), so this is a config-side estimate used only for budget
+    # validation. Set to the actual size of the .gguf file you deploy.
+    # Default: Gemma 4 12B Q4_K_M = ~7600 MiB.
+    model_vram_mib: int = Field(default=7600, ge=1024, alias="MODEL_VRAM_MIB")
     hybrid_local_queue_timeout_seconds: float = Field(default=2.0, ge=0, alias="HYBRID_LOCAL_QUEUE_TIMEOUT_SECONDS")
     hybrid_force_cloud_when_locked: bool = Field(default=True, alias="HYBRID_FORCE_CLOUD_WHEN_LOCKED")
     hybrid_force_cloud_for_allowed: bool = Field(default=False, alias="HYBRID_FORCE_CLOUD_FOR_ALLOWED")
@@ -293,3 +305,53 @@ class Settings(BaseSettings):
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings()
+
+
+# P1.5-followup (2026-06-12) — call this at startup. Warns if the
+# model + KV-cache + parallel config won't fit in the GPU budget.
+# Does NOT raise — operators in dev/test may have weird configs.
+# The warnings go to the standard logger so they show up in the
+# boot log and the structlog JSON stream.
+def validate_memory_budget(settings: "Settings | None" = None) -> None:
+    """Sanity-check the configured ctx / parallel / model size
+    against the GPU memory budget. Emits WARNING for any
+    component that pushes us over the budget.
+    """
+    import logging
+    logger = logging.getLogger("app.config")
+    s = settings or get_settings()
+    budget = s.gpu_memory_budget_mib
+    model = s.model_vram_mib
+    # Conservative KV cache estimate for a 12B-class model at
+    # 4-bit cache: ~60 MiB per 1K tokens of context per slot.
+    # (12 layers × 12 heads × 128 head_dim × 2 (K+V) × 0.5 byte
+    #  = 18432 bytes/token ≈ 0.018 MiB/token per slot, but with
+    # q4_0 cache it's 0.5 byte per element = 9216 bytes/token.
+    # We round up to 60 MiB/1K tokens to be safe with overhead.)
+    kv_per_slot_mib = max(1, s.lite_num_ctx // 1024 * 60)
+    parallel = s.gpu_concurrency
+    kv_total = kv_per_slot_mib * parallel
+    # Compute buffers, CUDA context, activations: ~2 GB on 16GB
+    # systems, scale linearly for bigger GPUs.
+    overhead_mib = 2048
+    used = model + kv_total + overhead_mib
+    headroom_mib = budget - used
+    logger.info(
+        "memory_budget: budget=%dMiB model=%dMiB ctx=%d parallel=%d "
+        "kv_per_slot=%dMiB total_used=%dMiB headroom=%dMiB",
+        budget, model, s.lite_num_ctx, parallel,
+        kv_per_slot_mib, used, headroom_mib,
+    )
+    if headroom_mib < 0:
+        logger.warning(
+            "memory_budget OVER: %.1f MiB over budget. Either lower "
+            "GPU_CONCURRENCY (currently %d), lower LITE_NUM_CTX "
+            "(currently %d), or raise GPU_MEMORY_BUDGET_MIB (currently %d).",
+            -headroom_mib, parallel, s.lite_num_ctx, budget,
+        )
+    elif headroom_mib < 1024:
+        logger.warning(
+            "memory_budget TIGHT: only %d MiB headroom. mmproj "
+            "lazy-load may OOM if you enable it.",
+            headroom_mib,
+        )
