@@ -41,7 +41,7 @@ from urllib.parse import urljoin
 import aiohttp
 
 # ── Config ────────────────────────────────────────────────────────────────
-@dataclass(frozen=True)
+@dataclass
 class Config:
     base_url: str
     api_key: str
@@ -696,3 +696,123 @@ class KnowledgeSeeder:
         # Wait for embeddings to finish (best-effort)
         await asyncio.sleep(2)
         return ok, fail
+
+
+# ── HTTP client + Phase Runner ───────────────────────────────────────────
+class ChatClient:
+    def __init__(self, cfg: Config, metrics: MetricsCollector, log: logging.Logger) -> None:
+        self.cfg = cfg
+        self.metrics = metrics
+        self.log = log
+        self.session: aiohttp.ClientSession | None = None
+        self._semaphore = asyncio.Semaphore(cfg.concurrency)
+
+    async def __aenter__(self) -> "ChatClient":
+        self.session = aiohttp.ClientSession(headers=self.cfg.headers())
+        return self
+
+    async def __aexit__(self, *exc) -> None:
+        if self.session:
+            await self.session.close()
+
+    async def chat(
+        self, user: str, message: str, session_id: str, topic: str = "",
+        phase: str = "", turn: int = 0,
+    ) -> tuple[int, str, int]:
+        """Returns (status_code, response_text, latency_ms)."""
+        payload = {
+            "project_id": "playground",
+            "tenant_id": "default",
+            "user_name": user,
+            "user_message": message,
+            "session_id": session_id,
+            "model_mode": "lite",
+            "stream": False,
+        }
+        async with self._semaphore:
+            t0 = time.monotonic()
+            try:
+                async with self.session.post(
+                    f"{self.cfg.base_url}/v1/chat",
+                    json=payload,
+                    timeout=aiohttp.ClientTimeout(total=60),
+                ) as resp:
+                    body = await resp.text()
+                    latency_ms = int((time.monotonic() - t0) * 1000)
+                    preview = body[:200]
+                    error_msg = None if resp.status < 400 else preview
+                    metric = RequestMetric(
+                        user=user, turn=turn, topic=topic, phase=phase,
+                        latency_ms=latency_ms, status=resp.status, error=error_msg,
+                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        response_preview=preview,
+                    )
+                    await self.metrics.record_request(metric)
+                    if resp.status >= 500:
+                        self.log.error(f"[{phase}] {user} turn {turn} status={resp.status}: {preview[:150]}")
+                    return resp.status, body, latency_ms
+            except asyncio.TimeoutError:
+                latency_ms = int((time.monotonic() - t0) * 1000)
+                await self.metrics.record_request(RequestMetric(
+                    user=user, turn=turn, topic=topic, phase=phase,
+                    latency_ms=latency_ms, status=599, error="timeout",
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                ))
+                return 599, "", latency_ms
+            except Exception as e:
+                latency_ms = int((time.monotonic() - t0) * 1000)
+                await self.metrics.record_request(RequestMetric(
+                    user=user, turn=turn, topic=topic, phase=phase,
+                    latency_ms=latency_ms, status=598, error=f"exception: {e!r}",
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                ))
+                return 598, "", latency_ms
+
+
+@dataclass
+class PhaseResult:
+    name: str
+    started_at: str
+    ended_at: str
+    duration_seconds: float
+    extra: dict = field(default_factory=dict)
+
+
+class PhaseRunner:
+    def __init__(self, cfg: Config, client: ChatClient, metrics: MetricsCollector, log: logging.Logger) -> None:
+        self.cfg = cfg
+        self.client = client
+        self.metrics = metrics
+        self.log = log
+
+    async def run(self) -> PhaseResult:
+        raise NotImplementedError
+
+
+class Phase1Warmup(PhaseRunner):
+    """10 personas × 10 câu = 100 turns, gather baseline latency."""
+
+    async def run(self) -> PhaseResult:
+        started = datetime.now(timezone.utc)
+        t_start = time.monotonic()
+        topics = all_topics()
+        for persona in PERSONAS:
+            for turn in range(self.cfg.phase1_turns_per_user):
+                topic = random.choice(topics)
+                question = random.choice(topic.questions)
+                await self.client.chat(
+                    user=persona.user_id,
+                    message=question.text,
+                    session_id=persona.user_id,
+                    topic=topic.name,
+                    phase="phase1_warmup",
+                    turn=turn,
+                )
+        ended = datetime.now(timezone.utc)
+        return PhaseResult(
+            name="phase1_warmup",
+            started_at=started.isoformat(),
+            ended_at=ended.isoformat(),
+            duration_seconds=time.monotonic() - t_start,
+            extra={"users": len(PERSONAS), "turns_per_user": self.cfg.phase1_turns_per_user},
+        )
