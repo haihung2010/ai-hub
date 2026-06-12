@@ -916,3 +916,75 @@ class Phase3Recall(PhaseRunner):
             duration_seconds=time.monotonic() - t_start,
             extra={"rounds": self.cfg.phase3_rounds, "users_per_round": self.cfg.phase3_users_per_round},
         )
+
+
+# ── Report ───────────────────────────────────────────────────────────────
+class ReportGenerator:
+    def __init__(self, cfg: Config, metrics: MetricsCollector) -> None:
+        self.cfg = cfg
+        self.metrics = metrics
+        self.phase_results: list[PhaseResult] = []
+
+    def add_phase(self, result: PhaseResult) -> None:
+        self.phase_results.append(result)
+
+    def build(self, started_at: datetime, ended_at: datetime) -> dict:
+        s = self.metrics.summary()
+        total_duration = (ended_at - started_at).total_seconds()
+        throughput = (s["total_requests"] / total_duration * 60) if total_duration else 0
+
+        # Pass/fail logic
+        pass_error = s["error_rate"] <= self.cfg.error_rate_threshold
+        pass_recall = (
+            s["memory_recall_avg_pct"] is None
+            or s["memory_recall_avg_pct"] >= self.cfg.memory_recall_threshold * 100
+        )
+        speedups = s.get("cache_speedup_pct", {}) or {}
+        pass_speedup = True  # observe only, never fail
+        if speedups:
+            avg_speedup = statistics.mean(speedups.values())
+            pass_speedup = avg_speedup >= self.cfg.cache_speedup_threshold * 100
+
+        if pass_error and pass_recall and pass_speedup:
+            verdict = "PASS"
+        elif pass_error and s["memory_recall_avg_pct"] is not None and s["memory_recall_avg_pct"] >= 50:
+            verdict = "SOFT_PASS"
+        else:
+            verdict = "FAIL"
+
+        return {
+            "test_name": "ai-hub-comprehensive-30min",
+            "started_at": started_at.isoformat(),
+            "ended_at": ended_at.isoformat(),
+            "total_duration_seconds": total_duration,
+            "throughput_turns_per_min": throughput,
+            "config": asdict(self.cfg),
+            "phases": [asdict(r) for r in self.phase_results],
+            "metrics_summary": s,
+            "top_errors": self._top_errors(10),
+            "verdict": verdict,
+            "criteria": {
+                "error_rate_threshold": self.cfg.error_rate_threshold,
+                "memory_recall_threshold": self.cfg.memory_recall_threshold,
+                "cache_speedup_threshold": self.cfg.cache_speedup_threshold,
+            },
+        }
+
+    def _top_errors(self, n: int) -> list[dict]:
+        from collections import Counter
+        error_types = Counter()
+        for e in self.metrics.errors:
+            etype = e.get("error") or f"status_{e['status']}"
+            error_types[etype] += 1
+        return [{"error": k, "count": v} for k, v in error_types.most_common(n)]
+
+    def write(self, report: dict) -> tuple[Path, Path]:
+        ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+        json_path = self.cfg.report_dir / f"comprehensive_30min_{ts}.json"
+        log_path = self.cfg.report_dir / f"comprehensive_30min_{ts}.log"
+        self.cfg.report_dir.mkdir(parents=True, exist_ok=True)
+        tmp = json_path.with_suffix(".tmp")
+        with open(tmp, "w") as f:
+            json.dump(report, f, indent=2, ensure_ascii=False)
+        tmp.rename(json_path)
+        return json_path, log_path
