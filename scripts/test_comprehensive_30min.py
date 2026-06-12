@@ -339,3 +339,114 @@ def check_key_facts(response: str, key_facts: tuple[str, ...]) -> tuple[int, int
         else:
             missed.append(f)
     return matched, len(key_facts), missed
+
+
+# ── Metrics ──────────────────────────────────────────────────────────────
+@dataclass
+class RequestMetric:
+    user: str
+    turn: int
+    topic: str
+    phase: str
+    latency_ms: int
+    status: int
+    error: str | None
+    timestamp: str
+    response_preview: str = ""  # first 200 chars
+
+
+@dataclass
+class TopicLatency:
+    topic: str
+    occurrences: int = 0
+    latencies_by_occurrence: dict[int, list[int]] = field(default_factory=dict)
+    is_cache_test: bool = False
+
+    def add(self, occurrence_idx: int, latency_ms: int) -> None:
+        self.occurrences += 1
+        self.latencies_by_occurrence.setdefault(occurrence_idx, []).append(latency_ms)
+
+    def speedup_pct(self) -> float | None:
+        if 1 not in self.latencies_by_occurrence:
+            return None
+        if len(self.latencies_by_occurrence) < 2:
+            return None
+        first = statistics.mean(self.latencies_by_occurrence[1])
+        later_occs = []
+        for k, vs in self.latencies_by_occurrence.items():
+            if k == 1:
+                continue
+            later_occs.extend(vs)
+        if not later_occs:
+            return None
+        later = statistics.mean(later_occs)
+        return (first - later) / first * 100.0
+
+
+class MetricsCollector:
+    def __init__(self) -> None:
+        self.requests: list[RequestMetric] = []
+        self.errors: list[dict] = []
+        self.topic_latencies: dict[str, TopicLatency] = {}
+        self.memory_recalls: list[dict] = []  # {user, round, facts_asked, facts_recalled, recall_pct, missed_facts}
+        self._lock = asyncio.Lock()
+
+    async def record_request(self, m: RequestMetric) -> None:
+        async with self._lock:
+            self.requests.append(m)
+            if m.status >= 500 or m.error:
+                self.errors.append({
+                    "user": m.user, "turn": m.turn, "phase": m.phase,
+                    "status": m.status, "error": m.error, "timestamp": m.timestamp,
+                })
+            if m.topic:
+                occ = self.topic_latencies.setdefault(m.topic, TopicLatency(topic=m.topic))
+                # Mark is_cache_test by looking up the global topic bank
+                if not occ.is_cache_test:
+                    occ.is_cache_test = any(t.name == m.topic and t.is_cache_test for t in all_topics())
+                # Occurrence index: count existing records for this topic
+                occ_idx = sum(len(v) for v in occ.latencies_by_occurrence.values()) + 1
+                occ.add(occ_idx, m.latency_ms)
+
+    async def record_recall(self, user: str, round_idx: int, asked: int, recalled: int, missed: list[str]) -> None:
+        async with self._lock:
+            self.memory_recalls.append({
+                "user": user, "round": round_idx,
+                "facts_asked": asked, "facts_recalled": recalled,
+                "recall_pct": (recalled / asked * 100.0) if asked else 0.0,
+                "missed_facts": missed,
+            })
+
+    def summary(self) -> dict:
+        total = len(self.requests)
+        errors = len(self.errors)
+        if total == 0:
+            return {"total_requests": 0, "error_rate": 0.0, "p50": 0, "p95": 0, "p99": 0}
+
+        latencies = sorted(r.latency_ms for r in self.requests if r.status < 500)
+        if not latencies:
+            return {"total_requests": total, "error_rate": errors / total,
+                    "p50": 0, "p95": 0, "p99": 0, "all_errored": True}
+
+        def pct(p: float) -> int:
+            idx = int(len(latencies) * p)
+            return latencies[min(idx, len(latencies) - 1)]
+
+        speedups = {
+            t.topic: t.speedup_pct() for t in self.topic_latencies.values()
+            if t.is_cache_test and t.speedup_pct() is not None
+        }
+
+        recall_pcts = [r["recall_pct"] for r in self.memory_recalls]
+        avg_recall = statistics.mean(recall_pcts) if recall_pcts else None
+
+        return {
+            "total_requests": total,
+            "errors": errors,
+            "error_rate": errors / total,
+            "p50_latency_ms": pct(0.50),
+            "p95_latency_ms": pct(0.95),
+            "p99_latency_ms": pct(0.99),
+            "cache_speedup_pct": speedups,
+            "memory_recall_avg_pct": avg_recall,
+        }
