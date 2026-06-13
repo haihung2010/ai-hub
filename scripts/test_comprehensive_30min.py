@@ -919,6 +919,10 @@ class Phase2Rotate(PhaseRunner):
 class Phase3Recall(PhaseRunner):
     """Round 1-3: chọn 10 user từ phase 1, wait, memory check, continue 10 câu."""
 
+    def __init__(self, cfg, client, metrics, log, tracker: UserMemoryTracker) -> None:
+        super().__init__(cfg, client, metrics, log)
+        self.tracker = tracker
+
     async def run(self) -> PhaseResult:
         started = datetime.now(timezone.utc)
         t_start = time.monotonic()
@@ -941,10 +945,13 @@ class Phase3Recall(PhaseRunner):
                     phase=f"phase3_recall_r{round_idx+1}",
                     turn=0,
                 )
-                # Baseline clothing keywords: response should mention ≥70% if memory works
-                baseline_facts = ("áo", "quần", "giày", "váy", "túi",
+                # Use per-user facts from phase 1 (more accurate than fixed 10-keyword baseline)
+                user_facts = self.tracker.get_facts(persona.user_id)
+                if not user_facts:
+                    # Fallback: user not in tracker, use baseline
+                    user_facts = ("áo", "quần", "giày", "váy", "túi",
                                   "size", "giá", "giao hàng", "đổi trả", "bảo hành")
-                matched, total, missed = check_key_facts(body, baseline_facts)
+                matched, total, missed = check_key_facts(body, user_facts)
                 await self.metrics.record_recall(
                     persona.user_id, round_idx + 1, total, matched, missed, body
                 )
@@ -1113,7 +1120,7 @@ async def _run_full(cfg: Config, log: logging.Logger, phases_filter: set[int] | 
                 ))
             else:
                 print("[main] Phase 3: memory recall + continue (3 rounds × 10 user)")
-                result = await Phase3Recall(cfg, client, metrics, log).run()
+                result = await Phase3Recall(cfg, client, metrics, log, tracker).run()
                 report_gen.add_phase(result)
                 print(f"  done in {result.duration_seconds:.1f}s")
 
