@@ -40,6 +40,16 @@ from urllib.parse import urljoin
 
 import aiohttp
 
+def time_guard(cfg: "Config", started_at: datetime) -> bool:
+    """Return True if test should continue, False if over budget.
+
+    Compares elapsed wall-clock since started_at against cfg.total_runtime_cap_seconds.
+    Used to skip remaining phases if test is over budget.
+    """
+    elapsed = (datetime.now(timezone.utc) - started_at).total_seconds()
+    return elapsed < cfg.total_runtime_cap_seconds
+
+
 # ── Config ────────────────────────────────────────────────────────────────
 @dataclass
 class Config:
