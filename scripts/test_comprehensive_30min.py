@@ -849,6 +849,8 @@ class Phase1Warmup(PhaseRunner):
             for turn in range(self.cfg.phase1_turns_per_user):
                 topic = random.choice(topics)
                 question = random.choice(topic.questions)
+                # NEW: record per-user fact
+                self.tracker.record(persona.user_id, topic.name, question.key_facts)
                 await self.client.chat(
                     user=persona.user_id,
                     message=question.text,
@@ -863,7 +865,8 @@ class Phase1Warmup(PhaseRunner):
             started_at=started.isoformat(),
             ended_at=ended.isoformat(),
             duration_seconds=time.monotonic() - t_start,
-            extra={"users": len(PERSONAS), "turns_per_user": self.cfg.phase1_turns_per_user},
+            extra={"users": len(PERSONAS), "turns_per_user": self.cfg.phase1_turns_per_user,
+                   "tracked_users": self.tracker.user_count()},
         )
 
 
@@ -1068,6 +1071,7 @@ class ReportGenerator:
 # ── Main ─────────────────────────────────────────────────────────────────
 async def _run_full(cfg: Config, log: logging.Logger, phases_filter: set[int] | None) -> dict:
     metrics = MetricsCollector()
+    tracker = UserMemoryTracker()
     report_gen = ReportGenerator(cfg, metrics)
     started = datetime.now(timezone.utc)
 
@@ -1083,7 +1087,7 @@ async def _run_full(cfg: Config, log: logging.Logger, phases_filter: set[int] | 
                 ))
             else:
                 print("[main] Phase 1: warmup (10 personas × 10 turns)")
-                result = await Phase1Warmup(cfg, client, metrics, log).run()
+                result = await Phase1Warmup(cfg, client, metrics, log, tracker).run()
                 report_gen.add_phase(result)
                 print(f"  done in {result.duration_seconds:.1f}s")
 
