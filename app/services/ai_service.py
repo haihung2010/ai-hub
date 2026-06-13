@@ -36,6 +36,8 @@ from app.services.summary_service import SummaryService
 from app.services.mcp.minimax_websearch import MiniMaxMCPClient
 from app.services.usage_service import UsageEvent, UsageService
 from app.services.cache_service import CacheService
+from app.services.verbatim_memory import VerbatimMemory
+from app.core.database import _get_pool
 from app.utils.cost_calculator import calculate_cost_usd
 from app.utils.token_counter import count_messages_tokens, count_text_tokens
 from app.services.user_service import UserService
@@ -234,6 +236,15 @@ class AIService:
                 settings.cache_ttl_seconds,
                 settings.cache_max_size_mb,
             )
+        # Verbatim memory: recent raw messages from the messages table,
+        # injected into system prompt so the LLM has direct recall of the
+        # last conversation turns (Task 5-6, 2026-06-13). Cheap (single
+        # indexed query) — always enabled.
+        try:
+            self._verbatim = VerbatimMemory(_get_pool(), max_messages=20)
+        except Exception as exc:
+            logger.warning("verbatim_memory init failed (degraded): %r", exc)
+            self._verbatim = None
         logger.info(
             "AIService initialized with gpu_concurrency=%s latency_threshold_ms=%s",
             settings.gpu_concurrency,
@@ -304,6 +315,29 @@ class AIService:
         ]
         history, summary, memory_bundle, knowledge_block = await asyncio.gather(*tasks)
         return history, summary, memory_bundle, knowledge_block
+
+    def _load_verbatim_block(
+        self,
+        user_id: str | None,
+        session_id: str,
+        limit: int = 10,
+    ) -> str | None:
+        """Read the user's last N raw messages from the messages table and
+        return a formatted <verbatim_history> block, or None on failure.
+
+        Used as a direct-recall fallback when structmem/summary haven't
+        captured a fact yet. Injected into the system prompt.
+        """
+        if not user_id or self._verbatim is None:
+            return None
+        try:
+            msgs = self._verbatim.get_recent(user_id, session_id, limit=limit)
+            if not msgs:
+                return None
+            return VerbatimMemory.format_for_context(msgs, max_chars_per_msg=200)
+        except Exception as exc:
+            logger.warning("verbatim_memory_load_failed: %r", exc)
+            return None
 
     def _build_structmem_blocks(self, bundle: RetrievedMemoryBundle | None) -> list[str]:
         if not bundle:
@@ -1402,6 +1436,12 @@ class AIService:
             else None
         )
         prompt = load_prompt(req.project_id)
+        # Verbatim memory: inject last 10 raw messages as direct recall
+        # fallback. Appends to system prompt so the LLM sees them.
+        verbatim_block = self._load_verbatim_block(user_id, session_id, limit=10)
+        if verbatim_block:
+            prompt.system_prompt = (prompt.system_prompt or "") + "\n\n" + verbatim_block
+            logger.info("verbatim_memory_injected user=%s session=%s", user_id, session_id)
         search_query = self._explicit_search_query(req)
         if search_query:
             provider = self._select_explicit_search_provider(req)
@@ -1607,6 +1647,12 @@ class AIService:
             else None
         )
         prompt = load_prompt(req.project_id)
+        # Verbatim memory: inject last 10 raw messages as direct recall
+        # fallback. Appends to system prompt so the LLM sees them.
+        verbatim_block = self._load_verbatim_block(user_id, session_id, limit=10)
+        if verbatim_block:
+            prompt.system_prompt = (prompt.system_prompt or "") + "\n\n" + verbatim_block
+            logger.info("verbatim_memory_injected user=%s session=%s", user_id, session_id)
         search_query = self._explicit_search_query(req)
         if search_query:
             provider = self._select_explicit_search_provider(req)
