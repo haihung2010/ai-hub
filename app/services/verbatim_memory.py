@@ -50,7 +50,8 @@ class VerbatimMemory:
                         (user_id, actual_limit),
                     )
                 rows = cur.fetchall()
-        return [{"role": r[0], "content": r[1], "ts": str(r[2])} for r in rows]
+        # Pool uses row_factory=dict_row, so rows are dicts not tuples
+        return [{"role": r["role"], "content": r["content"], "ts": str(r["created_at"])} for r in rows]
 
     @staticmethod
     def format_for_context(messages: list[dict], max_chars_per_msg: int = 200) -> str:

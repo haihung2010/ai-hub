@@ -100,7 +100,7 @@ class QueryClassifier:
         text = req.user_message.strip()
         normalized = self._strip_diacritics(text)
 
-        type_priority = ["coding", "reasoning", "search", "rag_query", "factual_qa", "greeting", "casual_chat", "creative"]
+        type_priority = ["memory_recall", "coding", "reasoning", "search", "rag_query", "factual_qa", "greeting", "casual_chat", "creative"]
         for intent_type in type_priority:
             patterns = self._patterns.get(intent_type, [])
             if any(p.search(normalized) for p in patterns):
