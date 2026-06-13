@@ -1,0 +1,19 @@
+{
+  "test_name": "ecommerce-100user",
+  "total_users": 100,
+  "session1_orders_created": 100,
+  "session2_lookups_succeeded": 0,
+  "session3_personalization_count": 0,
+  "order_lookup_accuracy": 0.0,
+  "cross_session_memory_accuracy": 0.0,
+  "personalization_accuracy": 0.0,
+  "leak_count": 0,
+  "total_duration_seconds": 33.89984613900015,
+  "verdict": "FAIL",
+  "criteria": {
+    "order_lookup_target": 0.9,
+    "memory_recall_target": 0.7,
+    "personalization_target": 0.6,
+    "leak_target": 0
+  }
+}
