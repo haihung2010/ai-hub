@@ -101,3 +101,72 @@ PRODUCTS = [
     {"name": "Váy maxi hoa", "size": "M", "color": "trắng", "price": 350000, "warranty": "3 tháng", "material": "voan"},
     {"name": "Giày thể thao", "size": "42", "color": "đen", "price": 800000, "warranty": "12 tháng", "material": "mesh"},
 ]
+
+
+@dataclass
+class Session1Result:
+    user_id: str
+    questions_asked: int
+    answers_received: int
+    order_code: str | None
+    errors: list[str] = field(default_factory=list)
+
+
+class Session1Runner:
+    """Q&A + create order. Simulates first-time buyer."""
+
+    def __init__(self, cfg: TestConfig, session: aiohttp.ClientSession):
+        self.cfg = cfg
+        self.session = session
+        self._semaphore = asyncio.Semaphore(cfg.concurrency)
+
+    async def run_for_user(self, user_id: str, product: dict) -> Session1Result:
+        result = Session1Result(user_id=user_id, questions_asked=0, answers_received=0, order_code=None)
+        order_code = f"ORD-{user_id[-4:].upper()}-{int(time.time()) % 100000}"
+        # Ask 5 random product questions
+        product_qs = [q for q in SESSION1_QUESTIONS if "đặt mua" not in q.lower()]
+        questions = random.sample(product_qs, k=min(self.cfg.session1_questions - 1, len(product_qs)))
+        for q in questions:
+            await self._chat(user_id, q, result)
+        # Final "đặt mua" question, then create order
+        await self._chat(user_id, SESSION1_QUESTIONS[6], result)  # "Đặt mua 1 cái, mã đơn?"
+        # Create order via API
+        try:
+            async with self._semaphore:
+                async with self.session.post(
+                    f"{self.cfg.base_url}/v1/orders",
+                    params={
+                        "tenant_id": "default", "user_id": user_id,
+                        "order_code": order_code, "product_name": product["name"],
+                        "size": product["size"], "color": product["color"], "price": product["price"],
+                    },
+                    headers={"X-API-KEY": self.cfg.api_key},
+                ) as resp:
+                    if resp.status < 300:
+                        result.order_code = order_code
+                    else:
+                        result.errors.append(f"create_order {resp.status}")
+        except Exception as e:
+            result.errors.append(f"create_order exception: {e!r}")
+        return result
+
+    async def _chat(self, user_id: str, message: str, result: Session1Result) -> None:
+        result.questions_asked += 1
+        try:
+            async with self._semaphore:
+                async with self.session.post(
+                    f"{self.cfg.base_url}/v1/chat",
+                    json={
+                        "project_id": "default", "tenant_id": "default",
+                        "user_name": user_id, "user_message": message,
+                        "session_id": f"{user_id}_s1", "model_mode": "lite", "stream": False,
+                    },
+                    headers={"X-API-KEY": self.cfg.api_key},
+                    timeout=aiohttp.ClientTimeout(total=30),
+                ) as resp:
+                    if resp.status < 400:
+                        result.answers_received += 1
+                    else:
+                        result.errors.append(f"chat {resp.status}")
+        except Exception as e:
+            result.errors.append(f"chat exception: {e!r}")
