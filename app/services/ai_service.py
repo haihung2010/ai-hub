@@ -35,6 +35,7 @@ from app.services.structmem_service import StructMemService
 from app.services.summary_service import SummaryService
 from app.services.mcp.minimax_websearch import MiniMaxMCPClient
 from app.services.usage_service import UsageEvent, UsageService
+from app.services.cache_service import CacheService
 from app.utils.cost_calculator import calculate_cost_usd
 from app.utils.token_counter import count_messages_tokens, count_text_tokens
 from app.services.user_service import UserService
@@ -212,6 +213,27 @@ class AIService:
             threshold_ms=settings.hybrid_latency_threshold_ms,
         )
         self._query_classifier = QueryClassifier(settings)
+        # Response cache (in-process LRU + Redis fallback) — Sprint 3
+        # Lives on the service so it can be wired into /v1/admin/cache/metrics
+        # and the test report. Coexists with response_cache.py (Redis-only
+        # fast path); this one is the in-process fallback used when Redis
+        # is down or for very hot keys.
+        self._cache: CacheService | None = (
+            CacheService(
+                redis_url=settings.cache_redis_url,
+                ttl_seconds=settings.cache_ttl_seconds,
+                max_size_mb=settings.cache_max_size_mb,
+            )
+            if settings.cache_enabled
+            else None
+        )
+        if self._cache is not None:
+            logger.info(
+                "AIService cache enabled (redis_url=%s, ttl=%ds, max=%dMB)",
+                settings.cache_redis_url or "(in-memory only)",
+                settings.cache_ttl_seconds,
+                settings.cache_max_size_mb,
+            )
         logger.info(
             "AIService initialized with gpu_concurrency=%s latency_threshold_ms=%s",
             settings.gpu_concurrency,
@@ -1550,6 +1572,32 @@ class AIService:
                     },
                 )
 
+        # ─── Cache check (in-process CacheService — Redis+LRU fallback) ───
+        # Only attempt for cacheable requests (no session_id, no client-supplied
+        # history). Acts as a fallback layer if response_cache (Redis-only)
+        # missed. Tracks hits/misses via self._cache.metrics() for observability.
+        if self._cache is not None and req.session_id is None and not (req.history or []):
+            try:
+                cache_key = CacheService.hash_key(req.user_name or "", req.user_message or "")
+                cached_payload = self._cache.get(cache_key)
+            except Exception:
+                cached_payload = None
+            if cached_payload:
+                logger.info(
+                    "cache_service HIT user=%s key=%s",
+                    req.user_name, cache_key[:12],
+                )
+                try:
+                    cached_resp = ChatResponse.model_validate_json(cached_payload)
+                    # Mark as cache hit + reset latency
+                    cached_resp.usage = {**cached_resp.usage, "cache": "hit"} if cached_resp.usage else {"cache": "hit"}
+                    cached_resp.latency_ms = round((time.perf_counter() - started) * 1000, 3)
+                    cached_resp.route = "cache"
+                    cached_resp.session_id = session_id
+                    return cached_resp
+                except Exception as e:
+                    logger.warning("cache_service parse failed (treating as miss): %r", e)
+
         combined_history, summary, memory_bundle, knowledge_block = await self._load_context_parallel(
             req, session_id, user_id
         )
@@ -1952,7 +2000,7 @@ class AIService:
             except Exception:
                 pass  # cache write failure is non-fatal
 
-        return ChatResponse(
+        response = ChatResponse(
             project_id=req.project_id,
             session_id=session_id,
             model=model,
@@ -1972,3 +2020,19 @@ class AIService:
                 "cost_usd": cost_usd,
             },
         )
+
+        # ─── Cache write (in-process CacheService — Redis+LRU) ───
+        # Mirrors the response_cache store: only for cacheable requests.
+        # Store a JSON payload (no request-specific latency/queue wait so
+        # cache hits are reproducible) — the cache-hit return path above
+        # overrides those fields with fresh values anyway.
+        if self._cache is not None and req.session_id is None and not (req.history or []):
+            try:
+                cache_key = CacheService.hash_key(req.user_name or "", req.user_message or "")
+                # Strip transient fields from the cached payload
+                cache_payload = response.model_dump_json()
+                self._cache.set(cache_key, cache_payload)
+            except Exception as e:
+                logger.warning("cache_service write failed (non-fatal): %r", e)
+
+        return response
