@@ -987,6 +987,7 @@ class ReportGenerator:
             "phases": [asdict(r) for r in self.phase_results],
             "memory_recalls": list(self.metrics.memory_recalls),
             "metrics_summary": s,
+            "cache_metrics": self._get_cache_metrics(),
             "top_errors": self._top_errors(10),
             "verdict": verdict,
             "criteria": {
@@ -1003,6 +1004,25 @@ class ReportGenerator:
             etype = e.get("error") or f"status_{e['status']}"
             error_types[etype] += 1
         return [{"error": k, "count": v} for k, v in error_types.most_common(n)]
+
+    def _get_cache_metrics(self) -> dict:
+        """Fetch cache metrics from ai-hub's /v1/admin/cache/metrics endpoint.
+
+        Best-effort: returns empty dict if endpoint is unavailable, the test
+        is running against an older ai-hub, or the API key lacks admin scope.
+        Never raises — report generation must not fail because of metrics.
+        """
+        try:
+            import json
+            import urllib.request
+            req = urllib.request.Request(
+                f"{self.cfg.base_url}/v1/admin/cache/metrics",
+                headers=self.cfg.headers(),
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                return json.loads(resp.read())
+        except Exception:
+            return {}
 
     def write(self, report: dict) -> tuple[Path, Path]:
         ts = datetime.now().strftime("%Y%m%d-%H%M%S")
