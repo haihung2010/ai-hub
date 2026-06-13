@@ -600,6 +600,19 @@ class AIService:
         return prompt_temperature
 
     def _select_model(self, req: ChatRequest, prompt_model: str) -> tuple[str, int]:
+        # Memory-recall queries MUST use 12B (better reasoning than E2B for fact recall).
+        # Overrides adaptive routing (which would otherwise classify "Bạn còn nhớ..."
+        # as easy and route to E2B-bg).
+        try:
+            intent_check = self._query_classifier.classify(req)
+            if intent_check.type == "memory_recall":
+                ctx = self._settings.project_context_sizes.get(
+                    req.project_id, self._settings.default_num_ctx
+                )
+                return self._settings.default_model, ctx
+        except Exception as e:
+            logger.debug("_select_model memory_recall check failed: %r", e)
+
         # Adaptive routing (added 2026-06-07) — uses difficulty + load + project.
         # Falls back to legacy BRANE regex when adaptive_routing_enabled=False.
         if not self._settings.adaptive_routing_enabled:
@@ -752,6 +765,12 @@ class AIService:
         # iHi project: never fast-background, keep on dedicated high-parallelism instance
         if req.project_id == "ihi":
             return provider, model, route_reason
+        # Memory-recall queries bypass fast-background (use 12B for better quality)
+        try:
+            if self._query_classifier.classify(req).type == "memory_recall":
+                return provider, model, route_reason
+        except Exception:
+            pass
         if provider.name == self._local.name and self._should_use_fast_background_model(req):
             bg_provider = self._background_local
             if bg_provider is None:
