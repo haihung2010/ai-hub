@@ -1026,22 +1026,43 @@ async def _run_full(cfg: Config, log: logging.Logger, phases_filter: set[int] | 
         await h.assert_healthy()
     async with ChatClient(cfg, metrics, log) as client:
         if not phases_filter or 1 in phases_filter:
-            print("[main] Phase 1: warmup (10 personas × 10 turns)")
-            result = await Phase1Warmup(cfg, client, metrics, log).run()
-            report_gen.add_phase(result)
-            print(f"  done in {result.duration_seconds:.1f}s")
+            if not time_guard(cfg, started):
+                log.warning("[main] time budget exceeded, skipping Phase 1")
+                report_gen.add_phase(PhaseResult(
+                    name="phase1_warmup", started_at="", ended_at="",
+                    duration_seconds=0, skipped=True, skip_reason="time budget",
+                ))
+            else:
+                print("[main] Phase 1: warmup (10 personas × 10 turns)")
+                result = await Phase1Warmup(cfg, client, metrics, log).run()
+                report_gen.add_phase(result)
+                print(f"  done in {result.duration_seconds:.1f}s")
 
         if not phases_filter or 2 in phases_filter:
-            print("[main] Phase 2: rotate (100 user, 5 cache topics)")
-            result = await Phase2Rotate(cfg, client, metrics, log).run()
-            report_gen.add_phase(result)
-            print(f"  done in {result.duration_seconds:.1f}s")
+            if not time_guard(cfg, started):
+                log.warning("[main] time budget exceeded, skipping Phase 2")
+                report_gen.add_phase(PhaseResult(
+                    name="phase2_rotate", started_at="", ended_at="",
+                    duration_seconds=0, skipped=True, skip_reason="time budget",
+                ))
+            else:
+                print("[main] Phase 2: rotate (50 user, 5 cache topics)")
+                result = await Phase2Rotate(cfg, client, metrics, log).run()
+                report_gen.add_phase(result)
+                print(f"  done in {result.duration_seconds:.1f}s")
 
         if not phases_filter or 3 in phases_filter:
-            print("[main] Phase 3: memory recall + continue (3 rounds × 10 user)")
-            result = await Phase3Recall(cfg, client, metrics, log).run()
-            report_gen.add_phase(result)
-            print(f"  done in {result.duration_seconds:.1f}s")
+            if not time_guard(cfg, started):
+                log.warning("[main] time budget exceeded, skipping Phase 3")
+                report_gen.add_phase(PhaseResult(
+                    name="phase3_recall", started_at="", ended_at="",
+                    duration_seconds=0, skipped=True, skip_reason="time budget",
+                ))
+            else:
+                print("[main] Phase 3: memory recall + continue (3 rounds × 10 user)")
+                result = await Phase3Recall(cfg, client, metrics, log).run()
+                report_gen.add_phase(result)
+                print(f"  done in {result.duration_seconds:.1f}s")
 
     ended = datetime.now(timezone.utc)
     report = report_gen.build(started, ended)
