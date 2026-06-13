@@ -11,7 +11,7 @@ import re
 import time
 import unicodedata
 from collections.abc import AsyncIterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from app.core.config import Settings
 from app.core.errors import OllamaUnavailable, SessionAccessDenied, UpstreamError, UpstreamTimeout, VramExhausted
