@@ -793,6 +793,8 @@ class PhaseResult:
     started_at: str
     ended_at: str
     duration_seconds: float
+    skipped: bool = False
+    skip_reason: str = ""
     extra: dict = field(default_factory=dict)
 
 
