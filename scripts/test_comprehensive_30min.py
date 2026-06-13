@@ -809,8 +809,37 @@ class PhaseRunner:
         raise NotImplementedError
 
 
+class UserMemoryTracker:
+    """Per-user record of what they were asked + the key_facts of each question.
+
+    Used by Phase 3 to do per-user recall check instead of fixed 10-keyword baseline.
+    """
+
+    def __init__(self) -> None:
+        self._records: dict[str, list[tuple[str, tuple[str, ...]]]] = {}  # user_id → [(topic, key_facts), ...]
+
+    def record(self, user_id: str, topic: str, key_facts: tuple[str, ...]) -> None:
+        if user_id not in self._records:
+            self._records[user_id] = []
+        self._records[user_id].append((topic, key_facts))
+
+    def get_facts(self, user_id: str) -> tuple[str, ...]:
+        """Flatten all key_facts recorded for this user across all topics."""
+        all_facts: list[str] = []
+        for topic, facts in self._records.get(user_id, []):
+            all_facts.extend(facts)
+        return tuple(all_facts)
+
+    def user_count(self) -> int:
+        return len(self._records)
+
+
 class Phase1Warmup(PhaseRunner):
-    """10 personas × 10 câu = 100 turns, gather baseline latency."""
+    """10 personas × 10 câu = 100 turns, gather baseline latency + record per-user facts."""
+
+    def __init__(self, cfg, client, metrics, log, tracker: UserMemoryTracker) -> None:
+        super().__init__(cfg, client, metrics, log)
+        self.tracker = tracker
 
     async def run(self) -> PhaseResult:
         started = datetime.now(timezone.utc)
