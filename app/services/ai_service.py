@@ -767,9 +767,7 @@ class AIService:
             return provider, model, route_reason
         # Memory-recall queries bypass fast-background (use 12B for better quality)
         try:
-            if self._query_classifier.classify(req).type == "memory_recall":
-                return provider, model, route_reason
-        except Exception:
+            intent_check = self._query_classifier.classify(req)
             pass
         if provider.name == self._local.name and self._should_use_fast_background_model(req):
             bg_provider = self._background_local
