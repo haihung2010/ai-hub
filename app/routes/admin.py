@@ -321,6 +321,32 @@ async def provider_health(request: Request) -> dict[str, object]:
     }
 
 
+@router.get("/cache/metrics", dependencies=[Depends(require_admin)])
+async def cache_metrics(request: Request) -> dict[str, object]:
+    """Return in-process CacheService metrics (hits/misses/size/redis status).
+
+    Combines:
+    - CacheService (in-process LRU + Redis fallback) on ai_service._cache
+    - response_cache (Redis-only fast path) stats from response_cache.get_stats()
+    Returns empty dict sections when a layer is disabled.
+    """
+    ai_service = getattr(request.app.state, "ai_service", None)
+    cache_layer = None
+    if ai_service is not None and getattr(ai_service, "_cache", None) is not None:
+        cache_layer = ai_service._cache.metrics()
+    else:
+        cache_layer = {"error": "cache not enabled"}
+    try:
+        from app.services import response_cache
+        redis_layer = response_cache.get_stats()
+    except Exception:
+        redis_layer = {}
+    return {
+        "cache_service": cache_layer,
+        "response_cache": redis_layer,
+    }
+
+
 @router.get("/health/instances", dependencies=[Depends(require_admin)])
 async def instance_health(request: Request) -> dict[str, object]:
     """Probe each llama.cpp instance individually. Returns per-port status,
