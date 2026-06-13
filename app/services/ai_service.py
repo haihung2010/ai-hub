@@ -11,7 +11,7 @@ import re
 import time
 import unicodedata
 from collections.abc import AsyncIterator
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 
 from app.core.config import Settings
 from app.core.errors import OllamaUnavailable, SessionAccessDenied, UpstreamError, UpstreamTimeout, VramExhausted
@@ -1459,7 +1459,7 @@ class AIService:
         # fallback. Appends to system prompt so the LLM sees them.
         verbatim_block = self._load_verbatim_block(user_id, session_id, limit=10)
         if verbatim_block:
-            prompt = replace(prompt, system_prompt=(prompt.system_prompt or "") + "\n\n" + verbatim_block)
+            prompt.system_prompt = (prompt.system_prompt or "") + "\n\n" + verbatim_block
             logger.info("verbatim_memory_injected user=%s session=%s", user_id, session_id)
         search_query = self._explicit_search_query(req)
         if search_query:
@@ -1670,7 +1670,7 @@ class AIService:
         # fallback. Appends to system prompt so the LLM sees them.
         verbatim_block = self._load_verbatim_block(user_id, session_id, limit=10)
         if verbatim_block:
-            prompt = replace(prompt, system_prompt=(prompt.system_prompt or "") + "\n\n" + verbatim_block)
+            prompt.system_prompt = (prompt.system_prompt or "") + "\n\n" + verbatim_block
             logger.info("verbatim_memory_injected user=%s session=%s", user_id, session_id)
         search_query = self._explicit_search_query(req)
         if search_query:
