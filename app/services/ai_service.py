@@ -37,6 +37,9 @@ from app.services.mcp.minimax_websearch import MiniMaxMCPClient
 from app.services.usage_service import UsageEvent, UsageService
 from app.services.cache_service import CacheService
 from app.services.verbatim_memory import VerbatimMemory
+from app.services.orders_service import OrdersService
+from app.services.user_profile_service import UserProfileService
+from app.services.cross_session_memory import CrossSessionMemory
 from app.core.database import _get_pool
 from app.utils.cost_calculator import calculate_cost_usd
 from app.utils.token_counter import count_messages_tokens, count_text_tokens
@@ -245,6 +248,29 @@ class AIService:
         except Exception as exc:
             logger.warning("verbatim_memory init failed (degraded): %r", exc)
             self._verbatim = None
+        # Orders service: e-commerce order CRUD (added 2026-06-13 for
+        # 100-user e-commerce test). Sync (matches ai-hub convention).
+        try:
+            self._orders = OrdersService(_get_pool())
+        except Exception as exc:
+            logger.warning("orders_service init failed (degraded): %r", exc)
+            self._orders = None
+        # User profile: aggregates preferences (sizes/colors/price) from
+        # structmem + messages across all user sessions. Used for
+        # personalization on future purchases.
+        try:
+            self._user_profile = UserProfileService(_get_pool())
+        except Exception as exc:
+            logger.warning("user_profile_service init failed (degraded): %r", exc)
+            self._user_profile = None
+        # Cross-session memory: queries structmem + messages by user_id
+        # (not session_id). Used to give a returning user context from
+        # their previous sessions.
+        try:
+            self._cross_memory = CrossSessionMemory(_get_pool())
+        except Exception as exc:
+            logger.warning("cross_session_memory init failed (degraded): %r", exc)
+            self._cross_memory = None
         logger.info(
             "AIService initialized with gpu_concurrency=%s latency_threshold_ms=%s",
             settings.gpu_concurrency,
@@ -1462,6 +1488,45 @@ class AIService:
         if verbatim_block:
             prompt = replace(prompt, system_prompt=(prompt.system_prompt or "") + "\n\n" + verbatim_block)
             logger.info("verbatim_memory_injected user=%s session=%s", user_id, session_id)
+        # Cross-session memory: inject structmem items across all user_id
+        # sessions (Task 6, 2026-06-13). Gives the LLM context from previous
+        # sessions for cross-session recall. Wrapped in try/except so a
+        # service failure degrades gracefully to verbatim-only.
+        if self._cross_memory is not None and user_id:
+            try:
+                structmem_items = self._cross_memory.get_structmem_for_user(
+                    tenant_id=req.tenant_id, user_id=user_id, limit=10
+                )
+                if structmem_items:
+                    memory_block = CrossSessionMemory.format_for_context(structmem_items)
+                    prompt = replace(
+                        prompt,
+                        system_prompt=(prompt.system_prompt or "") + "\n\n" + memory_block,
+                    )
+                    logger.info(
+                        "cross_session_memory_injected user=%s items=%d",
+                        user_id, len(structmem_items),
+                    )
+            except Exception as exc:
+                logger.warning("cross_session_memory_injection_failed: %r", exc)
+        # User profile: aggregated preferences (sizes, colors, price_max)
+        # across all user sessions. Used for personalization on future
+        # purchases. Degrades gracefully on failure.
+        if self._user_profile is not None and user_id:
+            try:
+                prefs = self._user_profile.get_preferences(req.tenant_id, user_id)
+                profile_block = UserProfileService.format_for_context(prefs)
+                if profile_block:
+                    prompt = replace(
+                        prompt,
+                        system_prompt=(prompt.system_prompt or "") + "\n\n" + profile_block,
+                    )
+                    logger.info(
+                        "user_profile_injected user=%s sizes=%d colors=%d price_max=%s",
+                        user_id, len(prefs.sizes), len(prefs.colors), prefs.price_max,
+                    )
+            except Exception as exc:
+                logger.warning("user_profile_injection_failed: %r", exc)
         search_query = self._explicit_search_query(req)
         if search_query:
             provider = self._select_explicit_search_provider(req)
@@ -1673,6 +1738,45 @@ class AIService:
         if verbatim_block:
             prompt = replace(prompt, system_prompt=(prompt.system_prompt or "") + "\n\n" + verbatim_block)
             logger.info("verbatim_memory_injected user=%s session=%s", user_id, session_id)
+        # Cross-session memory: inject structmem items across all user_id
+        # sessions (Task 6, 2026-06-13). Gives the LLM context from previous
+        # sessions for cross-session recall. Wrapped in try/except so a
+        # service failure degrades gracefully to verbatim-only.
+        if self._cross_memory is not None and user_id:
+            try:
+                structmem_items = self._cross_memory.get_structmem_for_user(
+                    tenant_id=req.tenant_id, user_id=user_id, limit=10
+                )
+                if structmem_items:
+                    memory_block = CrossSessionMemory.format_for_context(structmem_items)
+                    prompt = replace(
+                        prompt,
+                        system_prompt=(prompt.system_prompt or "") + "\n\n" + memory_block,
+                    )
+                    logger.info(
+                        "cross_session_memory_injected user=%s items=%d",
+                        user_id, len(structmem_items),
+                    )
+            except Exception as exc:
+                logger.warning("cross_session_memory_injection_failed: %r", exc)
+        # User profile: aggregated preferences (sizes, colors, price_max)
+        # across all user sessions. Used for personalization on future
+        # purchases. Degrades gracefully on failure.
+        if self._user_profile is not None and user_id:
+            try:
+                prefs = self._user_profile.get_preferences(req.tenant_id, user_id)
+                profile_block = UserProfileService.format_for_context(prefs)
+                if profile_block:
+                    prompt = replace(
+                        prompt,
+                        system_prompt=(prompt.system_prompt or "") + "\n\n" + profile_block,
+                    )
+                    logger.info(
+                        "user_profile_injected user=%s sizes=%d colors=%d price_max=%s",
+                        user_id, len(prefs.sizes), len(prefs.colors), prefs.price_max,
+                    )
+            except Exception as exc:
+                logger.warning("user_profile_injection_failed: %r", exc)
         search_query = self._explicit_search_query(req)
         if search_query:
             provider = self._select_explicit_search_provider(req)
