@@ -234,6 +234,7 @@ class Settings(BaseSettings):
             "search": [r"\b(search|tim|tra|google|web|mang|internet)\b"],
             "rag_query": [r"\b(tai lieu|document|docs|knowledge|rag|noi bo|internal|chinh sach|policy|du lieu|database|bao cao|report|quy trinh|procedure)\b"],
             "creative": [r"\b(viet|viet bai|viet thơ|thơ|van|ke chuyen|story|poem|essay)\b"],
+            "memory_recall": [r"\b(nho|truoc do|hoi nay|da hoi|nhac lai|truoc|doan chat (truoc|tren))\b"],
         },
         alias="QUERY_TYPE_PATTERNS",
     )
@@ -245,6 +246,7 @@ class Settings(BaseSettings):
             "casual_chat": "fast_background",
             "coding": "normal",
             "reasoning": "normal",
+            "memory_recall": "normal",  # bypass fast_background, use 12B for better recall quality
         },
         alias="QUERY_TYPE_MODEL_MAP",
     )
