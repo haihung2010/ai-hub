@@ -1,4 +1,9 @@
-"""Orders + return request service for e-commerce chatbot."""
+"""Orders + return request service for e-commerce chatbot.
+
+Sync implementation: ai-hub's psycopg3 pool is sync (ConnectionPool,
+not AsyncConnectionPool). Uses sync `with self.db.connection() as conn:`
+and `with conn.cursor() as cur:`.
+"""
 from __future__ import annotations
 
 import logging
@@ -43,7 +48,7 @@ class OrdersService:
     def __init__(self, db_pool):
         self.db = db_pool
 
-    async def create_order(
+    def create_order(
         self,
         tenant_id: str,
         user_id: str,
@@ -55,9 +60,9 @@ class OrdersService:
     ) -> Order:
         """Create a new order. Returns the Order dataclass."""
         order_id = str(uuid.uuid4())
-        async with self.db.connection() as conn:
-            async with conn.cursor() as cur:
-                await cur.execute(
+        with self.db.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
                     "INSERT INTO orders (id, tenant_id, user_id, order_code, product_name, size, color, price) "
                     "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
                     (order_id, tenant_id, user_id, order_code, product_name, size, color, price),
@@ -69,19 +74,19 @@ class OrdersService:
             status="active",
         )
 
-    async def get_by_code(self, tenant_id: str, order_code: str) -> Order | None:
+    def get_by_code(self, tenant_id: str, order_code: str) -> Order | None:
         """Look up order by order_code, scoped to tenant. Returns None if not found.
 
         Critical: must filter by tenant_id to prevent cross-tenant leaks.
         """
-        async with self.db.connection() as conn:
-            async with conn.cursor() as cur:
-                await cur.execute(
+        with self.db.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
                     "SELECT id, tenant_id, user_id, order_code, product_name, size, color, price, "
                     "purchase_date, status FROM orders WHERE tenant_id = %s AND order_code = %s",
                     (tenant_id, order_code),
                 )
-                row = await cur.fetchone()
+                row = cur.fetchone()
         if not row:
             return None
         return Order(
@@ -91,17 +96,17 @@ class OrdersService:
             purchase_date=str(row["purchase_date"]), status=row["status"],
         )
 
-    async def list_user_orders(self, tenant_id: str, user_id: str, limit: int = 20) -> list[Order]:
+    def list_user_orders(self, tenant_id: str, user_id: str, limit: int = 20) -> list[Order]:
         """List orders for a user (most recent first)."""
-        async with self.db.connection() as conn:
-            async with conn.cursor() as cur:
-                await cur.execute(
+        with self.db.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
                     "SELECT id, tenant_id, user_id, order_code, product_name, size, color, price, "
                     "purchase_date, status FROM orders WHERE tenant_id = %s AND user_id = %s "
                     "ORDER BY purchase_date DESC LIMIT %s",
                     (tenant_id, user_id, limit),
                 )
-                rows = await cur.fetchall()
+                rows = cur.fetchall()
         return [
             Order(
                 id=r["id"], tenant_id=r["tenant_id"], user_id=r["user_id"],
@@ -112,14 +117,14 @@ class OrdersService:
             for r in rows
         ]
 
-    async def request_return(
+    def request_return(
         self, tenant_id: str, order_id: str, reason: str, product_serial: str | None = None
     ) -> ReturnRequest:
         """Create a return request for an order. Returns the ReturnRequest."""
         ret_id = str(uuid.uuid4())
-        async with self.db.connection() as conn:
-            async with conn.cursor() as cur:
-                await cur.execute(
+        with self.db.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
                     "INSERT INTO return_requests (id, tenant_id, order_id, reason, product_serial) "
                     "VALUES (%s, %s, %s, %s, %s)",
                     (ret_id, tenant_id, order_id, reason, product_serial),

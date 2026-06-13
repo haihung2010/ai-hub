@@ -43,6 +43,7 @@ from app.routes import ihi as ihi_routes
 from app.routes import chatwoot_webhook as chatwoot_routes
 from app.routes import a2a as a2a_routes
 from app.routes import audio as audio_routes
+from app.routes import orders as orders_routes
 from app.agents.crew_service import CrewService
 from app.core.database import _get_database_url
 from app.services.ai_service import AIService
@@ -650,6 +651,7 @@ def create_app(
     app.include_router(chatwoot_routes.router)
     app.include_router(a2a_routes.router)
     app.include_router(audio_routes.router)
+    app.include_router(orders_routes.router)
     # P2.1 — OAuth 2.1 Client Credentials grant
     from app.routes import oauth as oauth_routes
     app.include_router(oauth_routes.router)
