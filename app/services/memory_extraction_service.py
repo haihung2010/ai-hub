@@ -46,16 +46,28 @@ class MemoryExtractionService:
             Message(role="user", content=self._build_source_text(messages)),
         ]
 
-    def _parse_payload(self, payload: str) -> dict[str, list[dict]]:
+    def _parse_payload(self, payload: str) -> dict[str, list[dict]] | None:
+        """Parse LLM payload as JSON object with the four memory-type keys.
+
+        Returns None if the JSON is invalid (caller decides whether to retry).
+        """
         cleaned = _extract_json_payload(payload)
         try:
             parsed = json.loads(cleaned)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
             logger.warning(
-                "StructMem extraction returned invalid JSON (preview=%s)",
+                "StructMem extraction returned invalid JSON: %s (preview=%s)",
+                e,
                 payload[:200].replace("\n", " "),
             )
-            return {"episodic": [], "semantic": [], "relational": [], "procedural": []}
+            return None
+
+        if not isinstance(parsed, dict):
+            logger.warning(
+                "StructMem extraction returned non-object JSON (type=%s)",
+                type(parsed).__name__,
+            )
+            return None
 
         result: dict[str, list[dict]] = {}
         for key in ("episodic", "semantic", "relational", "procedural"):
@@ -145,7 +157,42 @@ class MemoryExtractionService:
         except Exception:
             logger.exception("StructMem extraction LLM call failed user=%s project=%s", user_id, project_id)
             return None
+
+        # Parse JSON; on failure retry once with a stricter prompt.
         extracted = self._parse_payload(payload)
+        if extracted is None:
+            logger.warning(
+                "StructMem extraction: invalid JSON, retrying with stricter prompt user=%s project=%s",
+                user_id,
+                project_id,
+            )
+            retry_prompt = list(prompt_messages) + [
+                Message(
+                    role="user",
+                    content=(
+                        "IMPORTANT: Your previous response was not valid JSON. "
+                        "Output ONLY a single valid JSON object with keys "
+                        "episodic, semantic, relational, procedural. "
+                        "No markdown code blocks, no explanations, no commentary. "
+                        "Just the raw JSON object."
+                    ),
+                )
+            ]
+            try:
+                payload_retry = await provider.complete(retry_prompt, model, 0.0)
+            except Exception:
+                logger.exception(
+                    "StructMem extraction retry LLM call failed user=%s project=%s", user_id, project_id
+                )
+                return None
+            extracted = self._parse_payload(payload_retry)
+            if extracted is None:
+                logger.error(
+                    "StructMem extraction: invalid JSON on retry, skipping user=%s project=%s",
+                    user_id,
+                    project_id,
+                )
+                return None
         start_message_id = messages[0][0]
         end_message_id = messages[-1][0]
         episode_id = self._insert_episode(
