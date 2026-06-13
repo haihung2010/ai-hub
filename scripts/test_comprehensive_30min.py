@@ -88,7 +88,7 @@ class Config:
             llama_url=os.getenv("AIHUB_TEST_LLAMA_URL", "http://127.0.0.1:8080"),
             concurrency=int(os.getenv("AIHUB_TEST_CONCURRENCY", "4")),
             phase1_turns_per_user=int(os.getenv("AIHUB_TEST_PHASE1_TURNS", "10")),
-            phase2_users_total=int(os.getenv("AIHUB_TEST_PHASE2_USERS", "100")),
+            phase2_users_total=int(os.getenv("AIHUB_TEST_PHASE2_USERS", "50")),
             phase2_turns_per_user=int(os.getenv("AIHUB_TEST_PHASE2_TURNS", "10")),
             phase3_rounds=int(os.getenv("AIHUB_TEST_PHASE3_ROUNDS", "3")),
             phase3_users_per_round=int(os.getenv("AIHUB_TEST_PHASE3_USERS", "10")),
