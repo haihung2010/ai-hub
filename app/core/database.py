@@ -503,6 +503,35 @@ def init_db() -> None:
             )
         """)
 
+        # Orders + return requests (added 2026-06-13 for e-commerce test)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS orders (
+                id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                order_code TEXT UNIQUE NOT NULL,
+                product_name TEXT NOT NULL,
+                size TEXT,
+                color TEXT,
+                price INTEGER,
+                purchase_date TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+                status TEXT NOT NULL DEFAULT 'active'
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS return_requests (
+                id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                order_id TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                product_serial TEXT,
+                status TEXT NOT NULL DEFAULT 'pending',
+                requested_at TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+                resolved_at TIMESTAMP,
+                resolution_note TEXT
+            )
+        """)
+
         # Create indexes
         for stmt in [
             "CREATE INDEX IF NOT EXISTS idx_messages_tenant_session ON messages (tenant_id, session_id, id)",
@@ -531,6 +560,9 @@ def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_skills_tenant_project_active ON skills (tenant_id, project_id, is_active)",
             "CREATE INDEX IF NOT EXISTS idx_skills_eval_score ON skills (eval_score DESC)",
             "CREATE INDEX IF NOT EXISTS idx_ihi_rag_cases_severity ON ihi_rag_cases (severity DESC, match_count DESC)",
+            "CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(tenant_id, user_id)",
+            "CREATE INDEX IF NOT EXISTS idx_orders_code ON orders(order_code)",
+            "CREATE INDEX IF NOT EXISTS idx_returns_order ON return_requests(tenant_id, order_id)",
         ]:
             conn.execute(stmt)
 
