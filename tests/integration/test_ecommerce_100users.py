@@ -170,3 +170,55 @@ class Session1Runner:
                         result.errors.append(f"chat {resp.status}")
         except Exception as e:
             result.errors.append(f"chat exception: {e!r}")
+
+
+@dataclass
+class Session2Result:
+    user_id: str
+    order_code: str
+    lookup_success: bool
+    return_requested: bool
+    errors: list[str] = field(default_factory=list)
+
+
+class Session2Runner:
+    """Return flow. Tests order lookup by code + return request."""
+
+    def __init__(self, cfg: TestConfig, session: aiohttp.ClientSession):
+        self.cfg = cfg
+        self.session = session
+        self._semaphore = asyncio.Semaphore(cfg.concurrency)
+
+    async def run_for_user(self, user_id: str, order_code: str) -> Session2Result:
+        result = Session2Result(user_id=user_id, order_code=order_code, lookup_success=False, return_requested=False)
+        # Q1: "I want to return order ORD-XXXX"
+        await self._chat(user_id, SESSION2_QUESTIONS[0].format(order_code=order_code), result)
+        # Check if AI mentioned product name (proxy for lookup success)
+        # We'll check this in ReportGenerator, here just track if response was 200
+        # Q2: "Defect description"
+        await self._chat(user_id, SESSION2_QUESTIONS[1], result)
+        # Q3: "When will replacement arrive?"
+        await self._chat(user_id, SESSION2_QUESTIONS[2], result)
+        # Mark lookup success if we got 3 200s (proxy; real check in report)
+        if len(result.errors) == 0:
+            result.lookup_success = True
+            result.return_requested = True
+        return result
+
+    async def _chat(self, user_id: str, message: str, result: Session2Result) -> None:
+        try:
+            async with self._semaphore:
+                async with self.session.post(
+                    f"{self.cfg.base_url}/v1/chat",
+                    json={
+                        "project_id": "default", "tenant_id": "default",
+                        "user_name": user_id, "user_message": message,
+                        "session_id": f"{user_id}_s2", "model_mode": "lite", "stream": False,
+                    },
+                    headers={"X-API-KEY": self.cfg.api_key},
+                    timeout=aiohttp.ClientTimeout(total=30),
+                ) as resp:
+                    if resp.status >= 400:
+                        result.errors.append(f"chat {resp.status}")
+        except Exception as e:
+            result.errors.append(f"chat exception: {e!r}")
