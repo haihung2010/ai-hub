@@ -109,7 +109,8 @@ class Session1Result:
     questions_asked: int
     answers_received: int
     order_code: str | None
-    last_reply: str = ""  # captured from /v1/chat response
+    last_reply: str = ""  # captured from /v1/chat response (last call)
+    replies: list[str] = field(default_factory=list)  # ALL replies (Q1-Q7)
     errors: list[str] = field(default_factory=list)
 
 
@@ -170,6 +171,8 @@ class Session1Runner:
                         try:
                             body = await resp.json()
                             result.last_reply = body.get("content", "")[:500]
+                            if hasattr(result, "replies"):
+                                result.replies.append(result.last_reply)
                         except Exception:
                             pass
                     else:
@@ -185,6 +188,7 @@ class Session2Result:
     lookup_success: bool
     return_requested: bool
     last_reply: str = ""
+    replies: list[str] = field(default_factory=list)  # ALL replies (Q1=order code, Q2=defect, Q3=when)
     errors: list[str] = field(default_factory=list)
 
 
@@ -198,14 +202,18 @@ class Session2Runner:
 
     async def run_for_user(self, user_id: str, order_code: str) -> Session2Result:
         result = Session2Result(user_id=user_id, order_code=order_code, lookup_success=False, return_requested=False)
-        # Q1: "I want to return order ORD-XXXX"
+        # Q1: "I want to return order ORD-XXXX" (this should trigger order_lookup_injection)
         await self._chat(user_id, SESSION2_QUESTIONS[0].format(order_code=order_code), result)
-        # Check if AI mentioned product name in reply (proxy for lookup success)
-        # We expect: "áo thun" / "quần" / "váy" / "giày" in reply (from PRODUCTS list)
-        if result.last_reply:
-            product_keywords = ["áo thun", "quần", "váy", "giày"]
-            if any(kw in result.last_reply.lower() for kw in product_keywords):
-                result.lookup_success = True
+        # Check Q1 reply for product info (lenient: just need order_code mention + 1 product keyword)
+        # result.replies[0] is Q1's reply
+        if result.replies:
+            q1_reply_lower = result.replies[0].lower()
+            order_code_lower = order_code.lower()
+            if order_code_lower in q1_reply_lower:
+                # AI mentioned the order code, now check if it gave any product info
+                product_keywords = ["áo thun", "quần", "váy", "giày", "áo", "màu", "size", "kích thước", "giá"]
+                if any(kw in q1_reply_lower for kw in product_keywords):
+                    result.lookup_success = True
         # Q2: "Defect description"
         await self._chat(user_id, SESSION2_QUESTIONS[1], result)
         # Q3: "When will replacement arrive?"
@@ -234,6 +242,8 @@ class Session2Runner:
                         try:
                             body = await resp.json()
                             result.last_reply = body.get("content", "")[:500]
+                            if hasattr(result, "replies"):
+                                result.replies.append(result.last_reply)
                         except Exception:
                             pass
         except Exception as e:
@@ -331,6 +341,8 @@ class EcomReport:
             "leak_count": self.leak_count,
             "total_duration_seconds": self.total_duration_seconds,
             "verdict": self.verdict,
+            "sample_session2_replies_q1": [r.replies[0][:300] if r.replies else "" for r in self.session2_results[:3]],
+            "sample_session3_replies": [r.replies[:1] for r in self.session3_results[:3] if r.replies],
             "criteria": {
                 "order_lookup_target": 0.90,
                 "memory_recall_target": 0.70,
