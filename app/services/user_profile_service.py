@@ -29,9 +29,43 @@ COLOR_RE = re.compile(
     re.IGNORECASE,
 )
 PRICE_RE = re.compile(
-    r"(\d{1,3}(?:[.,]\d{3})+|\d{4,7})\s*(?:k|000|đồng|vnđ|vnd|đ)?",
+    r"\b(\d{1,3}(?:[.,]\d{3})+|\d{1,7})k?\b",
     re.IGNORECASE,
 )
+
+
+def _looks_like_price(token: str) -> bool:
+    """Heuristic: decide whether a PRICE_RE match is a real price vs. an
+    order-code fragment like "34880" (from "ORD-_000-34880") or a memory
+    triple serial id.
+
+    Accept if any of:
+      - has a thousands separator (. or ,) — e.g. "250.000", "1,200,000"
+      - has the "k" suffix — e.g. "250k", "1200k"
+      - 1-3 digits (clearly a "Xk" or "X00" shorthand) — e.g. "250", "99"
+      - 4-5 digits ending in 000 or 500 (typical round VND amounts)
+      - 6+ digits ending in 4+ zeros (large round VND amounts)
+
+    Reject if:
+      - 4-5 digits not ending in a round pattern (order-code-like)
+      - any digits not matching the above
+    """
+    if not token:
+        return False
+    lower = token.lower()
+    if "." in lower or "," in lower:
+        return True
+    if lower.endswith("k"):
+        return True
+    if len(lower) <= 3:
+        return True
+    # 4-5 digits: accept only if it ends in 000 or 500 (round VND)
+    if len(lower) in (4, 5) and (lower.endswith("000") or lower.endswith("500")):
+        return True
+    # 6+ digits: require 4+ trailing zeros
+    if len(lower) >= 6 and lower.endswith(("0000", "00000", "000000", "0000000")):
+        return True
+    return False
 
 
 def _flatten_size_matches(matches):
@@ -90,6 +124,12 @@ class UserProfileService:
                     colors.update(c.lower() for c in COLOR_RE.findall(text))
                     for p in PRICE_RE.findall(text):
                         if p:
+                            # Skip bare 5-7 digit numbers that look like order codes
+                            # (e.g. "34880" from "ORD-_000-34880"). Require either
+                            # the "k" suffix, a thousands separator, or a
+                            # currency hint to count as a real price.
+                            if not _looks_like_price(p):
+                                continue
                             try:
                                 prices.append(
                                     int(p.replace(".", "").replace(",", "").replace("k", "000"))
@@ -109,6 +149,8 @@ class UserProfileService:
                     colors.update(c.lower() for c in COLOR_RE.findall(text))
                     for p in PRICE_RE.findall(text):
                         if p:
+                            if not _looks_like_price(p):
+                                continue
                             try:
                                 prices.append(
                                     int(p.replace(".", "").replace(",", "").replace("k", "000"))
