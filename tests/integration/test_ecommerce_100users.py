@@ -342,25 +342,33 @@ class LeakChecker:
     A 404 is the expected, isolation-holding result.
     """
 
-    def __init__(self, cfg: TestConfig, session: aiohttp.ClientSession):
+    def __init__(
+        self,
+        cfg: TestConfig,
+        session: aiohttp.ClientSession,
+        user_a: str,
+        user_a_tenant: str,
+        user_b_order_code: str,
+        user_b_tenant: str,
+    ):
         self.cfg = cfg
         self.session = session
+        self.user_a = user_a
+        self.user_a_tenant = user_a_tenant
+        self.user_b_order_code = user_b_order_code
+        self.user_b_tenant = user_b_tenant
 
-    async def verify_isolation(
-        self, user_a: str, tenant_a: str, order_code_of_b: str,
-    ) -> tuple[bool, int]:
-        """Returns (is_isolated, status_code).
+    async def verify_isolation(self) -> bool:
+        """UserA in tenant_a queries UserB's order_code (in tenant_b) with tenant_a.
 
-        is_isolated=True if status_code is 404 (no data leaked).
-        is_isolated=False if status_code is 2xx (LEAK — order from another
-        tenant was returned).
-        Other statuses (4xx/5xx) are treated as isolation-holding for
-        safety, but logged.
+        Returns True if isolation holds (UserA gets 404 / no 2xx).
+        Returns False if leak (UserA gets 2xx with UserB's order data).
+        Any exception or non-404 2xx → treat as potential leak (False).
         """
         try:
             async with self.session.get(
-                f"{self.cfg.base_url}/v1/orders/{order_code_of_b}",
-                params={"tenant_id": tenant_a},  # UserA's tenant, not the order's tenant
+                f"{self.cfg.base_url}/v1/orders/{self.user_b_order_code}",
+                params={"tenant_id": self.user_a_tenant},  # WRONG tenant for UserB's order
                 headers={"X-API-KEY": self.cfg.api_key},
                 timeout=aiohttp.ClientTimeout(total=10),
             ) as resp:
@@ -368,15 +376,15 @@ class LeakChecker:
                 # Throttle to stay under the 60 rpm cap
                 if self.cfg.request_delay_seconds > 0:
                     await asyncio.sleep(self.cfg.request_delay_seconds)
+                # Expected: 404, no leak
+                # Leak: 2xx (data from another tenant returned)
                 if 200 <= status < 300:
-                    # LEAK: API returned data from another tenant
-                    return False, status
-                # 404 = isolation holds; other 4xx/5xx also treated as holding
-                return True, status
+                    return False  # LEAK
+                return True  # 404 or other 4xx → isolation holds
         except Exception:
             if self.cfg.request_delay_seconds > 0:
                 await asyncio.sleep(self.cfg.request_delay_seconds)
-            return True, -1
+            return False  # any error = treat as potential leak
 
 
 @dataclass
@@ -424,18 +432,13 @@ async def run_test(cfg: TestConfig) -> EcomReport:
         # Setup: clear any prior test data
         # (Skip for now - assume clean state)
 
-        # Generate num_users split across num_tenants tenants.
-        # Tenant 0 -> "default", Tenant 1 -> "tenant2", etc.
-        # Each user gets a unique id like ecom_user_default_000 / ecom_user_tenant2_000.
-        tenant_ids = [f"tenant{i+1}" if i > 0 else "default" for i in range(cfg.num_tenants)]
+        # Generate num_users split across 2 tenants (alternating).
+        # Even indices -> "default", odd indices -> "tenant2".
+        # Each user gets a unique id like ecom_user_000.
         users: list[tuple[str, str]] = []  # (user_id, tenant_id)
-        per_tenant = max(1, cfg.num_users // cfg.num_tenants)
-        for ti, tenant_id in enumerate(tenant_ids):
-            start = ti * per_tenant
-            end = cfg.num_users if ti == cfg.num_tenants - 1 else (ti + 1) * per_tenant
-            for i in range(start, end):
-                suffix = tenant_id.replace("tenant", "t")  # default, t2, t3, ...
-                users.append((f"ecom_user_{suffix}_{i - start:03d}", tenant_id))
+        for i in range(cfg.num_users):
+            tenant = "default" if i % 2 == 0 else "tenant2"
+            users.append((f"ecom_user_{i:03d}", tenant))
         user_ids = [u for u, _ in users]
         tenant_for_user = [t for _, t in users]
         products_chosen = [PRODUCTS[i % len(PRODUCTS)] for i in range(cfg.num_users)]
@@ -474,42 +477,49 @@ async def run_test(cfg: TestConfig) -> EcomReport:
             *[s3.run_for_user(uid, tid) for (uid, tid) in users]
         )
 
-        # Cross-tenant leak check: pick 10 successful Session 1 orders,
-        # then for each one, have a user in a DIFFERENT tenant try to fetch it.
-        # If the response is 2xx → LEAK (cross-tenant data exposed).
+        # Cross-tenant leak check: pick 10 random user pairs across
+        # different tenants. For each pair, UserA attempts to fetch
+        # UserB's order_code using UserA's own tenant_id. If the response
+        # is 2xx → LEAK (cross-tenant data exposed). 404 → isolation holds.
         print(f"[main] Leak check: 10 random cross-tenant order code lookups")
-        leak_checker = LeakChecker(cfg, session)
         leak_count = 0
         leak_samples: list[dict] = []
-        successful = [
-            (uid, tid, r.order_code)
-            for (uid, tid), r in zip(users, s1_results)
+        successful_orders = {
+            uid: r.order_code
+            for (uid, _tid), r in zip(users, s1_results)
             if r.order_code
-        ]
-        if cfg.num_tenants >= 2 and successful:
-            sample_size = min(10, len(successful))
-            sampled = random.sample(successful, k=sample_size)
-            for attacker_uid, attacker_tenant, victim_order_code in sampled:
-                # Find an order in a DIFFERENT tenant
-                victim = None
-                for vu, vt, vc in successful:
-                    if vt != attacker_tenant and vc != victim_order_code:
-                        victim = (vu, vt, vc)
-                        break
-                if not victim:
-                    continue
-                _, _, target_code = victim
-                is_isolated, status = await leak_checker.verify_isolation(
-                    attacker_uid, attacker_tenant, target_code,
-                )
-                if not is_isolated:
-                    leak_count += 1
-                    leak_samples.append({
-                        "attacker_user": attacker_uid,
-                        "attacker_tenant": attacker_tenant,
-                        "victim_order_code": target_code,
-                        "leak_status": status,
-                    })
+        }
+        for _ in range(10):
+            user_a, tenant_a = users[random.randint(0, len(users) - 1)]
+            # Find a user in a different tenant
+            different_tenant_users = [
+                (u, t) for u, t in users if t != tenant_a
+            ]
+            if not different_tenant_users:
+                continue
+            user_b, tenant_b = different_tenant_users[
+                random.randint(0, len(different_tenant_users) - 1)
+            ]
+            # Get UserB's order_code from session1_results
+            user_b_order_code = successful_orders.get(user_b)
+            if not user_b_order_code:
+                continue
+            # Verify UserA cannot see UserB's order
+            leak_checker = LeakChecker(
+                cfg, session,
+                user_a=user_a, user_a_tenant=tenant_a,
+                user_b_order_code=user_b_order_code, user_b_tenant=tenant_b,
+            )
+            isolated = await leak_checker.verify_isolation()
+            if not isolated:
+                leak_count += 1
+                leak_samples.append({
+                    "attacker_user": user_a,
+                    "attacker_tenant": tenant_a,
+                    "victim_user": user_b,
+                    "victim_tenant": tenant_b,
+                    "victim_order_code": user_b_order_code,
+                })
 
     ended = time.monotonic()
 
