@@ -47,6 +47,7 @@ def _mock_request(api_key_tenant_id: str | None) -> MagicMock:
     """
     req = MagicMock()
     req.state.api_key_tenant_id = api_key_tenant_id
+    req.state.api_key_is_admin = False
     return req
 
 
