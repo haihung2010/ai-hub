@@ -1165,6 +1165,13 @@ class AIService:
         return self._sanitize_memory_text(summary) if summary else None
 
     def _save_chat_messages(self, req: ChatRequest, session_id: str, user_id: str | None, content: str) -> None:
+        """Save user + assistant messages atomically (used by non-streaming chat)."""
+        self._save_user_message(req, session_id, user_id)
+        self._save_assistant_message(req, session_id, user_id, content)
+
+    def _save_user_message(self, req: ChatRequest, session_id: str, user_id: str | None) -> None:
+        """Persist the user message. Called early in chat_stream so the
+        background memory extraction task can see the new turn."""
         self._history.save_message(
             session_id,
             "user",
@@ -1172,6 +1179,9 @@ class AIService:
             tenant_id=req.tenant_id,
             user_id=user_id,
         )
+
+    def _save_assistant_message(self, req: ChatRequest, session_id: str, user_id: str | None, content: str) -> None:
+        """Persist the assistant reply. Called after the stream finishes."""
         self._history.save_message(
             session_id,
             "assistant",
@@ -1608,6 +1618,18 @@ class AIService:
 
         yield {"type": "start", "session_id": session_id, "model": model, "provider": provider.name, "route": route_alias}
 
+        # Parallel memory extraction (P5.1, 2026-06-14): save the user
+        # message and kick off the background extraction task BEFORE the
+        # stream starts. The LLM call for summary/structmem runs in
+        # parallel with the model stream, so wall-clock latency to the
+        # user drops by the extraction overhead. The task is fire-and-
+        # forget (asyncio.create_task inside _schedule_memory_jobs),
+        # already wrapped in try/except + logger.exception in the
+        # underlying summarize()/process_recent_messages() methods, so
+        # a failure can never crash the stream or the server.
+        await asyncio.to_thread(self._save_user_message, req, session_id, user_id)
+        self._schedule_memory_jobs(user_id, req.tenant_id, req.project_id, session_id, self._local)
+
         full_content = ""
         try:
             async for chunk in self._stream(provider, messages, model, temperature, options):
@@ -1631,7 +1653,11 @@ class AIService:
             "user_id": user_id,
         }
 
-        await asyncio.to_thread(self._save_chat_messages, req, session_id, user_id, full_content)
+        # Save only the assistant message at the end (user message was
+        # saved before the stream so the background extraction task
+        # could see it). Splitting the save avoids a double-INSERT of
+        # the user message if the early save ran but the stream errored.
+        await asyncio.to_thread(self._save_assistant_message, req, session_id, user_id, full_content)
         if user_id and self._pinned_memory:
             await asyncio.to_thread(
                 lambda: self._pinned_memory.remember_from_message(
@@ -1641,7 +1667,6 @@ class AIService:
         await asyncio.to_thread(
             self._save_prediction_record, req, session_id, user_id, full_content, model, provider
         )
-        self._schedule_memory_jobs(user_id, req.tenant_id, req.project_id, session_id, self._local)
         prompt_tokens, completion_tokens, total_tokens, cost_usd = self._compute_usage_metrics(
             messages, full_content, provider.name, model,
         )
