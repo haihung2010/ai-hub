@@ -1527,6 +1527,33 @@ class AIService:
                     )
             except Exception as exc:
                 logger.warning("user_profile_injection_failed: %r", exc)
+        # Order lookup: if user_message contains an order code pattern (ORD-XXXX),
+        # auto-fetch the order and inject details into system_prompt. This lets
+        # the LLM answer return/lookup queries without needing function calling.
+        # Wrapped in try/except for graceful degradation.
+        if self._orders is not None and user_id:
+            try:
+                order_code_match = re.search(r"\bORD-[\w-]{2,20}\b", req.user_message, re.IGNORECASE)
+                if order_code_match:
+                    order_code = order_code_match.group(0).upper()
+                    order = self._orders.get_by_code(req.tenant_id, order_code)
+                    if order:
+                        order_block = (
+                            f"<order_lookup>\n"
+                            f"Order code: {order.order_code}\n"
+                            f"Product: {order.product_name}\n"
+                            f"Size: {order.size or 'N/A'}, Color: {order.color or 'N/A'}\n"
+                            f"Price: {order.price:,}đ\n"
+                            f"Status: {order.status}\n"
+                            f"</order_lookup>"
+                        )
+                        prompt = replace(
+                            prompt,
+                            system_prompt=(prompt.system_prompt or "") + "\n\n" + order_block,
+                        )
+                        logger.info("order_lookup_injected user=%s code=%s", user_id, order_code)
+            except Exception as exc:
+                logger.warning("order_lookup_injection_failed: %r", exc)
         search_query = self._explicit_search_query(req)
         if search_query:
             provider = self._select_explicit_search_provider(req)
@@ -1777,6 +1804,33 @@ class AIService:
                     )
             except Exception as exc:
                 logger.warning("user_profile_injection_failed: %r", exc)
+        # Order lookup: if user_message contains an order code pattern (ORD-XXXX),
+        # auto-fetch the order and inject details into system_prompt. This lets
+        # the LLM answer return/lookup queries without needing function calling.
+        # Wrapped in try/except for graceful degradation.
+        if self._orders is not None and user_id:
+            try:
+                order_code_match = re.search(r"\bORD-[\w-]{2,20}\b", req.user_message, re.IGNORECASE)
+                if order_code_match:
+                    order_code = order_code_match.group(0).upper()
+                    order = self._orders.get_by_code(req.tenant_id, order_code)
+                    if order:
+                        order_block = (
+                            f"<order_lookup>\n"
+                            f"Order code: {order.order_code}\n"
+                            f"Product: {order.product_name}\n"
+                            f"Size: {order.size or 'N/A'}, Color: {order.color or 'N/A'}\n"
+                            f"Price: {order.price:,}đ\n"
+                            f"Status: {order.status}\n"
+                            f"</order_lookup>"
+                        )
+                        prompt = replace(
+                            prompt,
+                            system_prompt=(prompt.system_prompt or "") + "\n\n" + order_block,
+                        )
+                        logger.info("order_lookup_injected user=%s code=%s", user_id, order_code)
+            except Exception as exc:
+                logger.warning("order_lookup_injection_failed: %r", exc)
         search_query = self._explicit_search_query(req)
         if search_query:
             provider = self._select_explicit_search_provider(req)
