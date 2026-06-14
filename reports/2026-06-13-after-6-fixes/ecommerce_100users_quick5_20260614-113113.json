@@ -1,0 +1,36 @@
+{
+  "test_name": "ecommerce-100user",
+  "total_users": 5,
+  "session1_orders_created": 5,
+  "session2_lookups_succeeded": 2,
+  "session3_personalization_count": 5,
+  "order_lookup_accuracy": 0.4,
+  "cross_session_memory_accuracy": 1.0,
+  "personalization_accuracy": 1.0,
+  "leak_count": 0,
+  "leak_samples": [],
+  "total_duration_seconds": 101.39080172700005,
+  "verdict": "FAIL",
+  "sample_session2_replies_q1": [
+    "Nếu áo của bạn bị lỗi chỉ may, bạn cần liên hệ ngay với bộ phận hỗ trợ khách hàng của cửa hàng để được giải quyết.\n\nBạn nên cung cấp cho họ những thông tin sau:\n* Mã đơn hàng: ORD-_000-34880.\n* Mô tả chi tiết về lỗi: Áo bị lỗi chỉ may.\n* Hình ảnh minh họa về lỗi (nếu có).\n\nHọ sẽ hướng dẫn bạn quy tr",
+    "Chào bạn, tôi đã nhận được yêu cầu đổi trả cho đơn hàng ORD-_001-20362 (Quần jean xanh).\n\nĐể hỗ trợ bạn nhanh nhất, vui lòng cho biết lý do bạn muốn đổi trả là gì?\n • Sản phẩm không vừa size (Bạn đang mặc size m nhưng đơn hàng là size L).\n • Sản phẩm bị lỗi hoặc không đúng màu sắc.\n • Lý do cá nhân ",
+    "Nếu áo của bạn bị lỗi chỉ may, bạn vui lòng thực hiện các bước sau để được hỗ trợ đổi trả:\n\n*   **Liên hệ ngay** với bộ phận chăm sóc khách hàng của cửa hàng hoặc nhà bán hàng.\n*   Chuẩn bị **hình ảnh** rõ ràng về lỗi chỉ may.\n*   Cung cấp **thông tin đơn hàng** (ví dụ: mã đơn ORD-_002-34880) để họ "
+  ],
+  "sample_session3_replies": [
+    [
+      "Bạn muốn mua thêm áo thun loại nào ạ?\n\nĐể tôi có thể hỗ trợ bạn tốt nhất, vui lòng cho tôi biết thêm thông tin:\n*   **Màu sắc** bạn muốn (trắng, xanh, xám, đen)?\n*   **Size** bạn cần (m, l, XL, v.v.)?\n*   Bạn có quan tâm đến **mức giá** nào không?\n\nTôi đang chờ thông tin chi tiết từ bạn để tìm sản phẩm phù hợp."
+    ],
+    [
+      "Bạn muốn mua áo thun loại nào? Vui lòng cung cấp thêm thông tin chi tiết như:\n\n*   Bạn cần kích cỡ nào (ví dụ: m, L, XL)?\n*   Bạn thích màu sắc nào (trắng, xanh, xám, đen)?\n*   Bạn có ngân sách dự kiến không?\n\nTôi có thể giúp bạn tìm kiếm các lựa chọn phù hợp hơn."
+    ],
+    [
+      "Để tôi hỗ trợ bạn tìm được áo thun phù hợp nhất, bạn vui lòng cho tôi biết bạn đang quan tâm đến sản phẩm cụ thể nào nhé.\n\nBạn cần cung cấp tên sản phẩm hoặc hình ảnh để tôi kiểm tra xem size L và màu xanh navy có sẵn hay không."
+    ]
+  ],
+  "criteria": {
+    "order_lookup_target": 0.9,
+    "memory_recall_target": 0.7,
+    "personalization_target": 0.6,
+    "leak_target": 0
+  }
+}

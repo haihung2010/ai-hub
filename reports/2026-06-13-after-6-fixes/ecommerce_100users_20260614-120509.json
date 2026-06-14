@@ -1,0 +1,26 @@
+{
+  "test_name": "ecommerce-100user",
+  "total_users": 100,
+  "session1_orders_created": 100,
+  "session2_lookups_succeeded": 0,
+  "session3_personalization_count": 0,
+  "order_lookup_accuracy": 0.0,
+  "cross_session_memory_accuracy": 0.0,
+  "personalization_accuracy": 0.0,
+  "leak_count": 0,
+  "leak_samples": [],
+  "total_duration_seconds": 1949.743988801,
+  "verdict": "FAIL",
+  "sample_session2_replies_q1": [
+    "",
+    "",
+    ""
+  ],
+  "sample_session3_replies": [],
+  "criteria": {
+    "order_lookup_target": 0.9,
+    "memory_recall_target": 0.7,
+    "personalization_target": 0.6,
+    "leak_target": 0
+  }
+}
