@@ -109,6 +109,7 @@ class Session1Result:
     questions_asked: int
     answers_received: int
     order_code: str | None
+    last_reply: str = ""  # captured from /v1/chat response
     errors: list[str] = field(default_factory=list)
 
 
@@ -166,6 +167,11 @@ class Session1Runner:
                 ) as resp:
                     if resp.status < 400:
                         result.answers_received += 1
+                        try:
+                            body = await resp.json()
+                            result.last_reply = body.get("content", "")[:500]
+                        except Exception:
+                            pass
                     else:
                         result.errors.append(f"chat {resp.status}")
         except Exception as e:
@@ -178,6 +184,7 @@ class Session2Result:
     order_code: str
     lookup_success: bool
     return_requested: bool
+    last_reply: str = ""
     errors: list[str] = field(default_factory=list)
 
 
@@ -193,15 +200,18 @@ class Session2Runner:
         result = Session2Result(user_id=user_id, order_code=order_code, lookup_success=False, return_requested=False)
         # Q1: "I want to return order ORD-XXXX"
         await self._chat(user_id, SESSION2_QUESTIONS[0].format(order_code=order_code), result)
-        # Check if AI mentioned product name (proxy for lookup success)
-        # We'll check this in ReportGenerator, here just track if response was 200
+        # Check if AI mentioned product name in reply (proxy for lookup success)
+        # We expect: "áo thun" / "quần" / "váy" / "giày" in reply (from PRODUCTS list)
+        if result.last_reply:
+            product_keywords = ["áo thun", "quần", "váy", "giày"]
+            if any(kw in result.last_reply.lower() for kw in product_keywords):
+                result.lookup_success = True
         # Q2: "Defect description"
         await self._chat(user_id, SESSION2_QUESTIONS[1], result)
         # Q3: "When will replacement arrive?"
         await self._chat(user_id, SESSION2_QUESTIONS[2], result)
-        # Mark lookup success if we got 3 200s (proxy; real check in report)
+        # Mark return_requested if 0 errors
         if len(result.errors) == 0:
-            result.lookup_success = True
             result.return_requested = True
         return result
 
@@ -220,6 +230,12 @@ class Session2Runner:
                 ) as resp:
                     if resp.status >= 400:
                         result.errors.append(f"chat {resp.status}")
+                    else:
+                        try:
+                            body = await resp.json()
+                            result.last_reply = body.get("content", "")[:500]
+                        except Exception:
+                            pass
         except Exception as e:
             result.errors.append(f"chat exception: {e!r}")
 
@@ -228,6 +244,9 @@ class Session2Runner:
 class Session3Result:
     user_id: str
     personalization_used: bool  # did AI reference previous preferences?
+    memory_referenced: bool = False  # did AI mention specific facts from session 1?
+    last_reply: str = ""
+    replies: list[str] = field(default_factory=list)  # all replies
     errors: list[str] = field(default_factory=list)
 
 
@@ -366,12 +385,36 @@ async def run_test(cfg: TestConfig) -> EcomReport:
 
     # Compute metrics
     order_lookup_acc = sum(1 for r in s2_results if r.lookup_success) / max(1, len(s2_results))
-    cross_session_acc = 0.0  # Would need to analyze responses for preferences keywords
-    personalization_acc = 0.0  # Would need to analyze responses
 
-    # Pass/fail
-    passed = (order_lookup_acc >= cfg.order_lookup_target and
-              leak_count <= cfg.leak_target)
+    # Cross-session memory: check if Session 3 first reply references size/color
+    # from Session 1 (user said e.g. "size M", AI should mention it back)
+    memory_keywords = ["size m", "size l", "trắng", "xanh", "đen", "áo thun", "quần", "váy", "giày", "mua", "lần trước", "trước đó"]
+    memory_hits = 0
+    for r in s3_results:
+        for reply in r.replies[:1]:  # just first reply of session 3
+            if any(kw in reply.lower() for kw in memory_keywords):
+                r.memory_referenced = True
+                memory_hits += 1
+                break
+    cross_session_acc = memory_hits / max(1, len(s3_results))
+
+    # Personalization: check if Session 3 first reply asks follow-up aligned with history
+    # Heuristic: reply contains phrases like "Bạn mua", "size", "màu", suggesting personalization
+    personalization_phrases = ["bạn mua", "size", "màu", "bạn đã hỏi", "lần trước", "trước đó", "ưu tiên", "thường"]
+    personalization_hits = 0
+    for r in s3_results:
+        for reply in r.replies[:1]:
+            if any(phrase in reply.lower() for phrase in personalization_phrases):
+                r.personalization_used = True
+                personalization_hits += 1
+                break
+    personalization_acc = personalization_hits / max(1, len(s3_results))
+
+    # Pass/fail: all 4 criteria
+    passed = (order_lookup_acc >= cfg.order_lookup_target
+              and cross_session_acc >= cfg.memory_recall_target
+              and personalization_acc >= cfg.personalization_target
+              and leak_count <= cfg.leak_target)
     verdict = "PASS" if passed else "FAIL"
 
     return EcomReport(
