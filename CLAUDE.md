@@ -49,6 +49,7 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 ### Security
 - `X-API-KEY` header auth
 - Per-key rate limiting — **Redis sliding window** (auto-fallback to in-memory nếu Redis down)
+- Per-(tenant, model_mode) rate limit (P3.2, 2026-06-11) — Lite 60→**300** RPM/tenant, External tighter. Configured via `RATE_LIMIT_LITE_RPM` in `.env`. The 300 cap lets the e-commerce 100-user test (~110 RPM/tenant sustained) run without 429-saturation; quick-5u run stays well under it.
 - IP-based auth failure tracking and blocking (Redis-backed, fallback in-memory)
 - CORS restricted to allowed origins
 - Security denial logging to `security.log`
@@ -104,7 +105,7 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 
 ### Security Layer
 - `app/middleware/security.py`: API key auth, Redis rate limiting, denial logging
-- `app/core/config.py`: All settings — `API_KEY`, `RATE_LIMIT_PER_MINUTE`, `ALLOWED_ORIGINS`, model/memory/search config
+- `app/core/config.py`: All settings — `API_KEY`, `RATE_LIMIT_PER_MINUTE`, `RATE_LIMIT_LITE_RPM` (per-(tenant, model_mode) cap, default 60), `ALLOWED_ORIGINS`, model/memory/search config
 
 ### Frontend
 - `static/index.html`: API key prompt (localStorage), user-name resume, Lite-only image upload, `/clear` command support, streaming toggle, search toggle, queue badge (⏳ Queue: active/capacity)
@@ -112,6 +113,7 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 ## Security Defaults
 - **API Key Header**: `X-API-KEY`
 - **Default Rate Limit**: `60` requests per minute per API key
+- **Per-tenant Lite cap**: `300` RPM (set via `RATE_LIMIT_LITE_RPM` in `.env`); code default is 60. The 300 cap is required for the e-commerce 100-user test — don't lower it below ~200 unless you also lower the test's `AIHUB_ECOM_USERS` env var.
 - **Security Log File**: `security.log`
 - **Allowed Origins**: localhost variants, `https://htechlabsvn.com`, `https://api-aiserver.htechlabsvn.com`
 
