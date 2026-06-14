@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from app.core.database import DEFAULT_TENANT_ID
 from app.services.history_service import HistoryService
 from app.services.user_service import UserService
+from app.utils.tenant_guard import resolve_tenant
 
 router = APIRouter(prefix="/v1/users", tags=["users"])
 
@@ -18,6 +19,7 @@ async def list_user_sessions(
     project_id: str | None = Query(default=None, min_length=1, max_length=64),
     tenant_id: str = Query(default=DEFAULT_TENANT_ID, min_length=1, max_length=64),
 ) -> list[dict[str, str | None]]:
+    tenant_id = resolve_tenant(request, tenant_id)
     service: UserService = request.app.state.user_service
     user = service.find_by_name(user_name, tenant_id)
     if user is None:
@@ -45,6 +47,7 @@ async def clear_user_history(
     project_id: str = Query(..., min_length=1, max_length=64),
     tenant_id: str = Query(default=DEFAULT_TENANT_ID, min_length=1, max_length=64),
 ) -> dict:
+    tenant_id = resolve_tenant(request, tenant_id)
     user_service: UserService = request.app.state.user_service
     history_service: HistoryService = request.app.state.history_service
 
@@ -70,6 +73,7 @@ async def set_memory_boundary(
     """Mark a memory boundary for the user+project. Existing messages and
     summaries stay in the database for audit / re-export, but future memory
     retrieval will only include rows after this point in time."""
+    tenant_id = resolve_tenant(request, tenant_id)
     user_service: UserService = request.app.state.user_service
     history_service: HistoryService = request.app.state.history_service
 

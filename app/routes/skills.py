@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 
 from app.models.skill import SkillEvaluationResult
+from app.utils.tenant_guard import assert_entity_tenant
 
 router = APIRouter(prefix="/v1/projects", tags=["skills"])
 
@@ -200,6 +201,10 @@ async def update_skill(
     - test_cases_json is re-validated on every PATCH (P1.8 fix).
       Even if the original create went through, a PATCH cannot
       sneak a malformed blob past the validator.
+    - P5.2 (2026-06-14): tenant guard — the skill's tenant_id must
+      match the API key's bound tenant (admins exempt). Without this,
+      a tenant-A key could PATCH a tenant-B skill by guessing the
+      skill_id and supplying the right project_id.
     """
     from app.services.skill_service import SkillService
 
@@ -207,6 +212,12 @@ async def update_skill(
     existing = service.get_skill(skill_id)
     if not existing or existing.project_id != project_id:
         raise HTTPException(status_code=404, detail="Skill not found")
+    assert_entity_tenant(
+        request,
+        existing.tenant_id,
+        entity_label="Skill",
+        entity_id=skill_id,
+    )
 
     # P1.8: re-validate test_cases whenever it's being updated.
     # Without this, an attacker who got past create-time validation
@@ -238,6 +249,12 @@ async def delete_skill(project_id: str, skill_id: str, request: Request) -> None
     existing = service.get_skill(skill_id)
     if not existing or existing.project_id != project_id:
         raise HTTPException(status_code=404, detail="Skill not found")
+    assert_entity_tenant(
+        request,
+        existing.tenant_id,
+        entity_label="Skill",
+        entity_id=skill_id,
+    )
     service.delete(skill_id)
 
 
@@ -251,6 +268,12 @@ async def evaluate_skill(project_id: str, skill_id: str, request: Request) -> Ev
     existing = service.get_skill(skill_id)
     if not existing or existing.project_id != project_id:
         raise HTTPException(status_code=404, detail="Skill not found")
+    assert_entity_tenant(
+        request,
+        existing.tenant_id,
+        entity_label="Skill",
+        entity_id=skill_id,
+    )
 
     ai_service = get_ai_service()
     if not ai_service:
@@ -277,4 +300,10 @@ async def get_skill(project_id: str, skill_id: str, request: Request) -> SkillRe
     skill = service.get_skill(skill_id)
     if not skill or skill.project_id != project_id:
         raise HTTPException(status_code=404, detail="Skill not found")
+    assert_entity_tenant(
+        request,
+        skill.tenant_id,
+        entity_label="Skill",
+        entity_id=skill_id,
+    )
     return _skill_to_response(skill)

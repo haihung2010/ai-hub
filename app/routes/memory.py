@@ -8,6 +8,7 @@ from app.core.database import DEFAULT_TENANT_ID
 from app.services.pinned_memory_service import PinnedMemoryService
 from app.services.summary_service import SummaryService
 from app.services.user_service import UserService
+from app.utils.tenant_guard import resolve_tenant
 
 router = APIRouter(prefix="/v1", tags=["memory"])
 
@@ -19,6 +20,7 @@ async def get_memory_context(
     user_name: str = Query(min_length=1, max_length=128),
     tenant_id: str = Query(default=DEFAULT_TENANT_ID, min_length=1, max_length=64),
 ) -> dict[str, object]:
+    tenant_id = resolve_tenant(request, tenant_id)
     users: UserService = request.app.state.user_service
     pinned: PinnedMemoryService = request.app.state.pinned_memory_service
     summaries: SummaryService = request.app.state.summary_service

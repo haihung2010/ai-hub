@@ -7,6 +7,7 @@ from fastapi import APIRouter, Query, Request
 from app.core.database import DEFAULT_TENANT_ID
 from app.services.prediction_service import STOCK_PROJECT_ID, PredictionService
 from app.services.user_service import UserService
+from app.utils.tenant_guard import resolve_tenant
 
 router = APIRouter(prefix="/v1/predictions", tags=["predictions"])
 
@@ -20,6 +21,7 @@ async def list_predictions(
     symbol: str | None = Query(default=None, min_length=1, max_length=32),
     limit: int = Query(default=20, ge=1, le=100),
 ) -> list[dict[str, str | None]]:
+    tenant_id = resolve_tenant(request, tenant_id)
     users: UserService = request.app.state.user_service
     predictions: PredictionService = request.app.state.prediction_service
     user = users.find_by_name(user_name, tenant_id)
