@@ -11,7 +11,7 @@ import logging
 import subprocess
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -49,11 +49,22 @@ class KnowledgeSearchResponse(BaseModel):
 
 @router.get("/knowledge-search", response_model=KnowledgeSearchResponse)
 async def search_knowledge(
+    request: Request,
     query: str = Query(..., description="Natural language search query"),
     project_id: str = Query("default", description="Project scope"),
     limit: int = Query(4, ge=1, le=10, description="Max results"),
 ):
-    """Search AI Hub knowledge base with hybrid vector + full-text search."""
+    """Search AI Hub knowledge base with hybrid vector + full-text search.
+
+    Audit 2026-06-14: previously hardcoded ``tenant_id="default"``,
+    meaning any tenant-bound key would search the "default" namespace
+    and could read cards from that tenant. Now reads ``tenant_id`` from
+    ``request.state.api_key_tenant_id`` (set by SecurityMiddleware);
+    falls back to "default" only for the master key, which is the
+    legitimate cross-tenant ops key.
+    """
+    # Tenant-bound key → use its tenant. Master key → "default" fallback.
+    tenant_id = getattr(request.state, "api_key_tenant_id", None) or "default"
     try:
         from app.core.database import get_db_connection
         from app.services.knowledge_embedding_service import KnowledgeEmbeddingService
@@ -62,7 +73,7 @@ async def search_knowledge(
         emb = KnowledgeEmbeddingService()
         ret = KnowledgeRetrievalService(embedding_service=emb)
         results = ret.search(
-            tenant_id="default",
+            tenant_id=tenant_id,
             project_id=project_id,
             query=query,
             limit=min(limit, 10),
