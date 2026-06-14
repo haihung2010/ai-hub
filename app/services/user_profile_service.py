@@ -29,7 +29,7 @@ COLOR_RE = re.compile(
     re.IGNORECASE,
 )
 PRICE_RE = re.compile(
-    r"\b(\d{1,3}(?:[.,]\d{3})+|\d{1,7})k?\b",
+    r"\b(\d{1,3}(?:[.,]\d{3})+|\d{1,7}(?:k)?)\b",
     re.IGNORECASE,
 )
 
