@@ -103,7 +103,7 @@ class QueryClassifier:
         text = req.user_message.strip()
         normalized = self._strip_diacritics(text)
 
-        type_priority = ["memory_recall", "coding", "reasoning", "search", "rag_query", "factual_qa", "greeting", "casual_chat", "creative"]
+        type_priority = ["memory_recall", "order_lookup", "coding", "reasoning", "search", "rag_query", "factual_qa", "greeting", "casual_chat", "creative"]
         for intent_type in type_priority:
             patterns = self._patterns.get(intent_type, [])
             if any(p.search(normalized) for p in patterns):
@@ -639,6 +639,17 @@ class AIService:
         except Exception as e:
             logger.debug("_select_model memory_recall check failed: %r", e)
 
+        # Order-lookup queries (mentioning ORD-XXXX) bypass fast-background
+        # to use 12B which can use the injected order context.
+        try:
+            if re.search(r"\bord-[\w-]{2,20}\b", req.user_message, re.IGNORECASE):
+                ctx = self._settings.project_context_sizes.get(
+                    req.project_id, self._settings.default_num_ctx
+                )
+                return self._settings.default_model, ctx
+        except Exception as e:
+            logger.debug("_select_model order_lookup check failed: %r", e)
+
         # Adaptive routing (added 2026-06-07) — uses difficulty + load + project.
         # Falls back to legacy BRANE regex when adaptive_routing_enabled=False.
         if not self._settings.adaptive_routing_enabled:
@@ -795,6 +806,12 @@ class AIService:
         try:
             intent_check = self._query_classifier.classify(req)
             if intent_check.type == "memory_recall":
+                return provider, model, route_reason
+        except Exception:
+            pass
+        # Order-lookup queries (ORD-XXXX) bypass fast-background to use 12B
+        try:
+            if re.search(r"\bord-[\w-]{2,20}\b", req.user_message, re.IGNORECASE):
                 return provider, model, route_reason
         except Exception:
             pass
