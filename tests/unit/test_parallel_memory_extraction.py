@@ -24,6 +24,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+# All tests in this file mock the database (DB calls go through
+# ``_history`` which is a ``MagicMock``); the autouse ``isolated_db``
+# fixture in conftest would otherwise refuse to run without
+# ``AI_HUB_ALLOW_DB_TRUNCATE_FOR_TESTS=1``. Mark everything as
+# ``no_isolated_db`` to bypass the fixture.
+pytestmark = pytest.mark.no_isolated_db
+
 from app.core.config import Settings
 from app.models.chat import ChatRequest
 
