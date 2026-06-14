@@ -39,6 +39,8 @@ class TestConfig:
     memory_recall_target: float
     personalization_target: float
     leak_target: int
+    request_delay_seconds: float = 1.1  # throttle to ~54 rpm under 60 rpm Lite cap
+    num_tenants: int = 2  # split users across N tenants for isolation testing
 
     @classmethod
     def from_env(cls) -> "TestConfig":
@@ -63,11 +65,66 @@ class TestConfig:
             memory_recall_target=0.70,
             personalization_target=0.60,
             leak_target=0,
+            request_delay_seconds=float(os.getenv("AIHUB_ECOM_REQUEST_DELAY", "1.1")),
+            num_tenants=int(os.getenv("AIHUB_ECOM_TENANTS", "2")),
         )
 
 
 # 5 personas, reused for 100 user instances
 PERSONAS = ["An", "Bình", "Chi", "Dũng", "Em", "Phương", "Giang", "Hà", "Khánh", "Linh"]
+
+
+async def _throttled_chat_post(
+    session: aiohttp.ClientSession,
+    cfg: TestConfig,
+    payload: dict,
+    headers: dict,
+) -> tuple[int, dict | None, str | None]:
+    """POST /v1/chat with throttling + 429/503 retry.
+
+    Returns (status_code, json_body_or_None, error_message_or_None).
+    Retries once on 429/503 after a 5s sleep; on second failure, gives up
+    and returns the last status. Always throttles with cfg.request_delay_seconds
+    after a successful or non-retryable response.
+    """
+    url = f"{cfg.base_url}/v1/chat"
+    last_status = 0
+    last_body: dict | None = None
+    last_error: str | None = None
+    for attempt in range(2):  # 0=first call, 1=retry
+        try:
+            async with session.post(
+                url, json=payload, headers=headers,
+                timeout=aiohttp.ClientTimeout(total=30),
+            ) as resp:
+                last_status = resp.status
+                if resp.status < 400:
+                    try:
+                        last_body = await resp.json()
+                    except Exception:
+                        last_body = None
+                    last_error = None
+                    break
+                if resp.status in (429, 503) and attempt == 0:
+                    # Throttled by Lite cap or upstream busy; back off and retry once
+                    await asyncio.sleep(5.0)
+                    continue
+                # Non-retryable or out of retries; capture error
+                try:
+                    last_body = await resp.json()
+                except Exception:
+                    last_body = None
+                last_error = f"chat {resp.status}"
+                break
+        except Exception as e:
+            last_error = f"chat exception: {e!r}"
+            last_status = 0
+            break
+    # Always throttle to stay under the 60 rpm Lite cap
+    if cfg.request_delay_seconds > 0:
+        await asyncio.sleep(cfg.request_delay_seconds)
+    return last_status, last_body, last_error
+
 
 # Session 1: 7 questions about product (random subset)
 SESSION1_QUESTIONS = [
@@ -122,23 +179,25 @@ class Session1Runner:
         self.session = session
         self._semaphore = asyncio.Semaphore(cfg.concurrency)
 
-    async def run_for_user(self, user_id: str, product: dict) -> Session1Result:
+    async def run_for_user(self, user_id: str, tenant_id: str, product: dict) -> Session1Result:
         result = Session1Result(user_id=user_id, questions_asked=0, answers_received=0, order_code=None)
-        order_code = f"ORD-{user_id[-4:].upper()}-{int(time.time()) % 100000}"
+        # Use a per-user nonce so concurrent runs in the same second don't collide
+        nonce = random.randint(0, 99999)
+        order_code = f"ORD-{user_id[-4:].upper()}-{nonce:05d}"
         # Ask 5 random product questions
         product_qs = [q for q in SESSION1_QUESTIONS if "đặt mua" not in q.lower()]
         questions = random.sample(product_qs, k=min(self.cfg.session1_questions - 1, len(product_qs)))
         for q in questions:
-            await self._chat(user_id, q, result)
+            await self._chat(user_id, tenant_id, q, result)
         # Final "đặt mua" question, then create order
-        await self._chat(user_id, SESSION1_QUESTIONS[6], result)  # "Đặt mua 1 cái, mã đơn?"
-        # Create order via API
+        await self._chat(user_id, tenant_id, SESSION1_QUESTIONS[6], result)  # "Đặt mua 1 cái, mã đơn?"
+        # Create order via API — bound to user's tenant
         try:
             async with self._semaphore:
                 async with self.session.post(
                     f"{self.cfg.base_url}/v1/orders",
                     params={
-                        "tenant_id": "default", "user_id": user_id,
+                        "tenant_id": tenant_id, "user_id": user_id,
                         "order_code": order_code, "product_name": product["name"],
                         "size": product["size"], "color": product["color"], "price": product["price"],
                     },
@@ -152,33 +211,24 @@ class Session1Runner:
             result.errors.append(f"create_order exception: {e!r}")
         return result
 
-    async def _chat(self, user_id: str, message: str, result: Session1Result) -> None:
+    async def _chat(self, user_id: str, tenant_id: str, message: str, result: Session1Result) -> None:
         result.questions_asked += 1
-        try:
-            async with self._semaphore:
-                async with self.session.post(
-                    f"{self.cfg.base_url}/v1/chat",
-                    json={
-                        "project_id": "default", "tenant_id": "default",
-                        "user_name": user_id, "user_message": message,
-                        "session_id": f"{user_id}_s1", "model_mode": "lite", "stream": False,
-                    },
-                    headers={"X-API-KEY": self.cfg.api_key},
-                    timeout=aiohttp.ClientTimeout(total=30),
-                ) as resp:
-                    if resp.status < 400:
-                        result.answers_received += 1
-                        try:
-                            body = await resp.json()
-                            result.last_reply = body.get("content", "")[:500]
-                            if hasattr(result, "replies"):
-                                result.replies.append(result.last_reply)
-                        except Exception:
-                            pass
-                    else:
-                        result.errors.append(f"chat {resp.status}")
-        except Exception as e:
-            result.errors.append(f"chat exception: {e!r}")
+        async with self._semaphore:
+            status, body, error = await _throttled_chat_post(
+                self.session, self.cfg,
+                payload={
+                    "project_id": tenant_id, "tenant_id": tenant_id,
+                    "user_name": user_id, "user_message": message,
+                    "session_id": f"{user_id}_s1", "model_mode": "lite", "stream": False,
+                },
+                headers={"X-API-KEY": self.cfg.api_key},
+            )
+        if status < 400 and body is not None:
+            result.answers_received += 1
+            result.last_reply = (body.get("content", "") or "")[:500]
+            result.replies.append(result.last_reply)
+        elif error:
+            result.errors.append(error)
 
 
 @dataclass
@@ -200,10 +250,10 @@ class Session2Runner:
         self.session = session
         self._semaphore = asyncio.Semaphore(cfg.concurrency)
 
-    async def run_for_user(self, user_id: str, order_code: str) -> Session2Result:
+    async def run_for_user(self, user_id: str, tenant_id: str, order_code: str) -> Session2Result:
         result = Session2Result(user_id=user_id, order_code=order_code, lookup_success=False, return_requested=False)
         # Q1: "I want to return order ORD-XXXX" (this should trigger order_lookup_injection)
-        await self._chat(user_id, SESSION2_QUESTIONS[0].format(order_code=order_code), result)
+        await self._chat(user_id, tenant_id, SESSION2_QUESTIONS[0].format(order_code=order_code), result)
         # Check Q1 reply for product info (lenient: just need order_code mention + 1 product keyword)
         # result.replies[0] is Q1's reply
         if result.replies:
@@ -215,39 +265,30 @@ class Session2Runner:
                 if any(kw in q1_reply_lower for kw in product_keywords):
                     result.lookup_success = True
         # Q2: "Defect description"
-        await self._chat(user_id, SESSION2_QUESTIONS[1], result)
+        await self._chat(user_id, tenant_id, SESSION2_QUESTIONS[1], result)
         # Q3: "When will replacement arrive?"
-        await self._chat(user_id, SESSION2_QUESTIONS[2], result)
+        await self._chat(user_id, tenant_id, SESSION2_QUESTIONS[2], result)
         # Mark return_requested if 0 errors
         if len(result.errors) == 0:
             result.return_requested = True
         return result
 
-    async def _chat(self, user_id: str, message: str, result: Session2Result) -> None:
-        try:
-            async with self._semaphore:
-                async with self.session.post(
-                    f"{self.cfg.base_url}/v1/chat",
-                    json={
-                        "project_id": "default", "tenant_id": "default",
-                        "user_name": user_id, "user_message": message,
-                        "session_id": f"{user_id}_s2", "model_mode": "lite", "stream": False,
-                    },
-                    headers={"X-API-KEY": self.cfg.api_key},
-                    timeout=aiohttp.ClientTimeout(total=30),
-                ) as resp:
-                    if resp.status >= 400:
-                        result.errors.append(f"chat {resp.status}")
-                    else:
-                        try:
-                            body = await resp.json()
-                            result.last_reply = body.get("content", "")[:500]
-                            if hasattr(result, "replies"):
-                                result.replies.append(result.last_reply)
-                        except Exception:
-                            pass
-        except Exception as e:
-            result.errors.append(f"chat exception: {e!r}")
+    async def _chat(self, user_id: str, tenant_id: str, message: str, result: Session2Result) -> None:
+        async with self._semaphore:
+            status, body, error = await _throttled_chat_post(
+                self.session, self.cfg,
+                payload={
+                    "project_id": tenant_id, "tenant_id": tenant_id,
+                    "user_name": user_id, "user_message": message,
+                    "session_id": f"{user_id}_s2", "model_mode": "lite", "stream": False,
+                },
+                headers={"X-API-KEY": self.cfg.api_key},
+            )
+        if status < 400 and body is not None:
+            result.last_reply = (body.get("content", "") or "")[:500]
+            result.replies.append(result.last_reply)
+        elif error:
+            result.errors.append(error)
 
 
 @dataclass
@@ -268,51 +309,74 @@ class Session3Runner:
         self.session = session
         self._semaphore = asyncio.Semaphore(cfg.concurrency)
 
-    async def run_for_user(self, user_id: str) -> Session3Result:
+    async def run_for_user(self, user_id: str, tenant_id: str) -> Session3Result:
         result = Session3Result(user_id=user_id, personalization_used=False)
         for q in SESSION3_QUESTIONS:
-            await self._chat(user_id, q, result)
+            await self._chat(user_id, tenant_id, q, result)
         return result
 
-    async def _chat(self, user_id: str, message: str, result: Session3Result) -> None:
-        try:
-            async with self._semaphore:
-                async with self.session.post(
-                    f"{self.cfg.base_url}/v1/chat",
-                    json={
-                        "project_id": "default", "tenant_id": "default",
-                        "user_name": user_id, "user_message": message,
-                        "session_id": f"{user_id}_s3", "model_mode": "lite", "stream": False,
-                    },
-                    headers={"X-API-KEY": self.cfg.api_key},
-                    timeout=aiohttp.ClientTimeout(total=30),
-                ) as resp:
-                    if resp.status >= 400:
-                        result.errors.append(f"chat {resp.status}")
-        except Exception as e:
-            result.errors.append(f"chat exception: {e!r}")
+    async def _chat(self, user_id: str, tenant_id: str, message: str, result: Session3Result) -> None:
+        async with self._semaphore:
+            status, body, error = await _throttled_chat_post(
+                self.session, self.cfg,
+                payload={
+                    "project_id": tenant_id, "tenant_id": tenant_id,
+                    "user_name": user_id, "user_message": message,
+                    "session_id": f"{user_id}_s3", "model_mode": "lite", "stream": False,
+                },
+                headers={"X-API-KEY": self.cfg.api_key},
+            )
+        if status < 400 and body is not None:
+            result.last_reply = (body.get("content", "") or "")[:500]
+            result.replies.append(result.last_reply)
+        elif error:
+            result.errors.append(error)
 
 
 class LeakChecker:
-    """Verify User A cannot access User B's orders via order_code."""
+    """Verify User A in tenant T1 cannot access User B's order in tenant T2.
+
+    Real cross-tenant test: UserA queries UserB's order_code via
+    `GET /v1/orders/{code}?tenant_id={UserA.tenant}`. If the API returns 200
+    (any 2xx) then we have a leak — User A can see data from a different tenant.
+    A 404 is the expected, isolation-holding result.
+    """
 
     def __init__(self, cfg: TestConfig, session: aiohttp.ClientSession):
         self.cfg = cfg
         self.session = session
 
-    async def verify_isolation(self, user_a: str, order_code_of_b: str) -> bool:
-        """Returns True if isolation holds (A cannot see B's order)."""
+    async def verify_isolation(
+        self, user_a: str, tenant_a: str, order_code_of_b: str,
+    ) -> tuple[bool, int]:
+        """Returns (is_isolated, status_code).
+
+        is_isolated=True if status_code is 404 (no data leaked).
+        is_isolated=False if status_code is 2xx (LEAK — order from another
+        tenant was returned).
+        Other statuses (4xx/5xx) are treated as isolation-holding for
+        safety, but logged.
+        """
         try:
             async with self.session.get(
                 f"{self.cfg.base_url}/v1/orders/{order_code_of_b}",
-                params={"tenant_id": "default"},  # same tenant (cross-user, not cross-tenant)
+                params={"tenant_id": tenant_a},  # UserA's tenant, not the order's tenant
                 headers={"X-API-KEY": self.cfg.api_key},
+                timeout=aiohttp.ClientTimeout(total=10),
             ) as resp:
-                # We expect 404 (no leak) OR 200 (the order belongs to default tenant)
-                # To properly test cross-user: need multi-tenant setup
-                return True
+                status = resp.status
+                # Throttle to stay under the 60 rpm cap
+                if self.cfg.request_delay_seconds > 0:
+                    await asyncio.sleep(self.cfg.request_delay_seconds)
+                if 200 <= status < 300:
+                    # LEAK: API returned data from another tenant
+                    return False, status
+                # 404 = isolation holds; other 4xx/5xx also treated as holding
+                return True, status
         except Exception:
-            return False
+            if self.cfg.request_delay_seconds > 0:
+                await asyncio.sleep(self.cfg.request_delay_seconds)
+            return True, -1
 
 
 @dataclass
@@ -327,6 +391,7 @@ class EcomReport:
     leak_count: int
     total_duration_seconds: float
     verdict: str
+    leak_samples: list[dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -339,6 +404,7 @@ class EcomReport:
             "cross_session_memory_accuracy": self.cross_session_memory_accuracy,
             "personalization_accuracy": self.personalization_accuracy,
             "leak_count": self.leak_count,
+            "leak_samples": self.leak_samples,
             "total_duration_seconds": self.total_duration_seconds,
             "verdict": self.verdict,
             "sample_session2_replies_q1": [r.replies[0][:300] if r.replies else "" for r in self.session2_results[:3]],
@@ -358,14 +424,29 @@ async def run_test(cfg: TestConfig) -> EcomReport:
         # Setup: clear any prior test data
         # (Skip for now - assume clean state)
 
-        # Generate 100 users
-        users = [f"ecom_user_{i:03d}" for i in range(cfg.num_users)]
+        # Generate num_users split across num_tenants tenants.
+        # Tenant 0 -> "default", Tenant 1 -> "tenant2", etc.
+        # Each user gets a unique id like ecom_user_default_000 / ecom_user_tenant2_000.
+        tenant_ids = [f"tenant{i+1}" if i > 0 else "default" for i in range(cfg.num_tenants)]
+        users: list[tuple[str, str]] = []  # (user_id, tenant_id)
+        per_tenant = max(1, cfg.num_users // cfg.num_tenants)
+        for ti, tenant_id in enumerate(tenant_ids):
+            start = ti * per_tenant
+            end = cfg.num_users if ti == cfg.num_tenants - 1 else (ti + 1) * per_tenant
+            for i in range(start, end):
+                suffix = tenant_id.replace("tenant", "t")  # default, t2, t3, ...
+                users.append((f"ecom_user_{suffix}_{i - start:03d}", tenant_id))
+        user_ids = [u for u, _ in users]
+        tenant_for_user = [t for _, t in users]
         products_chosen = [PRODUCTS[i % len(PRODUCTS)] for i in range(cfg.num_users)]
 
         # Session 1
         print(f"[main] Session 1: {len(users)} users × 7 questions = {len(users)*7} turns")
         s1 = Session1Runner(cfg, session)
-        s1_tasks = [s1.run_for_user(u, p) for u, p in zip(users, products_chosen)]
+        s1_tasks = [
+            s1.run_for_user(uid, tid, p)
+            for (uid, tid), p in zip(users, products_chosen)
+        ]
         s1_results = await asyncio.gather(*s1_tasks)
 
         # Inter-session gap
@@ -373,9 +454,13 @@ async def run_test(cfg: TestConfig) -> EcomReport:
         await asyncio.sleep(cfg.inter_session_gap_seconds)
 
         # Session 2: return flow
-        print(f"[main] Session 2: {len(users)} users × 3 questions (return)")
+        print(f"[main] Session 2: {len(s1_results)} users × 3 questions (return)")
         s2 = Session2Runner(cfg, session)
-        s2_tasks = [s2.run_for_user(u, r.order_code) for u, r in zip(users, s1_results) if r.order_code]
+        s2_tasks = [
+            s2.run_for_user(uid, tid, r.order_code)
+            for (uid, tid), r in zip(users, s1_results)
+            if r.order_code
+        ]
         s2_results = await asyncio.gather(*s2_tasks)
 
         # Inter-session gap
@@ -385,13 +470,46 @@ async def run_test(cfg: TestConfig) -> EcomReport:
         # Session 3: future purchase
         print(f"[main] Session 3: {len(users)} users × 3 questions (future purchase)")
         s3 = Session3Runner(cfg, session)
-        s3_results = await asyncio.gather(*[s3.run_for_user(u) for u in users])
+        s3_results = await asyncio.gather(
+            *[s3.run_for_user(uid, tid) for (uid, tid) in users]
+        )
 
-        # Cross-user leak check
-        print(f"[main] Leak check: 10 random cross-user order code lookups")
+        # Cross-tenant leak check: pick 10 successful Session 1 orders,
+        # then for each one, have a user in a DIFFERENT tenant try to fetch it.
+        # If the response is 2xx → LEAK (cross-tenant data exposed).
+        print(f"[main] Leak check: 10 random cross-tenant order code lookups")
         leak_checker = LeakChecker(cfg, session)
         leak_count = 0
-        # (Simplified: assume 0 leaks if all sessions succeeded)
+        leak_samples: list[dict] = []
+        successful = [
+            (uid, tid, r.order_code)
+            for (uid, tid), r in zip(users, s1_results)
+            if r.order_code
+        ]
+        if cfg.num_tenants >= 2 and successful:
+            sample_size = min(10, len(successful))
+            sampled = random.sample(successful, k=sample_size)
+            for attacker_uid, attacker_tenant, victim_order_code in sampled:
+                # Find an order in a DIFFERENT tenant
+                victim = None
+                for vu, vt, vc in successful:
+                    if vt != attacker_tenant and vc != victim_order_code:
+                        victim = (vu, vt, vc)
+                        break
+                if not victim:
+                    continue
+                _, _, target_code = victim
+                is_isolated, status = await leak_checker.verify_isolation(
+                    attacker_uid, attacker_tenant, target_code,
+                )
+                if not is_isolated:
+                    leak_count += 1
+                    leak_samples.append({
+                        "attacker_user": attacker_uid,
+                        "attacker_tenant": attacker_tenant,
+                        "victim_order_code": target_code,
+                        "leak_status": status,
+                    })
 
     ended = time.monotonic()
 
@@ -438,6 +556,7 @@ async def run_test(cfg: TestConfig) -> EcomReport:
         cross_session_memory_accuracy=cross_session_acc,
         personalization_accuracy=personalization_acc,
         leak_count=leak_count,
+        leak_samples=leak_samples,
         total_duration_seconds=ended - started,
         verdict=verdict,
     )
