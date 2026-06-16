@@ -27,8 +27,8 @@ from starlette.responses import Response
 # stay locked down to ``default-src 'none'``.
 # IMPORTANT: order matters — exact-match roots ("/", "/index.html")
 # are checked before prefix matches.
-_RELAXED_CSP_EXACT = {"/", "/index.html"}
-_RELAXED_CSP_PREFIXES = ("/admin", "/static")
+_RELAXED_CSP_EXACT = {"/", "/index.html", "/admin.html", "/manifest.json"}
+_RELAXED_CSP_PREFIXES = ("/admin/", "/static", "/icon-", "/sw")
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -54,10 +54,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         ):
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; "
-                "style-src 'self' 'unsafe-inline'; "
-                "script-src 'self' 'unsafe-inline'; "
-                "img-src 'self' data:; "
-                "connect-src 'self'"
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                "font-src 'self' https://fonts.gstatic.com; "
+                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "img-src 'self' data: https:; "
+                "connect-src 'self' https://cdn.jsdelivr.net; "
+                "manifest-src 'self'; "
+                "worker-src 'self'"
             )
         else:
             # API / JSON responses — no scripts, no media

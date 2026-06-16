@@ -1,7 +1,7 @@
 /* AI Hub Admin — Service Worker
    Cache-first for shell, network-first for /v1 API. */
 
-const CACHE_VERSION = 'aihub-admin-v6';
+const CACHE_VERSION = 'aihub-admin-v7';
 const SHELL_ASSETS = [
     '/admin.html',
     '/admin.css',
