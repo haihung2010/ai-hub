@@ -3,10 +3,13 @@
 # Config (2026-06-07): parallel=8, ctx=8192, --cache-type-k/v q4_0.
 # Reduced ctx from 24576 → 8192 after 5K load test (2026-06-07) showed
 # 95% VRAM usage at ctx=24K. ctx=8K frees ~450 MiB headroom.
-# Per-slot ctx = 8192/8 = 1024 tokens (sufficient for chat + summary,
-# may overflow for long multi-turn with search context — bump if needed).
-# Usage: PORT=8080 PARALLEL=8 CTX_SIZE=8192 ./start_lite_q8.sh
-#   To restore ctx=24K: CTX_SIZE=24576 ./start_lite_q8.sh
+# Per-slot ctx = 8192/4 = 2048 tokens (sufficient for chat + multi-session
+# memory + RAG context, prevents overflow for 5+ turn conversations).
+# Previous default (ctx=6144, parallel=8) gave per-slot=768 which truncated
+# the system prompt during the e-commerce 100-user test — see P3.5 fix
+# 2026-06-16 (default.md prompt + this per-slot tuning).
+# Usage: PORT=8080 PARALLEL=4 CTX_SIZE=8192 ./start_lite_q8.sh
+#   To restore higher concurrency: PARALLEL=8 CTX_SIZE=16384 ./start_lite_q8.sh
 
 set -euo pipefail
 
@@ -14,8 +17,8 @@ LLAMA_SERVER=${LLAMA_SERVER:-/home/hung/llama.cpp/build-cuda13/bin/llama-server}
 MODEL=${MODEL:-/home/hung/models/gemma-4-12b-it-Q4_K_M.gguf}
 HOST=${HOST:-127.0.0.1}
 PORT=${PORT:-8080}
-CTX_SIZE=${CTX_SIZE:-6144}
-PARALLEL=${PARALLEL:-8}
+CTX_SIZE=${CTX_SIZE:-8192}
+PARALLEL=${PARALLEL:-4}
 ALIAS=${ALIAS:-local-gemma4-12b-q4-text}
 LOG_FILE=${LOG_FILE:-/tmp/aihub-llama-lite-q8.log}
 PID_FILE=${PID_FILE:-/tmp/aihub-llama-server.pid}
