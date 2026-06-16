@@ -622,7 +622,24 @@ class AIService:
             return non_system
         return [Message(role="system", content="\n\n".join(system_parts)), *non_system]
 
+    @staticmethod
+    def _is_order_lookup_intent(user_message: str) -> bool:
+        r"""Return True if the user message looks like an order-lookup query.
+
+        Uses the same pattern as the order_lookup injection in chat_stream/chat
+        (``\bORD-[\w-]{2,20}\b``). Detecting it here lets us force
+        temperature=0 for deterministic output — the 12B model occasionally
+        hallucinated the order code at temperature=0.7, which the
+        e-commerce 100-user test caught as ~20% accuracy variance.
+        """
+        return bool(re.search(r"\bORD-[\w-]{2,20}\b", user_message, re.IGNORECASE))
+
     def _select_temperature(self, req: ChatRequest, prompt_temperature: float) -> float:
+        # Order-lookup queries need deterministic output — the model must
+        # echo the exact order code from the injected <order_lookup> block,
+        # not a hallucinated variant. Force temperature=0 for these.
+        if self._is_order_lookup_intent(req.user_message):
+            return 0.0
         return prompt_temperature
 
     def _select_model(self, req: ChatRequest, prompt_model: str) -> tuple[str, int]:

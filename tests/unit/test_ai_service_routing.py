@@ -88,3 +88,23 @@ def test_extract_explicit_search_query_returns_none_for_regular_message() -> Non
 def test_extract_explicit_search_query_case_insensitive() -> None:
     result = AIService._extract_explicit_search_query("/SEARCH: bitcoin price")
     assert result == "bitcoin price"
+
+
+# AIService._is_order_lookup_intent — detects order-code queries so we can
+# route them to a more reliable model setting (deterministic temperature).
+# E-commerce 100-user test (2026-06-14) showed ~20% accuracy variance with
+# temperature=0.7 because the LLM occasionally hallucinated the order code.
+@pytest.mark.unit
+@pytest.mark.no_isolated_db
+def test_is_order_lookup_intent_detects_ord_prefix() -> None:
+    assert AIService._is_order_lookup_intent("Tôi muốn đổi trả đơn ORD-2026-0001") is True
+    assert AIService._is_order_lookup_intent("ORD-ABC-12345 bị lỗi") is True
+    assert AIService._is_order_lookup_intent("mã đơn ord-_098-25842 là gì") is True
+
+
+@pytest.mark.unit
+@pytest.mark.no_isolated_db
+def test_is_order_lookup_intent_returns_false_for_normal_chat() -> None:
+    assert AIService._is_order_lookup_intent("Có áo thun trắng size M không?") is False
+    assert AIService._is_order_lookup_intent("Tôi muốn mua thêm áo thun") is False
+    assert AIService._is_order_lookup_intent("Bạn còn nhớ tôi mua gì hôm trước?") is False
