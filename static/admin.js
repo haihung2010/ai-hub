@@ -1617,10 +1617,19 @@ function cmRenderStats(s) {
 
 async function cmLoadUsers() {
     if (!CM_SELECTED_TENANT) return;
+    const grid = document.getElementById('cm-grid');
+    if (!ADMIN.apiKey) {
+        grid.innerHTML = `<div class="cm-empty" style="display:flex;flex-direction:column;gap:0.75rem;align-items:center"><div>🔑 API key required</div><button class="btn btn-primary" onclick="document.getElementById('api-key-btn').click()">Set API Key</button></div>`;
+        return;
+    }
+    grid.innerHTML = '<div class="cm-loading">Loading users…</div>';
     try {
         CM_USERS = await api(`/v1/admin/tenants/${encodeURIComponent(CM_SELECTED_TENANT)}/users?limit=50`);
         cmRenderUsers();
-    } catch (e) { toast(e.message, 'err'); }
+    } catch (e) {
+        grid.innerHTML = `<div class="cm-empty" style="color:var(--status-err)">⚠ ${escapeHtml(e.message)}<br><br><button class="btn" onclick="cmLoadUsers()">Retry</button></div>`;
+        toast(e.message, 'err');
+    }
 }
 
 const CM_COLOR_PALETTE = ["indigo", "emerald", "amber", "violet", "rose", "sky", "cyan", "fuchsia"];
@@ -2156,6 +2165,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // requiring the user to click anything. Refresh every 3s.
     if (ADMIN.apiKey) {
         startAutoRefresh(3000);
+    } else {
+        // No API key saved — auto-prompt so user sees data immediately
+        setTimeout(() => document.getElementById('api-key-btn')?.click(), 400);
     }
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/admin-sw.js').catch(() => {});
