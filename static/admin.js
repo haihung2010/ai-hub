@@ -1550,114 +1550,218 @@ function initIHITab() {
     refreshRagTable();
 }
 
-/* ====== Chat Audit Tab ====== */
+/* ====== Chat Audit Tab — Chat Monitor (3D user cards) ====== */
+let CM_USERS = [];
+let CM_SORT = "newest";
+let CM_SEARCH = "";
+let CM_SELECTED_TENANT = null;
+let CM_MODAL_USER_ID = null;
+let CM_INITIALIZED = false;
+
 function initAuditTab() {
-    const loadBtn = document.getElementById('audit-load-btn');
-    if (loadBtn) {
-        loadBtn.addEventListener('click', loadAuditMessages);
-    }
-    populateAuditSelectors();
-}
-
-async function populateAuditSelectors() {
-    try {
-        // Tenants → audit-project-id
-        const tenants = await api('/v1/admin/tenants');
-        const psel = document.getElementById('audit-project-id');
-        if (psel) {
-            psel.innerHTML = '<option value="">-- All projects --</option>' +
-                tenants.map(t => `<option value="${escapeHtml(t.project_id)}">${escapeHtml(t.project_id)} (${t.total_requests || 0} req)</option>`).join('');
-        }
-        // Recent users via management sessions
-        const sessions = await api('/v1/admin/management/sessions?limit=200');
-        const usel = document.getElementById('audit-user-id');
-        if (usel) {
-            const seen = new Set();
-            const users = [];
-            for (const s of sessions) {
-                if (s.user_id && !seen.has(s.user_id)) {
-                    seen.add(s.user_id);
-                    users.push(s);
-                }
-            }
-            usel.innerHTML = '<option value="">-- Select user (200 most recent) --</option>' +
-                users.map(u => {
-                    const label = u.user_name || (u.user_id ? u.user_id.slice(0, 8) : '?');
-                    const uid = u.user_id || '';
-                    return `<option value="${escapeHtml(uid)}">${escapeHtml(label)} • ${escapeHtml(u.tenant_id || '?')} (${escapeHtml(uid.slice(0, 8))}…)</option>`;
-                }).join('');
-        }
-    } catch (e) {
-        console.error('populateAuditSelectors failed', e);
-    }
-}
-
-async function loadAuditMessages() {
-    const userId = document.getElementById('audit-user-id').value.trim();
-    const projectId = document.getElementById('audit-project-id').value.trim();
-    const container = document.getElementById('audit-messages-container');
-
-    if (!userId) {
-        toast('User ID required', 'warn');
-        return;
-    }
-
-    container.innerHTML = '<div id="audit-table"></div>';
-    DataTable.setLoading('audit-table');
-
-    try {
-        const params = new URLSearchParams();
-        if (projectId) params.append('project_id', projectId);
-        params.append('limit', '200');
-
-        const messages = await api(`/v1/admin/users/${encodeURIComponent(userId)}/messages?${params.toString()}`);
-
-        if (!messages || messages.length === 0) {
-            container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:2rem">No messages found</div>';
-            return;
-        }
-
-        const pairs = [];
-        for (let i = 0; i < messages.length; i += 2) {
-            const userMsg = messages[i];
-            const assistantMsg = messages[i + 1];
-            if (userMsg && userMsg.role === 'user') {
-                pairs.push({
-                    idx: pairs.length + 1,
-                    time: userMsg.created_at,
-                    request: userMsg.content || '',
-                    response: assistantMsg ? (assistantMsg.content || '') : '',
-                    response_at: assistantMsg ? assistantMsg.created_at : null,
-                    session_id: userMsg.session_id || '',
-                    request_obj: userMsg,
-                    response_obj: assistantMsg,
-                });
-            }
-        }
-
-        AUDIT_PAIRS = pairs;
-
-        DataTable.mount('audit-table', {
-            columns: [
-                { key: 'idx', label: '#', sortable: true, align: 'right' },
-                { key: 'time', label: 'Time', sortable: true, format: (_, r) => `<span class="mono" style="font-size:0.7rem">${fmtDateTime(r.time)}</span>` },
-                { key: 'session_id', label: 'Session', search: true, format: (v) => `<span class="mono" style="font-size:0.65rem;color:var(--text-faint)" title="${escapeHtml(v || '')}">${escapeHtml((v || '').slice(0, 8))}</span>` },
-                { key: 'request', label: 'Request', search: true, format: (v) => `<span title="${escapeHtml(v || '')}">${escapeHtml((v || '').slice(0, 100))}${(v || '').length > 100 ? '…' : ''}</span>` },
-                { key: 'response', label: 'Response', search: true, format: (v) => v ? `<span style="color:#6ee7b7" title="${escapeHtml(v)}">${escapeHtml(v.slice(0, 100))}${v.length > 100 ? '…' : ''}</span>` : '<span style="color:var(--text-faint);font-style:italic">no reply</span>' },
-            ],
-            rows: pairs,
-            pageSize: 30,
-            rowActions: (r) => [
-                { icon: 'eye', tooltip: 'View full', onClick: () => showAuditDetail(r) },
-            ],
-            emptyState: { icon: 'database', title: 'No messages' },
+    if (CM_INITIALIZED) { cmRefresh(); return; }
+    CM_INITIALIZED = true;
+    document.getElementById('cm-refresh-btn').addEventListener('click', () => cmRefresh());
+    document.getElementById('cm-search').addEventListener('input', (e) => { CM_SEARCH = e.target.value.toLowerCase(); cmRenderUsers(); });
+    document.getElementById('cm-tenant').addEventListener('change', (e) => { CM_SELECTED_TENANT = e.target.value; cmLoadUsers(); });
+    document.querySelectorAll('#cm-seg span').forEach(s => {
+        s.addEventListener('click', () => {
+            CM_SORT = s.dataset.sort;
+            document.querySelectorAll('#cm-seg span').forEach(x => x.classList.toggle('cm-seg-on', x === s));
+            cmRenderUsers();
         });
+    });
+    // Modal controls
+    document.getElementById('cm-modal-close').addEventListener('click', closeCmModal);
+    document.getElementById('cm-modal-refresh').addEventListener('click', cmLoadMessages);
+    document.getElementById('cm-modal').addEventListener('click', (e) => { if (e.target.id === 'cm-modal') closeCmModal(); });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.getElementById('cm-modal').classList.contains('active')) closeCmModal();
+    });
+    cmRefresh();
+}
 
-        toast(`Loaded ${pairs.length} request/response pairs`, 'ok');
+async function cmRefresh() {
+    try {
+        const [tenants, stats] = await Promise.all([api('/v1/admin/tenants'), api('/v1/admin/stats')]);
+        const sel = document.getElementById('cm-tenant');
+        if (sel) {
+            sel.innerHTML = tenants.map(t => `<option value="${escapeHtml(t.project_id)}">${escapeHtml(t.project_id)} (${t.user_count || 0} users)</option>`).join('');
+            if (!CM_SELECTED_TENANT && tenants.length) { CM_SELECTED_TENANT = tenants[0].project_id; sel.value = CM_SELECTED_TENANT; }
+        }
+        cmRenderStats(stats);
+        await cmLoadUsers();
     } catch (e) {
-        container.innerHTML = `<div style="color:var(--status-err)">${escapeHtml(e.message)}</div>`;
+        console.error('cmRefresh failed', e);
         toast(e.message, 'err');
     }
+}
+
+function cmRenderStats(s) {
+    const lat = s.latency || {};
+    const total = s.total_requests || 0;
+    const ok = s.success_requests || 0;
+    const err = s.error_requests || 0;
+    const q = s.queue_wait || {};
+    document.getElementById('cms-total').textContent = Number(total).toLocaleString('en-US');
+    document.getElementById('cms-queued').textContent = q.requests ? `${fmtInt(q.requests)} queued · ${(q.avg_ms/1000).toFixed(1)}s avg wait` : '— queued';
+    document.getElementById('cms-ok').textContent = Number(ok).toLocaleString('en-US');
+    document.getElementById('cms-ok-pct').textContent = total ? `${((ok/total)*100).toFixed(1)}%` : '—';
+    document.getElementById('cms-err').textContent = Number(err).toLocaleString('en-US');
+    document.getElementById('cms-err-pct').textContent = total ? `${((err/total)*100).toFixed(2)}%` : '—';
+    document.getElementById('cms-p95').innerHTML = (lat.p95_ms ? Math.round(lat.p95_ms).toLocaleString('en-US') : '—') + '<span class="stat-sub mono" style="font-size:0.7rem;margin-left:3px">ms</span>';
+    document.getElementById('cms-avg').textContent = 'avg ' + (lat.avg_ms ? (lat.avg_ms/1000).toFixed(2) + 's' : '—');
+    document.getElementById('cms-cost').innerHTML = (s.month_cost_usd != null ? '$' + s.month_cost_usd.toFixed(4) : '—') + '<span class="stat-sub mono" style="font-size:0.7rem;margin-left:3px">USD</span>';
+    document.getElementById('cms-fallback').textContent = s.fallback_requests ? `${s.fallback_requests} fallbacks` : '—';
+}
+
+async function cmLoadUsers() {
+    if (!CM_SELECTED_TENANT) return;
+    try {
+        CM_USERS = await api(`/v1/admin/tenants/${encodeURIComponent(CM_SELECTED_TENANT)}/users?limit=50`);
+        cmRenderUsers();
+    } catch (e) { toast(e.message, 'err'); }
+}
+
+const CM_COLOR_PALETTE = ["indigo", "emerald", "amber", "violet", "rose", "sky", "cyan", "fuchsia"];
+function cmAvatarColor(name) {
+    if (!name) return CM_COLOR_PALETTE[0];
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = ((h << 5) - h + name.charCodeAt(i)) | 0;
+    return CM_COLOR_PALETTE[Math.abs(h) % CM_COLOR_PALETTE.length];
+}
+
+function cmRenderUsers() {
+    let arr = [...CM_USERS];
+    if (CM_SEARCH) arr = arr.filter(u => (u.name || '').toLowerCase().includes(CM_SEARCH));
+    const ts = (iso) => iso ? new Date(iso).getTime() : 0;
+    if (CM_SORT === 'newest') arr.sort((a, b) => ts(b.last_message_at) - ts(a.last_message_at));
+    else if (CM_SORT === 'oldest') arr.sort((a, b) => ts(a.last_message_at) - ts(b.last_message_at));
+    else if (CM_SORT === 'name') arr.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    else if (CM_SORT === 'request_count') arr.sort((a, b) => (b.message_count || 0) - (a.message_count || 0));
+
+    document.getElementById('cm-count').textContent = CM_SEARCH ? `${arr.length} / ${CM_USERS.length}` : CM_USERS.length;
+    const grid = document.getElementById('cm-grid');
+    if (!CM_USERS.length) {
+        grid.innerHTML = '<div class="cm-empty">No users in this tenant.</div>';
+        return;
+    }
+    if (!arr.length) {
+        grid.innerHTML = `<div class="cm-empty">No matches for "${escapeHtml(CM_SEARCH)}"</div>`;
+        return;
+    }
+    const fmtTime = (iso) => iso ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—';
+    const fmtInt = (n) => n == null ? '—' : Number(n).toLocaleString('en-US');
+    grid.innerHTML = arr.map(u => {
+        const color = cmAvatarColor(u.name);
+        return `
+        <div class="cm-card ${color}" data-id="${escapeHtml(u.id)}" data-name="${escapeHtml(u.name)}" tabindex="0" title="${escapeHtml(u.name)} — click to view chat">
+            <div class="cm-name">
+                <span>${escapeHtml(u.name || u.id.slice(0, 8))}</span>
+                <span class="cm-arrow">→</span>
+            </div>
+            <div class="cm-stack">
+                <div class="cm-row">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span class="cm-v">${fmtTime(u.last_message_at)}</span>
+                    <span class="cm-l">time</span>
+                </div>
+                <div class="cm-row">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <span class="cm-v">${fmtInt(u.message_count)}</span>
+                    <span class="cm-l">msgs</span>
+                </div>
+                <div class="cm-row">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    <span class="cm-v">${fmtInt(u.session_count)}</span>
+                    <span class="cm-l">sess</span>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+
+    // 3D tilt — aihub tenant-card style
+    grid.querySelectorAll('.cm-card').forEach(card => {
+        card.addEventListener('mousemove', (e) => {
+            const r = card.getBoundingClientRect();
+            const x = (e.clientX - r.left) / r.width - 0.5;
+            const y = (e.clientY - r.top) / r.height - 0.5;
+            card.style.transform = `rotateY(${x * 15}deg) rotateX(${-y * 15}deg) translateY(-8px) scale(1.04)`;
+            card.style.zIndex = '10';
+        });
+        card.addEventListener('mouseleave', () => { card.style.transform = ''; card.style.zIndex = ''; });
+        const open = () => openCmModal(card.dataset.id, card.dataset.name);
+        card.addEventListener('click', open);
+        card.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); open(); } });
+    });
+}
+
+// ===== Modal =====
+function openCmModal(userId, userName) {
+    CM_MODAL_USER_ID = userId;
+    const t = document.getElementById('cm-title');
+    t.firstChild.textContent = userName + ' ';
+    document.getElementById('cm-id').textContent = userId.slice(0, 8);
+    document.getElementById('cm-msg-count').textContent = '…';
+    document.getElementById('cm-modal-body').innerHTML = '<div class="cm-empty">Loading messages…</div>';
+    document.getElementById('cm-modal').classList.add('active');
+    cmLoadMessages();
+}
+
+function closeCmModal() {
+    document.getElementById('cm-modal').classList.remove('active');
+    CM_MODAL_USER_ID = null;
+}
+
+async function cmLoadMessages() {
+    if (!CM_MODAL_USER_ID) return;
+    try {
+        const params = new URLSearchParams();
+        if (CM_SELECTED_TENANT) params.append('project_id', CM_SELECTED_TENANT);
+        params.append('limit', '200');
+        params.append('truncate', '0');
+        const msgs = await api(`/v1/admin/users/${encodeURIComponent(CM_MODAL_USER_ID)}/messages?${params.toString()}`);
+        document.getElementById('cm-msg-count').textContent = `${msgs.length} msgs`;
+        if (!msgs.length) {
+            document.getElementById('cm-modal-body').innerHTML = '<div class="cm-empty">No messages yet for this user.</div>';
+            return;
+        }
+        msgs.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        document.getElementById('cm-modal-body').innerHTML = msgs.map(m => cmRenderMessage(m)).join('');
+        const body = document.getElementById('cm-modal-body');
+        body.scrollTop = body.scrollHeight;
+    } catch (e) {
+        document.getElementById('cm-modal-body').innerHTML = `<div class="cm-empty" style="color:var(--status-err)">${escapeHtml(e.message)}</div>`;
+        toast(e.message, 'err');
+    }
+}
+
+function cmRenderMessage(m) {
+    const ts = m.created_at ? new Date(m.created_at).toLocaleString('en-GB') : '—';
+    const model = m.model || '—';
+    const lat = m.latency_ms ? (m.latency_ms / 1000).toFixed(2) + 's' : '—';
+    const tokens = m.prompt_tokens != null || m.completion_tokens != null
+        ? `${(m.prompt_tokens || 0) + (m.completion_tokens || 0)} (${m.prompt_tokens || 0}→${m.completion_tokens || 0})`
+        : '—';
+    const cost = m.cost_usd != null ? `$${Number(m.cost_usd).toFixed(6)}` : '';
+    const icon = m.role === 'user' ? 'U' : m.role === 'assistant' ? 'A' : 'S';
+    return `
+    <div class="cmm ${escapeHtml(m.role)}">
+        <div class="cmm-head">
+            <div class="cmm-icon">${icon}</div>
+            <span class="cmm-role">${escapeHtml(m.role)}</span>
+            <span class="cmm-spacer"></span>
+            <span class="cmm-time">${ts}</span>
+        </div>
+        <div class="cmm-content">${escapeHtml(m.content || '').replace(/\n/g, '<br>')}</div>
+        <div class="cmm-meta">
+            <span>model: <span class="v">${escapeHtml(model)}</span></span>
+            <span>${lat}</span>
+            <span>${tokens} tok</span>
+            ${cost ? `<span>${cost}</span>` : ''}
+            ${m.is_summarized ? `<span style="color:var(--status-warn)">summarized</span>` : ''}
+        </div>
+    </div>`;
 }
 
 let AUDIT_PAIRS = [];
