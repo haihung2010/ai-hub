@@ -71,3 +71,41 @@ def test_cache_returns_same_instance() -> None:
     a = load_prompt("iot")
     b = load_prompt("iot")
     assert a is b
+
+
+@pytest.mark.unit
+@pytest.mark.no_isolated_db
+def test_default_prompt_instructs_order_lookup() -> None:
+    """Default prompt must tell the LLM to use injected <order_lookup> data.
+
+    Context: ai_service.py injects an <order_lookup> block into the system
+    prompt when the user message contains an order code (ORD-XXXX). The
+    injected block carries real order fields (product, size, color, price,
+    status) from the orders table. Without explicit instructions the LLM
+    echoes the order code from the user message and gives generic responses
+    — observed in the e-commerce 100-user test (order_lookup_accuracy 0.4
+    vs 0.9 target, 2026-06-14).
+
+    This test pins the contract: every project that resolves to default.md
+    (including unknown project_ids) must have an instruction the LLM can
+    follow when it sees the <order_lookup> tag.
+    """
+    load_prompt.cache_clear()
+    p = load_prompt("default")
+    # 1) The injected tag must be referenced by name (string match, case-insensitive)
+    assert "<order_lookup>" in p.system_prompt, (
+        "default.md does not mention the <order_lookup> injected block. "
+        "Add a section instructing the LLM to use its contents."
+    )
+    # 2) There must be an instruction to USE the data, not just mention the tag
+    lowered = p.system_prompt.lower()
+    use_phrases = [
+        "dùng thông tin",
+        "sử dụng thông tin",
+        "dựa trên",
+        "use the",
+    ]
+    assert any(phrase in lowered for phrase in use_phrases), (
+        f"default.md must include a 'use the data' instruction. "
+        f"Expected one of {use_phrases}, but got prompt:\n{p.system_prompt}"
+    )
