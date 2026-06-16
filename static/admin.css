@@ -376,9 +376,11 @@ body {
 .ring-label .l { font-size: 0.625rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.14em; }
 
 /* ====== Misc ====== */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
+::-webkit-scrollbar { width: 12px; height: 12px; background: rgba(15, 23, 42, 0.5); }
+::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); border-radius: 6px; }
+::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.55); border-radius: 6px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.85); background-clip: padding-box; }
+::-webkit-scrollbar-corner { background: transparent; }
 
 .section-title {
     font-size: 0.6875rem; font-weight: 800;
