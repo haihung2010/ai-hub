@@ -54,9 +54,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         ):
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; "
-                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com "
+                "https://cdnjs.cloudflare.com; "
                 "font-src 'self' https://fonts.gstatic.com; "
-                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "script-src 'self' 'unsafe-inline' "
+                "https://cdn.jsdelivr.net https://cdn.tailwindcss.com "
+                "https://cdnjs.cloudflare.com; "
                 "img-src 'self' data: https:; "
                 "connect-src 'self' https://cdn.jsdelivr.net; "
                 "manifest-src 'self'; "

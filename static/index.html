@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Hub Chatbot</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <style>
         html, body { height: 100%; }
         body { min-height: 100dvh; overflow: hidden; }
@@ -14,7 +15,6 @@
             max-width: min(85%, 36rem);
             overflow-wrap: anywhere;
             word-break: break-word;
-            white-space: pre-wrap;
         }
         .input-shell { padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }
         .loader {
@@ -33,7 +33,134 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* ===== Markdown content inside chat bubbles ===== */
+        .bubble-content { line-height: 1.55; }
+        .bubble-content > *:first-child { margin-top: 0; }
+        .bubble-content > *:last-child { margin-bottom: 0; }
+        .bubble-content h1, .bubble-content h2, .bubble-content h3,
+        .bubble-content h4, .bubble-content h5, .bubble-content h6 {
+            margin: 0.7em 0 0.4em; font-weight: 700; line-height: 1.25;
+        }
+        .bubble-content h1 { font-size: 1.25rem; }
+        .bubble-content h2 { font-size: 1.15rem; }
+        .bubble-content h3 { font-size: 1.05rem; }
+        .bubble-content h4, .bubble-content h5, .bubble-content h6 { font-size: 0.95rem; }
+        .bubble-content p { margin: 0.4em 0; }
+        .bubble-content strong { font-weight: 700; }
+        .bubble-content em { font-style: italic; }
+        .bubble-content a { color: #93c5fd; text-decoration: underline; word-break: break-all; }
+        .bubble-content a:hover { color: #bfdbfe; }
+        .bubble-content code {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 4px; padding: 1px 5px;
+            font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+            font-size: 0.85em; white-space: pre-wrap;
+        }
+        .bubble-content pre {
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px; padding: 10px 12px; margin: 0.5em 0;
+            overflow-x: auto; font-size: 0.8rem; line-height: 1.5;
+        }
+        .bubble-content pre code {
+            background: transparent; border: none; padding: 0;
+            color: #e6e6e6; font-size: inherit; display: block; white-space: pre;
+        }
+        .bubble-content ul, .bubble-content ol { margin: 0.4em 0; padding-left: 1.5em; list-style-position: outside; }
+        .bubble-content ul { list-style-type: disc; }
+        .bubble-content ol { list-style-type: decimal; }
+        .bubble-content li { margin: 0.15em 0; }
+        .bubble-content blockquote {
+            margin: 0.5em 0; padding: 0.4em 0.8em;
+            border-left: 3px solid #6366f1;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 0 4px 4px 0;
+        }
+        .bubble-content hr { border: none; border-top: 1px solid rgba(255, 255, 255, 0.12); margin: 0.8em 0; }
+
+        /* ===== Bubble action buttons (hover, but always tap-able on touch) ===== */
+        .message-bubble.group { position: relative; }
+        .bubble-actions {
+            position: absolute; top: 6px; right: 6px;
+            display: inline-flex; gap: 4px; opacity: 0.25;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px; padding: 2px;
+            transition: opacity 0.15s;
+        }
+        .bubble-actions:hover,
+        .message-bubble.group:hover .bubble-actions,
+        .bubble-actions.show { opacity: 1; }
+        @media (hover: none) { .bubble-actions { opacity: 0.7; } }
+        .bubble-action {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 26px; height: 26px;
+            background: transparent; border: none;
+            color: #cbd5e1; cursor: pointer; border-radius: 4px;
+            transition: all 0.15s;
+        }
+        .bubble-action:hover { background: rgba(99, 102, 241, 0.2); color: #e0e7ff; }
+        .bubble-action.ok { color: #4ade80; }
+        .bubble-action:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ===== Stop button (replaces Send while streaming) ===== */
+        .send-btn-stop {
+            background: #dc2626 !important;
+        }
+        .send-btn-stop:hover { background: #b91c1c !important; }
+
+        /* ===== Scroll-to-bottom FAB ===== */
+        .scroll-fab {
+            position: absolute; bottom: 110px; right: 16px; z-index: 30;
+            width: 40px; height: 40px;
+            display: none; align-items: center; justify-content: center;
+            background: #1e293b; border: 1px solid #475569; border-radius: 50%;
+            color: #e2e8f0; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            transition: all 0.2s;
+        }
+        .scroll-fab.show { display: inline-flex; }
+        .scroll-fab:hover { background: #334155; transform: translateY(-1px); }
+        @media (min-width: 640px) { .scroll-fab { bottom: 130px; } }
+
+        /* ===== Edit textarea (user bubble) ===== */
+        .bubble-edit-textarea {
+            width: 100%; min-height: 60px; resize: vertical;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px; padding: 8px 10px;
+            color: white; font: inherit; outline: none;
+        }
+        .bubble-edit-textarea:focus { border-color: #6366f1; }
+        .bubble-edit-actions {
+            display: flex; gap: 6px; justify-content: flex-end; margin-top: 6px;
+        }
+        .bubble-edit-actions button {
+            padding: 4px 12px; font-size: 0.75rem; font-weight: 600;
+            border-radius: 6px; border: none; cursor: pointer;
+        }
+        .bubble-edit-save { background: #2563eb; color: white; }
+        .bubble-edit-save:hover { background: #1d4ed8; }
+        .bubble-edit-cancel { background: transparent; color: #94a3b8; border: 1px solid #475569 !important; }
+        .bubble-edit-cancel:hover { background: rgba(255, 255, 255, 0.05); }
+
+        /* ===== Mini toast (transient feedback) ===== */
+        .mini-toast {
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+            background: #0f172a; border: 1px solid #475569; color: #f1f5f9;
+            padding: 8px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+            z-index: 9999; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            animation: toast-in 0.2s ease-out, toast-out 0.2s ease-in 1.3s forwards;
+        }
+        .mini-toast.ok { border-color: #4ade80; color: #bbf7d0; }
+        .mini-toast.err { border-color: #f87171; color: #fecaca; }
+        @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+        @keyframes toast-out { to { opacity: 0; transform: translate(-50%, 10px); } }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
+    <script src="/markdown.js?v=2026-06-17-shared" defer></script>
 </head>
 <body class="bg-slate-950 font-sans text-slate-100">
     <div class="app-shell mx-auto flex max-w-2xl flex-col overflow-hidden p-2 sm:p-4">
@@ -122,10 +249,13 @@
             </div>
         </div>
 
-        <div id="chat-window" class="chat-container mb-2 flex min-h-0 flex-1 flex-col space-y-3 overflow-y-auto rounded-xl border border-slate-800 bg-slate-900 p-3 shadow-2xl shadow-black/20 sm:mb-4 sm:space-y-4 sm:p-6">
+        <div id="chat-window" class="chat-container relative mb-2 flex min-h-0 flex-1 flex-col space-y-3 overflow-y-auto rounded-xl border border-slate-800 bg-slate-900 p-3 shadow-2xl shadow-black/20 sm:mb-4 sm:space-y-4 sm:p-6">
             <div class="self-start rounded-2xl rounded-tl-none border border-slate-700 bg-slate-800 p-4 text-slate-100 shadow-sm message-bubble">
                 Xin chào! Mình là AI Assistant chạy local trên GPU. Gõ câu hỏi để bắt đầu nhé.
             </div>
+            <button id="scroll-fab" class="scroll-fab" title="Scroll to bottom" aria-label="Scroll to bottom">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
         </div>
 
         <div class="input-shell shrink-0">
@@ -571,44 +701,263 @@
             });
         }
 
-        // ── Chat bubble helpers ────────────────────────────────────────
-        function addBubble(text, isUser = false, images = []) {
+        // ── Mini toast (transient feedback) ───────────────────────────
+        let _toastTimer = null;
+        function showMiniToast(message, type = '') {
+            const existing = document.querySelector('.mini-toast');
+            if (existing) existing.remove();
+            if (_toastTimer) clearTimeout(_toastTimer);
+            const el = document.createElement('div');
+            el.className = 'mini-toast' + (type ? ' ' + type : '');
+            el.textContent = message;
+            document.body.appendChild(el);
+            _toastTimer = setTimeout(() => el.remove(), 1500);
+        }
+
+        // ── Scroll-to-bottom FAB ─────────────────────────────────────
+        const scrollFab = document.getElementById('scroll-fab');
+        function checkScrollPosition() {
+            if (!chatWindow) return;
+            const threshold = 80;
+            const atBottom = (chatWindow.scrollHeight - chatWindow.scrollTop - chatWindow.clientHeight) < threshold;
+            scrollFab.classList.toggle('show', !atBottom);
+        }
+        chatWindow.addEventListener('scroll', checkScrollPosition);
+        scrollFab.addEventListener('click', () => {
+            chatWindow.scrollTo({ top: chatWindow.scrollHeight, behavior: 'smooth' });
+        });
+
+        // ── Streaming state + Stop button ───────────────────────────
+        let _streamController = null;
+        let _isStreaming = false;
+        function setStreamingState(streaming) {
+            _isStreaming = streaming;
+            if (streaming) {
+                sendBtn.textContent = '⏹ Stop';
+                sendBtn.classList.add('send-btn-stop');
+                sendBtn.disabled = false;
+            } else {
+                sendBtn.textContent = 'Send';
+                sendBtn.classList.remove('send-btn-stop');
+                _streamController = null;
+            }
+        }
+
+        // ── Bubble factory ──────────────────────────────────────────
+        // Returns an object: { wrapper, bubble, content, isUser, isEditing, isStreaming,
+        //                    imagePreviews, lastPayload, getText(), setText(), append() }
+        function addBubble(text, isUser = false, imagePreviews = [], opts = {}) {
             const wrapper = document.createElement('div');
             wrapper.className = isUser ? 'flex justify-end' : 'flex justify-start';
-            const div = document.createElement('div');
-            div.className = isUser
-                ? 'bg-blue-600 text-white p-4 rounded-2xl rounded-tr-none message-bubble shadow-md'
-                : 'border border-slate-700 bg-slate-800 text-slate-100 p-4 rounded-2xl rounded-tl-none message-bubble shadow-sm';
-            if (images.length > 0) {
-                images.forEach((src) => {
+            wrapper.dataset.role = isUser ? 'user' : 'assistant';
+
+            const bubble = document.createElement('div');
+            bubble.className = isUser
+                ? 'bg-blue-600 text-white p-4 rounded-2xl rounded-tr-none message-bubble shadow-md group'
+                : 'border border-slate-700 bg-slate-800 text-slate-100 p-4 rounded-2xl rounded-tl-none message-bubble shadow-sm group';
+
+            if (imagePreviews && imagePreviews.length) {
+                imagePreviews.forEach((src) => {
                     const img = document.createElement('img');
                     img.src = src;
                     img.className = 'max-w-full h-auto rounded-lg mb-2 border border-blue-400';
-                    div.appendChild(img);
+                    bubble.appendChild(img);
                 });
             }
-            const textSpan = document.createElement('span');
-            textSpan.textContent = text;
-            div.appendChild(textSpan);
-            wrapper.appendChild(div);
+
+            const content = document.createElement('div');
+            content.className = 'bubble-content';
+            bubble.appendChild(content);
+            wrapper.appendChild(bubble);
             chatWindow.appendChild(wrapper);
             chatWindow.scrollTop = chatWindow.scrollHeight;
-            return textSpan;
+            checkScrollPosition();
+
+            let _text = text || '';
+            const api = {
+                wrapper, bubble, content,
+                isUser, isEditing: false, isStreaming: false,
+                imagePreviews: imagePreviews || [],
+                lastPayload: opts.payload || null,
+                getText() { return _text; },
+                setText(v) { _text = v || ''; api._renderContent(); },
+                append(chunk) { _text = (_text || '') + (chunk || ''); api._renderContent(); },
+                _renderContent() {
+                    if (api.isUser) {
+                        content.textContent = _text;
+                    } else {
+                        const rendered = (window.AIHUB_MARKDOWN && window.AIHUB_MARKDOWN.render(_text)) || _text;
+                        content.innerHTML = rendered;
+                        if (window.AIHUB_MARKDOWN) window.AIHUB_MARKDOWN.highlightAll(content);
+                    }
+                },
+            };
+            api._renderContent();
+            if (!isUser) attachAssistantActions(api);
+            else attachUserActions(api);
+            return api;
         }
 
-        // Create an empty assistant bubble and return its text span (for streaming)
-        function createAssistantBubble() {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'flex justify-start';
-            const div = document.createElement('div');
-            div.className = 'border border-slate-700 bg-slate-800 text-slate-100 p-4 rounded-2xl rounded-tl-none message-bubble shadow-sm';
-            const textSpan = document.createElement('span');
-            textSpan.className = 'cursor-blink';
-            div.appendChild(textSpan);
-            wrapper.appendChild(div);
-            chatWindow.appendChild(wrapper);
-            chatWindow.scrollTop = chatWindow.scrollHeight;
-            return textSpan;
+        function createAssistantBubble(opts = {}) {
+            const api = addBubble('', false, [], opts);
+            api.isStreaming = true;
+            api.content.classList.add('cursor-blink');
+            return api;
+        }
+
+        // ── Action buttons (Copy/Regenerate for assistant, Edit for user) ──
+        function attachAssistantActions(bubble) {
+            if (bubble.wrapper.querySelector('.bubble-actions')) return;
+            const actions = document.createElement('div');
+            actions.className = 'bubble-actions';
+            const regenDisabled = bubble.isStreaming ? 'disabled' : '';
+            actions.innerHTML = `
+                <button class="bubble-action" data-action="copy" title="Copy message" aria-label="Copy">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+                <button class="bubble-action" data-action="regenerate" title="Regenerate response" aria-label="Regenerate" ${regenDisabled}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/></svg>
+                </button>`;
+            bubble.bubble.appendChild(actions);
+
+            actions.addEventListener('click', (e) => {
+                const btn = e.target.closest('.bubble-action');
+                if (!btn || btn.disabled) return;
+                if (btn.dataset.action === 'copy') {
+                    navigator.clipboard.writeText(bubble.getText() || '').then(() => {
+                        btn.classList.add('ok');
+                        showMiniToast('Copied!', 'ok');
+                        setTimeout(() => btn.classList.remove('ok'), 1200);
+                    }).catch(() => showMiniToast('Copy failed', 'err'));
+                } else if (btn.dataset.action === 'regenerate') {
+                    regenerateResponse(bubble);
+                }
+            });
+        }
+
+        function attachUserActions(bubble) {
+            if (bubble.wrapper.querySelector('.bubble-actions')) return;
+            const actions = document.createElement('div');
+            actions.className = 'bubble-actions';
+            actions.innerHTML = `
+                <button class="bubble-action" data-action="edit" title="Edit message" aria-label="Edit">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>`;
+            bubble.bubble.appendChild(actions);
+
+            actions.addEventListener('click', (e) => {
+                const btn = e.target.closest('.bubble-action');
+                if (!btn) return;
+                if (btn.dataset.action === 'edit') startEditUserBubble(bubble);
+            });
+        }
+
+        // ── Edit user message → resend ──────────────────────────────
+        function startEditUserBubble(bubble) {
+            if (bubble.isEditing) return;
+            bubble.isEditing = true;
+            const original = bubble.getText() || '';
+            const ta = document.createElement('textarea');
+            ta.className = 'bubble-edit-textarea';
+            ta.value = original;
+            const editActions = document.createElement('div');
+            editActions.className = 'bubble-edit-actions';
+            editActions.innerHTML = `
+                <button class="bubble-edit-cancel" type="button">Cancel</button>
+                <button class="bubble-edit-save" type="button">Save & Resend</button>`;
+            bubble.content.replaceWith(ta);
+            bubble.bubble.appendChild(editActions);
+            const oldContent = bubble.content;
+            bubble.content = ta;
+            setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 0);
+
+            const finish = (newText) => {
+                bubble.isEditing = false;
+                bubble.content = oldContent;
+                ta.replaceWith(oldContent);
+                editActions.remove();
+                if (newText != null && newText !== original) {
+                    bubble.setText(newText);
+                    // Remove this user bubble and everything after it, then re-send
+                    const idx = Array.from(chatWindow.children).indexOf(bubble.wrapper);
+                    while (chatWindow.children.length > idx) chatWindow.lastChild.remove();
+                    resendMessage(newText, bubble.imagePreviews, bubble.lastPayload);
+                }
+            };
+            editActions.querySelector('.bubble-edit-cancel').addEventListener('click', () => finish(null));
+            editActions.querySelector('.bubble-edit-save').addEventListener('click', () => {
+                const t = ta.value.trim();
+                if (!t) { showMiniToast('Message cannot be empty', 'err'); return; }
+                finish(t);
+            });
+            ta.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); editActions.querySelector('.bubble-edit-save').click(); }
+                if (e.key === 'Escape') { e.preventDefault(); finish(null); }
+            });
+        }
+
+        // ── Regenerate last response ────────────────────────────────
+        function regenerateResponse(assistantBubble) {
+            // Find the preceding user bubble
+            let prev = assistantBubble.wrapper.previousElementSibling;
+            while (prev && prev.dataset.role !== 'user') prev = prev.previousElementSibling;
+            if (!prev) { showMiniToast('No preceding user message found', 'err'); return; }
+            // Extract user bubble API from DOM (cheaper: just read text + images)
+            const userText = prev.querySelector('.bubble-content')?.textContent || '';
+            const userImages = Array.from(prev.querySelectorAll('img')).map(i => i.src);
+            // Remove this assistant bubble and any subsequent
+            const idx = Array.from(chatWindow.children).indexOf(assistantBubble.wrapper);
+            while (chatWindow.children.length > idx) chatWindow.lastChild.remove();
+            // Re-send — re-use the stored payload (preserves session_id, mode, etc.)
+            resendMessage(userText, userImages, null);  // payload not needed — resendMessage uses current state
+        }
+
+        // Shared re-send used by Edit + Regenerate
+        async function resendMessage(text, imagePreviews, _unusedPayload) {
+            if (!await ensureApiKey()) return;
+            if (!await ensureUserName()) return;
+            if (!text && (!imagePreviews || !imagePreviews.length)) return;
+
+            // Add user bubble (mirror of sendMessage)
+            addBubble(text || 'Analyze this image', true, imagePreviews || []);
+
+            const startTime = performance.now();
+            const useStream = streamEnabled;
+            statusDiv.innerHTML = useStream
+                ? '<span class="loader mr-2"></span> Đang trả lời...'
+                : `<span class="loader mr-2"></span> ${currentMode === 'lite' ? 'Gemma 4' : 'Thinking'} đang xử lý...`;
+            sendBtn.disabled = true;
+            _startQueuePoll();
+
+            const payload = {
+                project_id: currentProject,
+                user_name: currentUserName,
+                user_message: text || 'Analyze this image',
+                session_id: currentSessionId,
+                model_mode: currentMode,
+                enable_search: searchEnabled,
+                allow_external: false,
+            };
+            // Note: image base64s aren't preserved through regeneration; the data: URLs
+            // are display-only. For image re-analysis, user re-attaches.
+            try {
+                const { sessionId, latencyMs, aborted } = useStream
+                    ? await sendStreaming(payload)
+                    : await sendNonStreaming(payload);
+                if (sessionId) { currentSessionId = sessionId; storage.setItem('sessionId', currentSessionId); }
+                const elapsed = latencyMs != null ? (latencyMs / 1000).toFixed(2) : ((performance.now() - startTime) / 1000).toFixed(2);
+                statusDiv.textContent = aborted
+                    ? `STOPPED at ${elapsed}s | SESSION: ${(sessionId || '').substring(0, 8)}...`
+                    : `LATENCY: ${elapsed}s | SESSION: ${(sessionId || '').substring(0, 8)}... | MODE: ${currentMode.toUpperCase()}${useStream ? ' | STREAMED' : ''}`;
+            } catch (error) {
+                console.error(error);
+                addBubble('Error: ' + error.message, false);
+                statusDiv.textContent = 'ERROR: ' + error.message;
+            } finally {
+                sendBtn.disabled = false;
+                _stopQueuePoll();
+                userInput.focus();
+            }
         }
 
         function isSearchCommand(text) {
@@ -681,24 +1030,37 @@
 
         // ── Streaming send ─────────────────────────────────────────────
         async function sendStreaming(payload) {
-            const response = await fetch('/v1/chat', {
-                method: 'POST',
-                headers: buildApiHeaders(),
-                body: JSON.stringify({ ...payload, stream: true }),
-            });
+            _streamController = new AbortController();
+            setStreamingState(true);
+
+            let response;
+            try {
+                response = await fetch('/v1/chat', {
+                    method: 'POST',
+                    headers: buildApiHeaders(),
+                    body: JSON.stringify({ ...payload, stream: true }),
+                    signal: _streamController.signal,
+                });
+            } catch (e) {
+                setStreamingState(false);
+                if (e.name === 'AbortError') return { sessionId: null, latencyMs: null, aborted: true };
+                throw e;
+            }
 
             if (!response.ok) {
+                setStreamingState(false);
                 let detail = `API error (${response.status})`;
                 try { const err = await response.json(); detail = err.detail || detail; } catch (_) {}
                 throw new Error(detail);
             }
 
-            const textSpan = createAssistantBubble();
+            const bubble = createAssistantBubble({ payload });
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
             let sessionId = null;
             let latencyMs = null;
+            let aborted = false;
 
             try {
                 while (true) {
@@ -713,7 +1075,15 @@
                     for (const line of lines) {
                         if (!line.startsWith('data: ')) continue;
                         const raw = line.slice(6).trim();
-                        if (raw === '[DONE]') { textSpan.classList.remove('cursor-blink'); return { sessionId, latencyMs }; }
+                        if (raw === '[DONE]') {
+                            bubble.content.classList.remove('cursor-blink');
+                            bubble.isStreaming = false;
+                            // Enable Regenerate now that stream is done
+                            const regenBtn = bubble.wrapper.querySelector('[data-action="regenerate"]');
+                            if (regenBtn) regenBtn.disabled = false;
+                            setStreamingState(false);
+                            return { sessionId, latencyMs, aborted };
+                        }
 
                         let event;
                         try { event = JSON.parse(raw); } catch (_) { continue; }
@@ -721,23 +1091,41 @@
                         if (event.type === 'start') {
                             sessionId = event.session_id;
                         } else if (event.type === 'chunk') {
-                            textSpan.textContent += event.content;
+                            bubble.append(event.content);
                             chatWindow.scrollTop = chatWindow.scrollHeight;
+                            checkScrollPosition();
                         } else if (event.type === 'done') {
                             sessionId = event.session_id;
                             latencyMs = event.latency_ms;
-                            textSpan.classList.remove('cursor-blink');
+                            bubble.content.classList.remove('cursor-blink');
+                            bubble.isStreaming = false;
+                            const regenBtn = bubble.wrapper.querySelector('[data-action="regenerate"]');
+                            if (regenBtn) regenBtn.disabled = false;
+                            setStreamingState(false);
                         } else if (event.type === 'error') {
-                            textSpan.classList.remove('cursor-blink');
-                            textSpan.textContent = `Error (${event.code}): ${event.detail}`;
-                            textSpan.closest('div').className = 'bg-red-50 text-red-700 p-4 rounded-2xl rounded-tl-none message-bubble shadow-sm border border-red-200';
+                            bubble.content.classList.remove('cursor-blink');
+                            bubble.setText(`Error (${event.code}): ${event.detail || ''}`);
+                            bubble.bubble.classList.add('!border-red-500', '!bg-red-950/40');
+                            setStreamingState(false);
                         }
                     }
                 }
+            } catch (e) {
+                if (e.name === 'AbortError') {
+                    aborted = true;
+                    bubble.content.classList.remove('cursor-blink');
+                    bubble.isStreaming = false;
+                    const existing = bubble.getText();
+                    bubble.setText((existing ? existing + '\n\n' : '') + '_⏹ Stopped._');
+                    const regenBtn = bubble.wrapper.querySelector('[data-action="regenerate"]');
+                    if (regenBtn) regenBtn.disabled = false;
+                } else {
+                    throw e;
+                }
             } finally {
-                textSpan.classList.remove('cursor-blink');
+                setStreamingState(false);
             }
-            return { sessionId, latencyMs };
+            return { sessionId, latencyMs, aborted };
         }
 
         // ── Non-streaming send ─────────────────────────────────────────
@@ -753,7 +1141,7 @@
                 throw new Error(detail);
             }
             const data = await response.json();
-            addBubble(data.content, false);
+            addBubble(data.content, false, [], { payload });
             return { sessionId: data.session_id, latencyMs: data.latency_ms };
         }
 
@@ -793,12 +1181,22 @@
                 resetSelectedImage();
             }
 
-            userInput.value = '';
-            addBubble(message || 'Analyze this image', true, imagePreviews);
-
             const startTime = performance.now();
             const explicitSearch = searchEnabled && isSearchCommand(message);
             const useStream = streamEnabled && !explicitSearch;
+            const payload = {
+                project_id: currentProject,
+                user_name: currentUserName,
+                user_message: message || 'Analyze this image',
+                session_id: currentSessionId,
+                model_mode: currentMode,
+                enable_search: searchEnabled,
+                allow_external: explicitSearch,
+            };
+            if (currentMode === 'lite' && images.length > 0) payload.images = images;
+            userInput.value = '';
+            addBubble(message || 'Analyze this image', true, imagePreviews, { payload });
+
             if (explicitSearch && streamEnabled) {
                 setStreamEnabled(false);
                 statusDiv.textContent = 'Search sẽ chạy với Stream OFF để ổn định hơn';
@@ -812,19 +1210,8 @@
             sendBtn.disabled = true;
             _startQueuePoll();
 
-            const payload = {
-                project_id: currentProject,
-                user_name: currentUserName,
-                user_message: message || 'Analyze this image',
-                session_id: currentSessionId,
-                model_mode: currentMode,
-                enable_search: searchEnabled,
-                allow_external: explicitSearch,
-            };
-            if (currentMode === 'lite' && images.length > 0) payload.images = images;
-
             try {
-                const { sessionId, latencyMs } = useStream
+                const { sessionId, latencyMs, aborted } = useStream
                     ? await sendStreaming(payload)
                     : await sendNonStreaming(payload);
 
@@ -837,7 +1224,9 @@
                     ? (latencyMs / 1000).toFixed(2)
                     : ((performance.now() - startTime) / 1000).toFixed(2);
 
-                statusDiv.textContent = `LATENCY: ${elapsed}s | SESSION: ${(sessionId || '').substring(0, 8)}... | MODE: ${currentMode.toUpperCase()}${explicitSearch ? ' | SEARCH | STREAM OFF' : ''}${useStream ? ' | STREAMED' : ''}`;
+                statusDiv.textContent = aborted
+                    ? `STOPPED at ${elapsed}s | SESSION: ${(sessionId || '').substring(0, 8)}...`
+                    : `LATENCY: ${elapsed}s | SESSION: ${(sessionId || '').substring(0, 8)}... | MODE: ${currentMode.toUpperCase()}${explicitSearch ? ' | SEARCH | STREAM OFF' : ''}${useStream ? ' | STREAMED' : ''}`;
             } catch (error) {
                 console.error(error);
                 addBubble('Error: ' + error.message, false);
@@ -849,8 +1238,16 @@
             }
         }
 
-        sendBtn.addEventListener('click', sendMessage);
-        userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+        // Send/Stop button — click triggers send, or aborts stream if one is active
+        sendBtn.addEventListener('click', () => {
+            if (_isStreaming) {
+                if (_streamController) _streamController.abort();
+                showMiniToast('Stopped', 'ok');
+                return;
+            }
+            sendMessage();
+        });
+        userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !_isStreaming) sendMessage(); });
 
         // ── Queue depth polling ─────────────────────────────────────────
         const queueBadge = document.getElementById('queue-badge');

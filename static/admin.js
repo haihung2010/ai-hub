@@ -1736,14 +1736,19 @@ async function cmLoadMessages() {
             return;
         }
         msgs.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-        document.getElementById('cm-modal-body').innerHTML = msgs.map(m => cmRenderMessage(m)).join('');
         const body = document.getElementById('cm-modal-body');
+        body.innerHTML = msgs.map(m => cmRenderMessage(m)).join('');
+        if (window.AIHUB_MARKDOWN) window.AIHUB_MARKDOWN.highlightAll(body);
         body.scrollTop = body.scrollHeight;
     } catch (e) {
         document.getElementById('cm-modal-body').innerHTML = `<div class="cm-empty" style="color:var(--status-err)">${escapeHtml(e.message)}</div>`;
         toast(e.message, 'err');
     }
 }
+
+/* Markdown rendering now lives in static/markdown.js (shared with main chat).
+   Falls back to plain text if the shared module didn't load. */
+const renderMarkdown = (text) => (window.AIHUB_MARKDOWN ? window.AIHUB_MARKDOWN.render(text) : (text || ''));
 
 function cmRenderMessage(m) {
     const ts = m.created_at ? new Date(m.created_at).toLocaleString('en-GB') : '—';
@@ -1762,7 +1767,7 @@ function cmRenderMessage(m) {
             <span class="cmm-spacer"></span>
             <span class="cmm-time">${ts}</span>
         </div>
-        <div class="cmm-content">${escapeHtml(m.content || '').replace(/\n/g, '<br>')}</div>
+        <div class="cmm-content">${renderMarkdown(m.content || '')}</div>
         <div class="cmm-meta">
             <span>model: <span class="v">${escapeHtml(model)}</span></span>
             <span>${lat}</span>

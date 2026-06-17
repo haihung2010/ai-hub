@@ -1567,7 +1567,66 @@ body {
 .cmm-meta .v { color: var(--text-secondary); }
 .cmm-content {
     font-size: 0.85rem; line-height: 1.6;
-    white-space: pre-wrap; word-wrap: break-word;
     color: var(--text-primary);
     padding-left: 2.1rem;
+    word-wrap: break-word; overflow-wrap: break-word;
+}
+.cmm-content h1, .cmm-content h2, .cmm-content h3,
+.cmm-content h4, .cmm-content h5, .cmm-content h6 {
+    margin: 0.75em 0 0.4em; font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.25;
+}
+.cmm-content h1 { font-size: 1.4rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.2em; }
+.cmm-content h2 { font-size: 1.2rem; }
+.cmm-content h3 { font-size: 1.05rem; }
+.cmm-content h4 { font-size: 0.95rem; }
+.cmm-content h5, .cmm-content h6 { font-size: 0.85rem; color: var(--text-secondary); }
+.cmm-content p { margin: 0 0 0.5em; }
+.cmm-content strong { font-weight: 700; color: #fff; }
+.cmm-content em { font-style: italic; color: #e6e6e6; }
+.cmm-content a {
+    color: #a5b4fc; text-decoration: underline;
+    word-break: break-all;
+}
+.cmm-content a:hover { color: #c7d2fe; }
+.cmm-content code {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.78rem;
+    color: #fcd34d;
+    white-space: pre-wrap;
+}
+.cmm-content pre {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 0.5em 0;
+    overflow-x: auto;
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+.cmm-content pre code {
+    background: transparent; border: none; padding: 0; color: #e6e6e6;
+    font-size: inherit; display: block; white-space: pre;
+}
+.cmm-content ul, .cmm-content ol {
+    margin: 0.4em 0; padding-left: 1.5em;
+}
+.cmm-content li { margin: 0.15em 0; }
+.cmm-content blockquote {
+    margin: 0.5em 0; padding: 0.4em 0.8em;
+    border-left: 3px solid var(--accent-1);
+    background: rgba(99, 102, 241, 0.08);
+    color: var(--text-secondary);
+    border-radius: 0 4px 4px 0;
+    font-style: italic;
+}
+.cmm-content hr {
+    border: none; border-top: 1px solid rgba(255, 255, 255, 0.12);
+    margin: 0.8em 0;
 }

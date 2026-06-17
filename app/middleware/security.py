@@ -26,7 +26,7 @@ ALWAYS_PUBLIC_PATHS = {"/", "/webhooks/facebook"}
 DOCS_PATHS = {"/docs", "/openapi.json", "/redoc"}
 HEALTH_PATHS = {"/health"}
 PWA_ROOT_FILES = {"/manifest.json", "/favicon.ico"}
-PWA_ROOT_SUFFIXES = (".png", ".webmanifest", ".svg", ".woff", ".woff2")
+PWA_ROOT_SUFFIXES = (".png", ".webmanifest", ".svg", ".woff", ".woff2", ".js", ".css", ".map", ".json")
 RATE_LIMIT_WINDOW_SECONDS = 60
 
 
