@@ -47,6 +47,16 @@ from app.services.user_service import UserService
 
 logger = logging.getLogger(__name__)
 
+# Projects that should never fast-background-route to E4B-bg.
+# The QueryClassifier over-classifies casual chat for these (60%+ of
+# fanpage requests were being routed to E4B-bg per the 2026-06-18 ecom
+# test and the 2026-06-20 fanpage parallel test). Re-enable per-project
+# if the project explicitly opts into fast-background.
+_NO_FAST_BACKGROUND_PROJECTS: frozenset[str] = frozenset({
+    "fanpage", "ecommerce", "vehix", "iot", "playground", "default",
+})
+
+
 
 class _LatencyTracker:
     """Rolling average tracker for local provider latency."""
@@ -172,6 +182,7 @@ class AIService:
         gemini: ChatProvider | None = None,
         nine_router: ChatProvider | None = None,
         ihi: ChatProvider | None = None,
+        provider_router: "ProviderRouter | None" = None,
     ) -> None:
         self._local = local
         self._background_local = background_local
@@ -179,6 +190,7 @@ class AIService:
         self._gemini = gemini
         self._nine_router = nine_router
         self._ihi = ihi
+        self._provider_router = provider_router
         self._history = history
         self._settings = settings
         self._users = users
@@ -643,6 +655,18 @@ class AIService:
         return prompt_temperature
 
     def _select_model(self, req: ChatRequest, prompt_model: str) -> tuple[str, int]:
+        # Projects in the no-fast-background whitelist skip adaptive routing
+        # and use primary 12B. The adaptive router + QueryClassifier both
+        # over-classify casual chat (60%+ of fanpage requests were being
+        # routed to E2B-bg per the 2026-06-18 ecom test and 2026-06-20
+        # fanpage parallel test). ihi is also excluded because it has its
+        # own dedicated routing.
+        if req.project_id in _NO_FAST_BACKGROUND_PROJECTS or req.project_id == "ihi":
+            ctx = self._settings.project_context_sizes.get(
+                req.project_id, self._settings.default_num_ctx
+            )
+            return self._settings.default_model, ctx
+
         # Memory-recall queries MUST use 12B (better reasoning than E2B for fact recall).
         # Overrides adaptive routing (which would otherwise classify "Bạn còn nhớ..."
         # as easy and route to E2B-bg).
@@ -818,6 +842,13 @@ class AIService:
             return provider, model, route_reason
         # iHi project: never fast-background, keep on dedicated high-parallelism instance
         if req.project_id == "ihi":
+            return provider, model, route_reason
+        # Projects that need primary 12B quality: never fast-background.
+        # The QueryClassifier over-classifies casual chat for these projects
+        # and would otherwise send 60%+ of requests to E4B-bg (see
+        # bug_fastbackground_e2b_2026-06-18.md). Re-enable per-project if
+        # the project explicitly opts in.
+        if req.project_id in _NO_FAST_BACKGROUND_PROJECTS:
             return provider, model, route_reason
         # Memory-recall queries bypass fast-background (use 12B for better quality)
         try:

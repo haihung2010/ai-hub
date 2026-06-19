@@ -265,6 +265,7 @@ def create_app(
             raise
         timeout = httpx.Timeout(max(settings.request_timeout_seconds, settings.openrouter_timeout_seconds))
         async with httpx.AsyncClient(timeout=timeout) as client:
+            provider_router = None  # may be overridden per branch below
             if settings.llama_cpp_nodes:
                 _providers = [
                     LlamaCppProvider(client=client, openai_url=f"{node}/v1")
@@ -278,7 +279,18 @@ def create_app(
                     if settings.ihi_llama_cpp_enabled
                     else None
                 )
-                logger.info("load balancer active: %d nodes %s", len(_providers), settings.llama_cpp_nodes)
+                # Build minimal router for load-balancer mode (single 12b for chat)
+                from app.services.provider_router import (
+                    ProviderRouter, ProviderCapability, TaskType,
+                )
+                router_providers = [
+                    ProviderCapability(
+                        name="12b", base_url=settings.llama_cpp_openai_url,
+                        priority=1, supports={TaskType.CHAT, TaskType.CONTEXTUALIZE},
+                    ),
+                ]
+                provider_router = ProviderRouter(router_providers, health_check_ttl_sec=30)
+                logger.info("load balancer active: %d nodes %s; router=1", len(_providers), settings.llama_cpp_nodes)
             elif settings.background_llama_cpp_enabled:
                 local_provider = LlamaCppProvider(client=client, openai_url=settings.llama_cpp_openai_url)
                 background_provider = LlamaCppProvider(
@@ -295,6 +307,35 @@ def create_app(
                     settings.background_llama_cpp_openai_url,
                     settings.ihi_llama_cpp_openai_url if settings.ihi_llama_cpp_enabled else "disabled",
                 )
+                # Build ProviderRouter (provider selection by priority + capability)
+                from app.services.provider_router import (
+                    ProviderRouter, ProviderCapability, TaskType,
+                )
+                router_providers = [
+                    ProviderCapability(
+                        name="12b", base_url=settings.llama_cpp_openai_url,
+                        priority=1, supports={TaskType.CHAT, TaskType.CONTEXTUALIZE},
+                    ),
+                    ProviderCapability(
+                        name="e4b", base_url=settings.background_llama_cpp_openai_url,
+                        priority=2,
+                        supports={TaskType.CHAT, TaskType.STRUCTMEM, TaskType.SUMMARY, TaskType.CONTEXTUALIZE},
+                    ),
+                ]
+                if settings.ihi_llama_cpp_enabled and settings.ihi_llama_cpp_openai_url:
+                    ihi_url = settings.ihi_llama_cpp_openai_url.rstrip("/")
+                    if ihi_url != settings.background_llama_cpp_openai_url.rstrip("/"):
+                        router_providers.append(ProviderCapability(
+                            name="ihi", base_url=ihi_url,
+                            priority=2, supports={TaskType.CHAT},
+                        ))
+                if settings.minimax_enabled and settings.minimax_api_key:
+                    router_providers.append(ProviderCapability(
+                        name="minimax_m3", base_url=settings.minimax_base_url + "/v1",
+                        priority=10, supports={TaskType.CHAT},
+                    ))
+                provider_router = ProviderRouter(router_providers, health_check_ttl_sec=30)
+                logger.info("ProviderRouter initialized: %d providers", len(router_providers))
             else:
                 local_provider = LlamaCppProvider(client=client, openai_url=settings.llama_cpp_openai_url)
                 background_provider = None
@@ -303,6 +344,22 @@ def create_app(
                     if settings.ihi_llama_cpp_enabled
                     else None
                 )
+                from app.services.provider_router import (
+                    ProviderRouter, ProviderCapability, TaskType,
+                )
+                router_providers = [
+                    ProviderCapability(
+                        name="12b", base_url=settings.llama_cpp_openai_url,
+                        priority=1, supports={TaskType.CHAT, TaskType.CONTEXTUALIZE},
+                    ),
+                ]
+                if settings.ihi_llama_cpp_enabled and settings.ihi_llama_cpp_openai_url:
+                    router_providers.append(ProviderCapability(
+                        name="ihi", base_url=settings.ihi_llama_cpp_openai_url,
+                        priority=2, supports={TaskType.CHAT},
+                    ))
+                provider_router = ProviderRouter(router_providers, health_check_ttl_sec=30)
+                logger.info("ProviderRouter (single) initialized: %d providers", len(router_providers))
             openrouter = (
                 OpenRouterProvider(
                     client=client,
@@ -505,6 +562,7 @@ def create_app(
                 gemini=gemini,
                 nine_router=nine_router,
                 ihi=ihi_provider,
+                provider_router=provider_router,
             )
             app.state.ai_service_ref = weakref.ref(app.state.ai_service)
             # Adaptive routing: APScheduler for periodic IHI rollups (added 2026-06-07)

@@ -108,3 +108,14 @@ def test_is_order_lookup_intent_returns_false_for_normal_chat() -> None:
     assert AIService._is_order_lookup_intent("Có áo thun trắng size M không?") is False
     assert AIService._is_order_lookup_intent("Tôi muốn mua thêm áo thun") is False
     assert AIService._is_order_lookup_intent("Bạn còn nhớ tôi mua gì hôm trước?") is False
+
+
+def test_no_fast_background_projects_constant_includes_fanpage():
+    """fanpage is in the no-fast-background whitelist (regression 2026-06-20)."""
+    from app.services.ai_service import _NO_FAST_BACKGROUND_PROJECTS
+    assert "fanpage" in _NO_FAST_BACKGROUND_PROJECTS
+    assert "ecommerce" in _NO_FAST_BACKGROUND_PROJECTS
+    assert "vehix" in _NO_FAST_BACKGROUND_PROJECTS
+    assert "iot" in _NO_FAST_BACKGROUND_PROJECTS
+    assert "playground" in _NO_FAST_BACKGROUND_PROJECTS
+    # ihi is NOT in the whitelist (it's already excluded by the ihi check above)
