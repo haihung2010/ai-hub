@@ -53,3 +53,34 @@ class ProviderRouter:
             raise ValueError("providers list must not be empty")
         self._providers = sorted(providers, key=lambda p: p.priority)
         self._ttl = health_check_ttl_sec
+
+    async def select(self, task: TaskType, project_id: str) -> ProviderCapability:
+        """Pick the highest-priority healthy provider that supports `task`.
+
+        `project_id` is accepted for future per-project overrides; current
+        implementation ignores it (priority is global).
+
+        Raises NoProviderError if no provider matches.
+        """
+        candidates = [p for p in self._providers if task in p.supports]
+        for p in candidates:
+            if await self._is_healthy(p):
+                return p
+        raise NoProviderError(
+            f"No healthy provider supports task={task.value} "
+            f"(tried {len(candidates)} providers)"
+        )
+
+    async def _is_healthy(self, p: ProviderCapability) -> bool:
+        """Check provider health, with TTL cache to avoid hammering.
+
+        Default stub: assume healthy. Tests monkeypatch this. Task 8
+        replaces with real httpx-based check.
+        """
+        now = time.monotonic()
+        cached = _health_cache.get(p.name)
+        if cached and (now - cached[1]) < self._ttl:
+            return cached[0]
+        # default stub: healthy. Real impl in follow-up task.
+        _health_cache[p.name] = (True, now)
+        return True
