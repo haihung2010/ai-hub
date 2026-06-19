@@ -6,6 +6,7 @@ Replaces ad-hoc provider init in main.py. See docs/superpowers/specs/
 from __future__ import annotations
 
 import time
+import httpx
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -72,15 +73,22 @@ class ProviderRouter:
         )
 
     async def _is_healthy(self, p: ProviderCapability) -> bool:
-        """Check provider health, with TTL cache to avoid hammering.
+        """Check provider health via HTTP GET, with TTL cache.
 
-        Default stub: assume healthy. Tests monkeypatch this. Task 8
-        replaces with real httpx-based check.
+        Default health_url = base_url with /v1 stripped + /health appended.
+        Returns True if GET /health returns 200. Errors return False (cached
+        for TTL seconds to avoid hammering a down endpoint).
         """
         now = time.monotonic()
         cached = _health_cache.get(p.name)
         if cached and (now - cached[1]) < self._ttl:
             return cached[0]
-        # default stub: healthy. Real impl in follow-up task.
-        _health_cache[p.name] = (True, now)
-        return True
+        url = p.health_url or p.base_url.rsplit("/v1", 1)[0] + "/health"
+        try:
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                r = await client.get(url)
+                healthy = r.status_code == 200
+        except Exception:
+            healthy = False
+        _health_cache[p.name] = (healthy, now)
+        return healthy
