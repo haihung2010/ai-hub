@@ -1,0 +1,273 @@
+{
+  "config": {
+    "personas": [
+      "fanpage_phone_01",
+      "fanpage_phone_02",
+      "fanpage_phone_03",
+      "fanpage_watch_01",
+      "fanpage_watch_02"
+    ],
+    "started": "2026-06-20T01:56:34.101967"
+  },
+  "summary": {
+    "by_persona": {
+      "fanpage_phone_01": {
+        "project_id": "fanpage",
+        "turns": 4,
+        "ok": 4,
+        "err": 0,
+        "err_rate": 0.0,
+        "p50_s": 2.173,
+        "p95_s": 2.366,
+        "max_s": 2.366
+      },
+      "fanpage_phone_02": {
+        "project_id": "fanpage",
+        "turns": 3,
+        "ok": 3,
+        "err": 0,
+        "err_rate": 0.0,
+        "p50_s": 2.213,
+        "p95_s": 2.423,
+        "max_s": 2.423
+      },
+      "fanpage_phone_03": {
+        "project_id": "fanpage",
+        "turns": 3,
+        "ok": 3,
+        "err": 0,
+        "err_rate": 0.0,
+        "p50_s": 2.111,
+        "p95_s": 2.311,
+        "max_s": 2.311
+      },
+      "fanpage_watch_01": {
+        "project_id": "fanpage",
+        "turns": 3,
+        "ok": 3,
+        "err": 0,
+        "err_rate": 0.0,
+        "p50_s": 2.094,
+        "p95_s": 2.796,
+        "max_s": 2.796
+      },
+      "fanpage_watch_02": {
+        "project_id": "fanpage",
+        "turns": 3,
+        "ok": 3,
+        "err": 0,
+        "err_rate": 0.0,
+        "p50_s": 2.322,
+        "p95_s": 2.332,
+        "max_s": 2.332
+      }
+    },
+    "overall": {
+      "turns": 16,
+      "ok": 16,
+      "err": 0,
+      "err_rate": 0.0,
+      "p50_s": 2.173,
+      "p95_s": 2.796,
+      "p99_s": 2.796,
+      "max_s": 2.796
+    }
+  },
+  "results": {
+    "fanpage_phone_01": {
+      "project_id": "fanpage",
+      "user_name": "phong_phone_01",
+      "session_id": "f5529896-eee7-42e6-b61f-7e82c639836a",
+      "turns": [
+        {
+          "turn": 1,
+          "message": "Xin chào, tôi muốn mua điện thoại mới tầm 10-15 triệu, dùng cho công việc văn phòng",
+          "ok": true,
+          "latency_s": 1.536,
+          "session_id": "f5529896-eee7-42e6-b61f-7e82c639836a",
+          "content": "Chào bạn! 👋 Với ngân sách 10-15 triệu cho công việc văn phòng, bạn đang ưu tiên tính năng nào nhất nè? Ví dụ như là pin trâu, chụp ảnh đẹp hay màn hình lớn cho dễ làm việc? 😊",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1239
+        },
+        {
+          "turn": 2,
+          "message": "Pin trâu và chụp ảnh đẹp quan trọng nhất, có thể gợi ý cụ thể 2-3 model không?",
+          "ok": true,
+          "latency_s": 2.173,
+          "session_id": "f5529896-eee7-42e6-b61f-7e82c639836a",
+          "content": "Với tiêu chí pin trâu và chụp ảnh đẹp trong tầm giá này, mình gợi ý bạn cân nhắc Samsung Galaxy S24 hoặc iPhone 15 nhé. Cả hai đều rất ổn định cho công việc văn phòng và có chất lượng hình ảnh cực kỳ ấn tượng luôn! ✨\n\nBạn có muốn mình gửi thông tin chi tiết hơn về mẫu máy nào trước không?",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1069
+        },
+        {
+          "turn": 3,
+          "message": "So sánh Samsung Galaxy S24 với iPhone 15, cái nào đáng mua hơn trong tầm giá này?",
+          "ok": true,
+          "latency_s": 2.366,
+          "session_id": "f5529896-eee7-42e6-b61f-7e82c639836a",
+          "content": "Cả hai đều là lựa chọn tuyệt vời, nhưng Samsung S24 sẽ nhỉnh hơn về khả năng zoom và đa dạng màu sắc, còn iPhone 15 thì cực kỳ ổn định và giữ giá tốt hơn nếu bạn định đổi máy sau này. 😊\n\nBạn thường dùng điện thoại để chụp ảnh phong cảnh hay là chụp ảnh chân dung nhiều hơn để mình tư vấn kỹ hơn cho bạn nhé?",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1443
+        },
+        {
+          "turn": 4,
+          "message": "Cảm ơn bạn, tôi sẽ cân nhắc Samsung S24",
+          "ok": true,
+          "latency_s": 1.774,
+          "session_id": "f5529896-eee7-42e6-b61f-7e82c639836a",
+          "content": "Tuyệt vời luôn! Samsung S24 là lựa chọn cực kỳ thông minh cho nhu cầu của bạn đó. 🥰\n\nNếu cần hỗ trợ thêm thông tin gì về cấu hình hay chương trình ưu đãi của mẫu này, cứ nhắn cho mình biết nhé!",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1741
+        }
+      ]
+    },
+    "fanpage_phone_02": {
+      "project_id": "fanpage",
+      "user_name": "phong_phone_02",
+      "session_id": "30b0d202-662d-4302-86c4-52ecdaf39230",
+      "turns": [
+        {
+          "turn": 1,
+          "message": "Tôi cần điện thoại gaming, chơi Genshin Impact mượt, tầm 12-18 triệu",
+          "ok": true,
+          "latency_s": 2.213,
+          "session_id": "30b0d202-662d-4302-86c4-52ecdaf39230",
+          "content": "Chào bạn nè! Với tầm giá 12-18 triệu, bạn hoàn toàn có thể sở hữu các dòng flagship cực mạnh để chiến Genshin Impact mượt mà luôn. 🎮\n\nBạn đang nhắm mắt mẫu máy nào chưa, hay để mình gợi ý vài lựa chọn \"khủng\" nhất hiện nay cho bạn chọn nhé?",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 788
+        },
+        {
+          "turn": 2,
+          "message": "Có model nào chip Snapdragon 8 Gen 3 trong tầm giá?",
+          "ok": true,
+          "latency_s": 2.166,
+          "session_id": "30b0d202-662d-4302-86c4-52ecdaf39230",
+          "content": "Có vài mẫu cực đỉnh dùng chip Snapdragon 8 Gen 3 trong tầm giá này nè! Bạn có thể tham khảo các dòng như Samsung S23 Series (đã giảm giá sâu), Xiaomi 13T Pro hoặc các mẫu flagship cũ hơn một chút để tối ưu hiệu năng chơi game tốt nhất.\n\nBạn thích thiết kế của hãng nào nhất trong số này không?",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 707
+        },
+        {
+          "turn": 3,
+          "message": "Xiaomi 14 Pro hay ROG Phone 8, gợi ý cái nào?",
+          "ok": true,
+          "latency_s": 2.423,
+          "session_id": "30b0d202-662d-4302-86c4-52ecdaf39230",
+          "content": "Nếu ưu tiên sự cân bằng giữa hiệu năng và thiết kế đẹp thì Xiaomi 14 Pro là lựa chọn cực ổn áp luôn. Còn nếu bạn thực sự muốn \"hardcore\" với các tính năng chuyên game như nút bấm phụ và tản nhiệt đặc biệt thì ROG Phone 8 là vô đối luôn! 🎮\n\nBạn thường chơi game lâu mỗi ngày hay chỉ là giải trí lúc rảnh rỗi thôi?",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1043
+        }
+      ]
+    },
+    "fanpage_phone_03": {
+      "project_id": "fanpage",
+      "user_name": "phong_phone_03",
+      "session_id": "948ce967-02f6-4f64-9d9f-d22ac7ed3910",
+      "turns": [
+        {
+          "turn": 1,
+          "message": "Điện thoại cho bà ngoại 70 tuổi, dễ dùng, pin lâu, giá rẻ 4-6 triệu",
+          "ok": true,
+          "latency_s": 2.311,
+          "session_id": "948ce967-02f6-4f64-9d9f-d22ac7ed3910",
+          "content": "Chào bạn! Bạn đang tìm quà cho bà ngoại đúng không nè? Với tiêu chí dễ dùng, pin trâu và trong tầm giá 4-6 triệu, mình thấy dòng Samsung Galaxy A15 hoặc Oppo A series là lựa chọn cực kỳ hợp lý vì giao diện dễ làm quen luôn. ✨\n\n Bạn có muốn mình gửi danh sách vài mẫu cụ thể để bạn chọn cho bà không?",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 861
+        },
+        {
+          "turn": 2,
+          "message": "Có nên mua Samsung Galaxy A15 không?",
+          "ok": true,
+          "latency_s": 2.111,
+          "session_id": "948ce967-02f6-4f64-9d9f-d22ac7ed3910",
+          "content": "Mình thấy Samsung Galaxy A15 là lựa chọn rất ổn cho bà ngoại luôn vì màn hình đẹp và hệ điều hành Samsung khá dễ dùng cho người lớn tuổi. Với mức giá này, máy lại có pin rất trâu nữa! 🔋\n\n Bà bạn thường hay dùng điện thoại để làm gì nhất nhỉ (nghe gọi hay xem video cho vui)?",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 727
+        },
+        {
+          "turn": 3,
+          "message": "Cảm ơn bạn, tôi sẽ mua Samsung A15 tặng bà",
+          "ok": true,
+          "latency_s": 1.694,
+          "session_id": "948ce967-02f6-4f64-9d9f-d22ac7ed3910",
+          "content": "Tuyệt quá! Chắc chắn bà ngoại sẽ rất vui khi nhận được món quà ý nghĩa này từ bạn cho xem. 🥰 \n\nNếu cần hỗ trợ thêm gì về cách cài đặt cho dễ dùng cho bà sau khi mua máy, cứ nhắn tin cho mình nhé!",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1002
+        }
+      ]
+    },
+    "fanpage_watch_01": {
+      "project_id": "fanpage",
+      "user_name": "phong_watch_01",
+      "session_id": "288047a3-09a9-47f9-82ae-56c92ef07c01",
+      "turns": [
+        {
+          "turn": 1,
+          "message": "Tôi quan tâm đồng hồ thông minh, tầm giá 5-8 triệu, dùng để tập gym",
+          "ok": true,
+          "latency_s": 2.094,
+          "session_id": "288047a3-09a9-47f9-82ae-56c92ef07c01",
+          "content": "Chào bạn! Với ngân sách từ 5-8 triệu để tập gym thì bạn đang hướng tới những mẫu rất chất lượng rồi đó. 🏋‍♂️\n\nBạn ưu tiên tính năng theo dõi sức khỏe chuyên sâu (như nhịp tim, oxy trong máu) hay muốn một mẫu có thiết kế thể thao mạnh mẽ, dễ nhìn hơn?",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 920
+        },
+        {
+          "turn": 2,
+          "message": "Có mẫu nào pin >7 ngày và theo dõi nhịp tim chính xác không?",
+          "ok": true,
+          "latency_s": 1.846,
+          "session_id": "288047a3-09a9-47f9-82ae-56c92ef07c01",
+          "content": "Với yêu cầu pin trâu trên 7 ngày và theo dõi nhịp tim chuẩn cho tập gym, mình gợi ý bạn xem qua dòng Garmin hoặc các mẫu cao cấp của Huawei nhé. 🔋\n\nBạn có thích thiết kế phong cách thể thao mạnh mẽ hay loại nào nhìn tinh tế hơn một chút?",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 728
+        },
+        {
+          "turn": 3,
+          "message": "Apple Watch SE 2 hay Galaxy Watch 6, cái nào phù hợp tập gym hơn?",
+          "ok": true,
+          "latency_s": 2.796,
+          "session_id": "288047a3-09a9-47f9-82ae-56c92ef07c01",
+          "content": "Nếu ưu tiên cho việc tập gym và độ bền pin thì Apple Watch SE 2 và Galaxy Watch 6 sẽ có trải nghiệm khá khác nhau đấy. 🏃‍♂️\n\nApple Watch SE 2 cực ổn định cho hệ sinh thái Apple, nhưng nếu bạn cần pin lâu hơn và các chỉ số tập luyện chuyên sâu thì dòng Galaxy Watch (hoặc các mẫu Garmin như mình nói lúc trước) sẽ là lựa chọn cân bằng hơn. Bạn đang dùng điện thoại iPhone hay Samsung vậy?",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1103
+        }
+      ]
+    },
+    "fanpage_watch_02": {
+      "project_id": "fanpage",
+      "user_name": "phong_watch_02",
+      "session_id": "108e4ca7-b3d8-4a8a-b0e3-0d93e984a468",
+      "turns": [
+        {
+          "turn": 1,
+          "message": "Tôi muốn mua đồng hồ cơ nam, tầm 3-5 triệu, đeo đi làm",
+          "ok": true,
+          "latency_s": 2.322,
+          "session_id": "108e4ca7-b3d8-4a8a-b0e3-0d93e984a468",
+          "content": "Với ngân sách 3-5 triệu, bạn có thể chọn những dòng cực bền và lịch lãm như Seiko 5 hoặc Orient Kinetics đó. Những mẫu này cực kỳ phù hợp để đeo đi làm hàng ngày vì vừa bền máy lại vừa đa dạng mẫu mã. ⌚\n\nBạn thích phong cách thiết kế cổ điển hay hiện đại hơn để mình gửi mẫu cụ thể cho bạn chọn nè?",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 828
+        },
+        {
+          "turn": 2,
+          "message": "Có thương hiệu nào bền và đẹp không, gợi ý vài mẫu?",
+          "ok": true,
+          "latency_s": 2.332,
+          "session_id": "108e4ca7-b3d8-4a8a-b0e3-0d93e984a468",
+          "content": "Ngoài hai dòng mình vừa kể, Seiko và Orient là những \"ông lớn\" cực kỳ bền bỉ trong phân khúc này luôn. 🤝\n\nNếu bạn thích sự tinh tế, mình gợi ý mẫu **Orient Bambino** (thiết kế cổ điển cực đẹp) hoặc **Seiko 5 Sports** (nếu bạn thích phong cách năng động hơn chút). Bạn muốn xem mẫu nào trước nè?",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 777
+        },
+        {
+          "turn": 3,
+          "message": "Còn chính sách bảo hành và đổi trả như thế nào khi mua online?",
+          "ok": true,
+          "latency_s": 2.025,
+          "session_id": "108e4ca7-b3d8-4a8a-b0e3-0d93e984a468",
+          "content": "Khi mua online, bên mình luôn đảm bảo chính sách bảo hành chính hãng đầy đủ cho bạn luôn nhé. ❤️\n\nNếu sản phẩm bị lỗi kỹ thuật hoặc không đúng mô tả, bạn hoàn toàn có thể đổi trả trong vòng 7 ngày đầu tiên. Bạn cần mình tư vấn kỹ hơn về quy trình đổi trả không?",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1111
+        }
+      ]
+    }
+  }
+}
