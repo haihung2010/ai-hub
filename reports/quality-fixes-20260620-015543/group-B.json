@@ -1,0 +1,273 @@
+{
+  "config": {
+    "personas": [
+      "fanpage_watch_warranty",
+      "ihi_sensor_01",
+      "iot_env_01",
+      "vehix_rental_01",
+      "vehix_contract_01"
+    ],
+    "started": "2026-06-20T01:59:22.083469"
+  },
+  "summary": {
+    "by_persona": {
+      "fanpage_watch_warranty": {
+        "project_id": "fanpage",
+        "turns": 4,
+        "ok": 4,
+        "err": 0,
+        "err_rate": 0.0,
+        "p50_s": 2.21,
+        "p95_s": 2.462,
+        "max_s": 2.462
+      },
+      "ihi_sensor_01": {
+        "project_id": "ihi",
+        "turns": 3,
+        "ok": 3,
+        "err": 0,
+        "err_rate": 0.0,
+        "p50_s": 46.462,
+        "p95_s": 58.549,
+        "max_s": 58.549
+      },
+      "iot_env_01": {
+        "project_id": "iot",
+        "turns": 3,
+        "ok": 3,
+        "err": 0,
+        "err_rate": 0.0,
+        "p50_s": 3.977,
+        "p95_s": 4.967,
+        "max_s": 4.967
+      },
+      "vehix_rental_01": {
+        "project_id": "vehix",
+        "turns": 3,
+        "ok": 3,
+        "err": 0,
+        "err_rate": 0.0,
+        "p50_s": 0.853,
+        "p95_s": 0.875,
+        "max_s": 0.875
+      },
+      "vehix_contract_01": {
+        "project_id": "vehix",
+        "turns": 3,
+        "ok": 3,
+        "err": 0,
+        "err_rate": 0.0,
+        "p50_s": 0.903,
+        "p95_s": 1.043,
+        "max_s": 1.043
+      }
+    },
+    "overall": {
+      "turns": 16,
+      "ok": 16,
+      "err": 0,
+      "err_rate": 0.0,
+      "p50_s": 1.898,
+      "p95_s": 58.549,
+      "p99_s": 58.549,
+      "max_s": 58.549
+    }
+  },
+  "results": {
+    "fanpage_watch_warranty": {
+      "project_id": "fanpage",
+      "user_name": "phong_watch_warranty",
+      "session_id": "8723deaa-5fb9-4104-bcba-d8e40d4bd5b7",
+      "turns": [
+        {
+          "turn": 1,
+          "message": "Tôi mua Apple Watch Series 9 ở cửa hàng ABC tại Q1 hôm qua, hôm nay màn hình bị sọc, bảo hành thế nào?",
+          "ok": true,
+          "latency_s": 2.21,
+          "session_id": "8723deaa-5fb9-4104-bcba-d8e40d4bd5b7",
+          "content": "Ôi tiếc quá, cái màn hình bị sọc ngay sau khi mua xong là lỗi kỹ thuật rồi. 😟 Vì bạn vừa mua tại cửa hàng ABC ở Q1 hôm qua, bạn hãy mang máy kèm theo hóa đơn và hộp đến thẳng đó để các bạn ấy kiểm tra và hỗ trợ bảo hành cho mình ngay nhé!",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1149
+        },
+        {
+          "turn": 2,
+          "message": "Tôi còn hóa đơn và hộp nguyên seal, cần mang đi đâu để bảo hành?",
+          "ok": true,
+          "latency_s": 1.702,
+          "session_id": "8723deaa-5fb9-4104-bcba-d8e40d4bd5b7",
+          "content": "Bạn hãy mang máy cùng với hộp và hóa đơn đến thẳng cửa hàng ABC tại Quận 1 nơi bạn đã mua hôm qua nhé. Các bạn ấy sẽ hỗ trợ kiểm tra và xử lý bảo hành cho bạn nhanh nhất có thể đấy! 🕒",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 883
+        },
+        {
+          "turn": 3,
+          "message": "Bảo hành Apple Watch quốc tế hay chính hãng Việt Nam, khác nhau gì?",
+          "ok": true,
+          "latency_s": 1.898,
+          "session_id": "8723deaa-5fb9-4104-bcba-d8e40d4bd5b7",
+          "content": "Bảo hành chính hãng Việt Nam sẽ được hỗ trợ nhanh và dễ dàng hơn tại các hệ thống ủy quyền trong nước nè. Còn bảo hành quốc tế thì đôi khi sẽ mất thời gian hơn vì phải gửi máy đi kiểm tra tại các trung tâm ủy quyền quốc tế đó. 🌍",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1206
+        },
+        {
+          "turn": 4,
+          "message": "Nếu đổi mới thì thời gian bao lâu, có mất phí không?",
+          "ok": true,
+          "latency_s": 2.462,
+          "session_id": "8723deaa-5fb9-4104-bcba-d8e40d4bd5b7",
+          "content": "Thời gian đổi mới sẽ tùy thuộc vào tình trạng máy và quy trình kiểm tra của cửa hàng, thường là sẽ nhanh hơn nếu là lỗi kỹ thuật rõ ràng. Còn về phí thì nếu là lỗi từ nhà sản xuất và bạn còn đủ hộp, hóa đơn thì thường sẽ được hỗ trợ miễn phí đó! Bạn có muốn mình kiểm tra kỹ hơn về chính sách của cửa hàng ABC cho bạn không?",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1563
+        }
+      ]
+    },
+    "ihi_sensor_01": {
+      "project_id": "ihi",
+      "user_name": "tech_ihi_01",
+      "session_id": "509bf7bd-bdc6-4059-9c21-caf8d7854bc2",
+      "turns": [
+        {
+          "turn": 1,
+          "message": "[{\"device_id\": \"Motor-001\", \"temperature_c\": 95, \"vibration_mm_s\": 5.2, \"current_a\": 82}]",
+          "ok": true,
+          "latency_s": 58.549,
+          "session_id": "509bf7bd-bdc6-4059-9c21-caf8d7854bc2",
+          "content": "{\"danger\":[\"Motor-001\"], \"warning\":[],\"normal_count\":0}",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 823
+        },
+        {
+          "turn": 2,
+          "message": "[{\"device_id\": \"Motor-002\", \"temperature_c\": 88, \"vibration_mm_s\": 4.8, \"current_a\": 68}, {\"device_id\": \"Motor-003\", \"te",
+          "ok": true,
+          "latency_s": 46.462,
+          "session_id": "509bf7bd-bdc6-4059-9c21-caf8d7854bc2",
+          "content": "{\"danger\":[],\"warning\":[\"Motor-002\"], \"normal_count\":1}",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 794
+        },
+        {
+          "turn": 3,
+          "message": "[{\"device_id\": \"Motor-A\", \"temperature_c\": 92, \"vibration_mm_s\": 7.0, \"current_a\": 80}, {\"device_id\": \"Motor-B\", \"temper",
+          "ok": true,
+          "latency_s": 22.043,
+          "session_id": "509bf7bd-bdc6-4059-9c21-caf8d7854bc2",
+          "content": "{\"danger\":[\"Motor-A\"], \"warning\":[\"Motor-C\"], \"normal_count\":1}",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1042
+        }
+      ]
+    },
+    "iot_env_01": {
+      "project_id": "iot",
+      "user_name": "iot_env_01",
+      "session_id": "abaf0a04-2e7d-41d4-8efb-34b875ac7929",
+      "turns": [
+        {
+          "turn": 1,
+          "message": "Báo cáo chỉ số môi trường khu vực nhà máy HCM: nhiệt độ, độ ẩm, AQI",
+          "ok": true,
+          "latency_s": 4.967,
+          "session_id": "abaf0a04-2e7d-41d4-8efb-34b875ac7929",
+          "content": "Hiện tại bạn **chưa cung cấp dữ liệu số** cho khu vực nhà máy HCM.\n\nĐể tôi thực hiện báo cáo và kiểm tra ngưỡng cảnh báo (Nhiệt >35°C, AQI >150), vui lòng cung cấp số liệu theo định dạng:\n*   **Nhiệt độ (°C)**\n*   **Độ ẩm (%)**\n*   **AQI**\n\n**Sau khi bạn gửi số, tôi sẽ:**\n1. Phân tích ngay lập tức.\n2. Thông báo nếu vượt ngưỡng cảnh báo.\n3. Đưa ra lời khuyên sức khỏe cụ thể.",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1382
+        },
+        {
+          "turn": 2,
+          "message": "Hiện tại có cảnh báo ngưỡng nào vượt không, so sánh với 24h qua",
+          "ok": true,
+          "latency_s": 1.667,
+          "session_id": "abaf0a04-2e7d-41d4-8efb-34b875ac7929",
+          "content": "Bạn **chưa cung cấp dữ liệu số** nên tôi chưa thể phân tích.\n\nHãy gửi số liệu **Nhiệt độ, Độ ẩm, AQI** để tôi thực hiện so sánh và cảnh báo ngay lập tức.",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 681
+        },
+        {
+          "turn": 3,
+          "message": "Set threshold cảnh báo khi nhiệt >35°C hoặc AQI >150, lưu log",
+          "ok": true,
+          "latency_s": 3.977,
+          "session_id": "abaf0a04-2e7d-41d4-8efb-34b875ac7929",
+          "content": "Đã thiết lập hệ thống cảnh báo:\n\n*   **Nhiệt độ:** > 35°C $\\rightarrow$ **BÁO ĐỘNG**\n*   **AQI:** > 150 $\\rightarrow$ **BÁO ĐỘNG**\n\n**Hành động:** Hệ thống sẽ tự động ghi log và thông báo ngay khi dữ liệu bạn gửi vào đạt hoặc vượt ngưỡng này. \n\n*Vui lòng gửi số liệu để bắt đầu theo dõi.*",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1003
+        }
+      ]
+    },
+    "vehix_rental_01": {
+      "project_id": "vehix",
+      "user_name": "vehix_rental_01",
+      "session_id": "902e5e9b-68f9-46f2-a990-090de1571969",
+      "turns": [
+        {
+          "turn": 1,
+          "message": "Tôi đang thuê xe Honda Vision, hợp đồng HD-VX-789, kiểm tra tình trạng và số ngày còn lại",
+          "ok": true,
+          "latency_s": 0.853,
+          "session_id": "902e5e9b-68f9-46f2-a990-090de1571969",
+          "content": "Tôi không có dữ liệu này trong context hiện tại. Vui lòng hỏi cụ thể hơn để hệ thống truy xuất.",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1131
+        },
+        {
+          "turn": 2,
+          "message": "Có thể gia hạn thêm 3 ngày không, phí gia hạn bao nhiêu?",
+          "ok": true,
+          "latency_s": 0.829,
+          "session_id": "902e5e9b-68f9-46f2-a990-090de1571969",
+          "content": "Tôi không có dữ liệu này trong context hiện tại. Vui lòng hỏi cụ thể hơn để hệ thống truy xuất.",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1087
+        },
+        {
+          "turn": 3,
+          "message": "Nếu trả xe trễ 2 giờ thì phí phạt tính thế nào, có ưu đãi gì không?",
+          "ok": true,
+          "latency_s": 0.875,
+          "session_id": "902e5e9b-68f9-46f2-a990-090de1571969",
+          "content": "Tôi không có dữ liệu này trong context hiện tại. Vui lòng hỏi cụ thể hơn để hệ thống truy xuất.",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1273
+        }
+      ]
+    },
+    "vehix_contract_01": {
+      "project_id": "vehix",
+      "user_name": "vehix_contract_01",
+      "session_id": "c693b6bd-5c0d-49eb-8b94-3efffacc6223",
+      "turns": [
+        {
+          "turn": 1,
+          "message": "Hợp đồng thuê xe VF-3, biển số 50-A1-234.56, đang cho thuê, kiểm tra thông tin",
+          "ok": true,
+          "latency_s": 0.846,
+          "session_id": "c693b6bd-5c0d-49eb-8b94-3efffacc6223",
+          "content": "Tôi không có dữ liệu này trong context hiện tại. Vui lòng hỏi cụ thể hơn để hệ thống truy xuất.",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1139
+        },
+        {
+          "turn": 2,
+          "message": "Khách thuê đã trả 50% cọc, số dư còn lại và lịch thanh toán tiếp theo?",
+          "ok": true,
+          "latency_s": 1.043,
+          "session_id": "c693b6bd-5c0d-49eb-8b94-3efffacc6223",
+          "content": "Tôi không có dữ liệu này trong context hiện tại. Vui lòng hỏi cụ thể hơn để hệ thống truy xuất.",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1418
+        },
+        {
+          "turn": 3,
+          "message": "Tạo phiếu bảo trì định kỳ 5000km cho xe này, schedule lúc nào phù hợp?",
+          "ok": true,
+          "latency_s": 0.903,
+          "session_id": "c693b6bd-5c0d-49eb-8b94-3efffacc6223",
+          "content": "Tôi không có dữ liệu này trong context hiện tại. Vui lòng hỏi cụ thể hơn để hệ thống truy xuất.",
+          "model": "local-gemma4-e4b-q4",
+          "tokens": 1280
+        }
+      ]
+    }
+  }
+}
