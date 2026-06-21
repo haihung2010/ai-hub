@@ -52,6 +52,10 @@ from app.services.history_service import HistoryService
 from app.services.knowledge_embedding_service import KnowledgeEmbeddingService
 from app.services.knowledge_ingestion_service import KnowledgeIngestionService
 from app.services.knowledge_retrieval_service import KnowledgeRetrievalService
+from app.services.contextualizer import (
+    Contextualizer,
+    LlamaCppContextualizerProvider,
+)
 from app.services.rerank_service import RerankService
 from app.services.memory_consolidation_service import MemoryConsolidationService
 from app.services.memory_extraction_service import MemoryExtractionService
@@ -75,6 +79,7 @@ from app.services.mcp.minimax_websearch import (
 )
 from app.services.usage_service import UsageService
 from app.services.user_service import UserService
+from app.services.observability import init_observability, ObservabilityService
 from app.services.scheduler import PeriodicSummarizer
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -263,6 +268,12 @@ def create_app(
         except Exception as exc:
             logger.error("init_db failed during startup: %s", exc)
             raise
+        # Initialize observability (no-op if LANGFUSE_ENABLED=false)
+        init_observability(settings)
+        logger.info(
+            "ObservabilityService initialized: enabled=%s",
+            ObservabilityService.instance().is_enabled(),
+        )
         timeout = httpx.Timeout(max(settings.request_timeout_seconds, settings.openrouter_timeout_seconds))
         async with httpx.AsyncClient(timeout=timeout) as client:
             provider_router = None  # may be overridden per branch below
@@ -411,11 +422,48 @@ def create_app(
             knowledge_embedding = KnowledgeEmbeddingService(
                 model_name=settings.knowledge_embedding_model,
             )
+            # Anthropic Contextual Retrieval (2026-06-19): LLM-generated
+            # context. Opt-in via ENABLE_LLM_CONTEXTUALIZER. When on, E4B
+            # Q4 (port 8081) generates 50-100 token context per chunk. The
+            # Contextualizer swallows its own errors and falls back to a
+            # deterministic header, so ingestion is never blocked by E4B
+            # availability.
+            contextualizer: Contextualizer | None = None
+            if settings.enable_llm_contextualizer:
+                contextualizer_url = (
+                    settings.contextualizer_url
+                    or settings.background_llama_cpp_openai_url
+                )
+                if background_provider is not None:
+                    adapter = LlamaCppContextualizerProvider(
+                        llama_cpp_provider=background_provider,
+                        model=settings.contextualizer_model,
+                    )
+                    contextualizer = Contextualizer(
+                        provider=adapter,
+                        model=settings.contextualizer_model,
+                        max_context_tokens=settings.contextualizer_max_context_tokens,
+                        timeout_seconds=settings.contextualizer_timeout_seconds,
+                    )
+                    logger.info(
+                        "Contextualizer enabled: url=%s model=%s max_tokens=%d timeout=%.1fs",
+                        contextualizer_url,
+                        settings.contextualizer_model,
+                        settings.contextualizer_max_context_tokens,
+                        settings.contextualizer_timeout_seconds,
+                    )
+                else:
+                    logger.warning(
+                        "ENABLE_LLM_CONTEXTUALIZER=true but no background_provider "
+                        "(port 8081) is configured — Contextualizer stays disabled. "
+                        "Set BACKGROUND_LLAMA_CPP_ENABLED=true and start E4B on :8081."
+                    )
             knowledge_ingestion = KnowledgeIngestionService(
                 chunk_chars=settings.knowledge_chunk_chars,
                 chunk_overlap_chars=settings.knowledge_chunk_overlap_chars,
                 max_card_chars=settings.knowledge_max_card_chars,
                 embedding_service=knowledge_embedding,
+                contextualizer=contextualizer,
             )
             reranker = (
                 RerankService(
@@ -509,6 +557,7 @@ def create_app(
             app.state.pinned_memory_service = pinned_memory
             app.state.knowledge_ingestion_service = knowledge_ingestion
             app.state.knowledge_retrieval_service = knowledge_retrieval
+            app.state.contextualizer = contextualizer
             app.state.rerank_service = reranker
             app.state.usage_service = usage
             app.state.failure_risk_service = failure_risk
@@ -660,6 +709,8 @@ def create_app(
             # Graceful shutdown — flush pending Langfuse spans so a clean
             # exit does not drop the last few traces.
             langfuse_shutdown()
+            # Flush pending observability spans on shutdown
+            ObservabilityService.instance().flush()
             # Drain the security-audit writer so the last few rate-limit
             # / auth-failure denials are not lost on shutdown.
             from app.services.security_audit import shutdown as security_audit_shutdown
