@@ -1,0 +1,12 @@
+# POC-only deps; install in separate venv_poc to avoid breaking ai-hub venv.
+# ai-hub runs Gemma 4 12B Q4 + E4B Q4 + E2B Q4 mmproj on 16GB VRAM.
+# These deps pull heavy ML stacks (torch, detectron2, surya) that would
+# conflict with ai-hub's pinned versions. NEVER `pip install` from this file
+# into ai-hub's ./venv/. Operator creates venv_poc and installs there.
+
+docling>=2.0
+marker-pdf>=1.0
+unstructured>=0.16
+pdf2image>=1.17
+Pillow>=10.0
+PyMuPDF>=1.24
