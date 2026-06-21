@@ -44,10 +44,32 @@ class ObservabilityService:
 
     @classmethod
     def instance(cls) -> "ObservabilityService":
-        """Return the process-wide singleton, or a no-op if not initialized."""
+        """Return the process-wide singleton, or a no-op fallback if not initialized.
+
+        Why a no-op fallback: the @observe() decorators at class-body level
+        (ai_service, llama_cpp, contextualizer, etc.) call instance() at
+        import time. Before main.py has run init_observability(), the
+        singleton is None and env vars may not be set — constructing a real
+        Settings(_env_file=None) in that state fails the app boot. Falling
+        back to a no-op keeps the import-time decorator chain safe; the real
+        service replaces it once main.py calls init_observability().
+        """
         if cls._instance is None:
             from app.core.config import Settings
-            return cls(Settings(_env_file=None))  # type: ignore[call-arg]
+            try:
+                # Let pydantic-settings auto-load .env from CWD. If env is
+                # missing, the except branch keeps the app bootable.
+                return cls(Settings())
+            except Exception:
+                # Bootstrap no-op — same shape, langfuse_enabled=False, so
+                # observe() returns _noop_decorator and flush() is a no-op.
+                noop = cls.__new__(cls)
+                noop._settings = None  # type: ignore[attr-defined]
+                noop._enabled = False
+                noop._otel_trace_provider = None
+                noop._otel_exporter = None
+                noop._otel_processor = None
+                return noop
         return cls._instance
 
     @classmethod
@@ -68,10 +90,16 @@ class ObservabilityService:
 
             resource = Resource.create({"service.name": "ai-hub"})
             provider = TracerProvider(resource=resource)
+            # Langfuse OTLP/HTTP auth is HTTP Basic with public_key:secret_key
+            # (NOT Bearer). Verified against the v3.194 OTLP endpoint.
+            import base64
+            basic_token = base64.b64encode(
+                f"{self._settings.langfuse_public_key}:{self._settings.langfuse_secret_key}".encode()
+            ).decode()
             exporter = OTLPSpanExporter(
                 endpoint=f"{self._settings.langfuse_otlp_endpoint}/v1/traces",
                 headers={
-                    "Authorization": f"Bearer {self._settings.langfuse_public_key}:{self._settings.langfuse_secret_key}",
+                    "Authorization": f"Basic {basic_token}",
                 },
             )
             processor = BatchSpanProcessor(
