@@ -9,6 +9,7 @@ from collections.abc import Sequence
 
 from app.core.database import DEFAULT_TENANT_ID, get_db_connection
 from app.models.chat import Message
+from app.services.observability import ObservabilityService
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +137,7 @@ class MemoryExtractionService:
                     )
             conn.commit()
 
+    @ObservabilityService.instance().observe("memory.extract")
     async def extract_and_store(
         self,
         *,
