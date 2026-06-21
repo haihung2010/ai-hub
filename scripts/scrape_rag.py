@@ -418,6 +418,8 @@ async def run_scrape(
                 for scrape in results:
                     try:
                         card = _to_card(scrape, project_id=project_id, tenant_id=tenant_id)
+                        # create_card is now a sync wrapper around
+                        # create_card_async (2026-06-19: Contextual Retrieval).
                         ingestion.create_card(card)
                         report.cards_ingested += 1
                     except Exception as e:

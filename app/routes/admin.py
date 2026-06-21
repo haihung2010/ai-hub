@@ -270,19 +270,28 @@ async def reindex_knowledge(
     project_id: str | None = None,
     batch_size: int = 50,
     force: bool = False,
+    contextualize: bool = True,
 ) -> dict[str, object]:
     """Back-fill embeddings for knowledge chunks.
 
     By default only re-embeds chunks with NULL embedding. Pass ``force=true``
     to re-embed every chunk — required to roll out Contextual Retrieval to
     chunks ingested before the feature existed.
+
+    ``contextualize=true`` (default) uses the LLM-generated context (E4B
+    on port 8081) when ENABLE_LLM_CONTEXTUALIZER is set; otherwise it
+    uses the deterministic metadata-derived header. Pass
+    ``contextualize=false`` to skip the LLM path even when the flag is on
+    (e.g. for a one-off migration where you only want to backfill
+    embeddings without re-running E4B).
     """
     ingestion = request.app.state.knowledge_ingestion_service
-    result = ingestion.fill_missing_embeddings(
+    result = await ingestion.fill_missing_embeddings_async(
         tenant_id=tenant_id,
         project_id=project_id,
         batch_size=batch_size,
         force=force,
+        contextualize=contextualize,
     )
     return result
 
@@ -813,7 +822,7 @@ async def upload_knowledge(payload: RagUploadRequest, request: Request):
         content=payload.content,
         tags=payload.tags,
     )
-    card = ingestion.create_card(card_req)
+    card = await ingestion.create_card_async(card_req)
     return {"id": card.id, "status": "indexed"}
 
 

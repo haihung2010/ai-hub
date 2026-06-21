@@ -18,7 +18,7 @@ async def create_knowledge_card(req: KnowledgeCardCreate, request: Request) -> d
     # clients cannot create cards in a tenant they don't own).
     req.tenant_id = resolve_tenant(request, req.tenant_id)
     ingestion: KnowledgeIngestionService = request.app.state.knowledge_ingestion_service
-    card = ingestion.create_card(req)
+    card = await ingestion.create_card_async(req)
     return {"card": _card_to_dict(card)}
 
 
