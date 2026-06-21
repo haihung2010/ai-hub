@@ -753,6 +753,11 @@ def create_app(
     app.include_router(predictions_routes.router)
     app.include_router(crew_routes.router)
     app.include_router(admin_routes.router)
+    # Task 4.2 — Langfuse admin endpoints (cost / latency / traces / health).
+    # 503 when LANGFUSE_ENABLED=false; full query implementation deferred
+    # to Phase 2. See docs/superpowers/plans/2026-06-21-langfuse-observability-doc-ingestion-poc.md
+    from app.routes import admin_langfuse as admin_langfuse_routes
+    app.include_router(admin_langfuse_routes.router)
     app.include_router(mcp_tools_routes.router)
     app.include_router(fb_webhook_routes.router)
     app.include_router(skills_routes.router)
