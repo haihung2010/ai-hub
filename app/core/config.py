@@ -129,6 +129,16 @@ class Settings(BaseSettings):
     langfuse_public_key: str = Field(default="", alias="LANGFUSE_PUBLIC_KEY")
     langfuse_secret_key: str = Field(default="", alias="LANGFUSE_SECRET_KEY")
     langfuse_host: str = Field(default="http://localhost:3000", alias="LANGFUSE_HOST")
+    # ── Observability: Langfuse ─────────────────────────────────
+    langfuse_enabled: bool = Field(default=False, alias="LANGFUSE_ENABLED")
+    langfuse_otlp_endpoint: str = Field(
+        default="http://localhost:3000/api/public/otel",
+        alias="LANGFUSE_OTLP_ENDPOINT",
+    )
+    langfuse_flush_interval_seconds: float = Field(
+        default=5.0, alias="LANGFUSE_FLUSH_INTERVAL_SECONDS"
+    )
+    langfuse_sample_rate: float = Field(default=1.0, alias="LANGFUSE_SAMPLE_RATE")
     public_health_enabled: bool = Field(default=True, alias="PUBLIC_HEALTH_ENABLED")
     public_docs_enabled: bool = Field(default=True, alias="PUBLIC_DOCS_ENABLED")
     auth_failure_limit: int = Field(default=10, ge=1, alias="AUTH_FAILURE_LIMIT")
@@ -184,6 +194,18 @@ class Settings(BaseSettings):
     background_llama_cpp_openai_url: str = Field(default="http://localhost:8081/v1", alias="BACKGROUND_LLAMA_CPP_OPENAI_URL")
     background_llama_cpp_enabled: bool = Field(default=False, alias="BACKGROUND_LLAMA_CPP_ENABLED")
     background_llama_cpp_parallel: int = Field(default=8, ge=1, alias="BACKGROUND_LLAMA_CPP_PARALLEL")
+    # Anthropic Contextual Retrieval (2026-06-19). When enabled, the
+    # Contextualizer uses E4B Q4 (port 8081) to generate 50-100 token
+    # context per chunk. The generated text is prepended to the chunk
+    # before embedding AND before the FTS tsvector is built. Falls back
+    # to the deterministic metadata-derived header on E4B failure/timeout
+    # — ingestion never blocks on the contextualizer.
+    enable_llm_contextualizer: bool = Field(default=False, alias="ENABLE_LLM_CONTEXTUALIZER")
+    contextualizer_url: str = Field(default="", alias="CONTEXTUALIZER_URL")
+    contextualizer_model: str = Field(default="local-gemma4-e4b-q4-text", alias="CONTEXTUALIZER_MODEL")
+    contextualizer_max_concurrency: int = Field(default=4, ge=1, alias="CONTEXTUALIZER_MAX_CONCURRENCY")
+    contextualizer_timeout_seconds: float = Field(default=30.0, gt=0, alias="CONTEXTUALIZER_TIMEOUT_SECONDS")
+    contextualizer_max_context_tokens: int = Field(default=100, ge=20, le=400, alias="CONTEXTUALIZER_MAX_CONTEXT_TOKENS")
     ihi_llama_cpp_openai_url: str = Field(default="http://localhost:8083/v1", alias="IHI_LLAMA_CPP_OPENAI_URL")
     ihi_llama_cpp_enabled: bool = Field(default=True, alias="IHI_LLAMA_CPP_ENABLED")
     llama_cpp_nodes: list[str] = Field(default_factory=list, alias="LLAMA_CPP_NODES")
