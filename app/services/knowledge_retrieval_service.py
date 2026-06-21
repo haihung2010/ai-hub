@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from app.core.database import get_db_connection
 from app.models.knowledge import KnowledgeSearchResult
 from app.services.knowledge_embedding_service import KnowledgeEmbeddingService
+from app.services.observability import ObservabilityService
 from app.services.rerank_service import RerankService
 
 logger = logging.getLogger(__name__)
@@ -18,8 +19,11 @@ _RRF_K = 60               # Reciprocal Rank Fusion constant
 _VECTOR_CANDIDATES = 20    # Top-N from vector search
 _FTS_CANDIDATES = 20       # Top-N from full-text search
 _RERANK_CANDIDATE_K = 20   # Top-N sent to reranker
-_HIGH_CONFIDENCE_THRESHOLD = 0.85
 _DEDUP_SIMILARITY_THRESHOLD = 0.85
+# Note: the pre-existing `_HIGH_CONFIDENCE_THRESHOLD = 0.85` was removed
+# in 2026-06-19 (Anthropic Contextual Retrieval). The reranker now runs
+# on every search — the +1 RTT is the cost of the documented −67%
+# retrieval failure rate.
 
 # P0.2 (2026-06-10): RAG content segregation. Strip prompt-injection tokens
 # (ChatML/llama.cpp role markers) from chunk content before it is rendered
@@ -74,6 +78,7 @@ class KnowledgeRetrievalService:
 
     # ── Main search: Hybrid Vector + FTS with RRF ──────────────
 
+    @ObservabilityService.instance().observe("retrieval.hybrid_search")
     def search(
         self,
         *,
@@ -109,6 +114,44 @@ class KnowledgeRetrievalService:
             knowledge_domain=knowledge_domain,
             limit=limit,
         )
+
+    def _apply_rerank(
+        self,
+        results: list[KnowledgeSearchResult],
+        query: str,
+    ) -> list[KnowledgeSearchResult]:
+        """Rerank the top candidates using the cross-encoder reranker.
+
+        Anthropic full Contextual Retrieval (2026-06-19) recommends
+        reranking ALWAYS, not just when the vector top score is low. The
+        pre-existing ``top_score < 0.85`` fast path is removed because
+        Contextual Retrieval pushes the failure rate down by 67% in
+        exchange for one extra RTT to the reranker on every search.
+
+        Falls back to the hybrid (vector + FTS) results if the reranker
+        raises — a 5xx from the reranker is not worth failing the
+        whole search request.
+        """
+        if not (self._rerank and results):
+            return results
+        candidates = results[:_RERANK_CANDIDATE_K]
+        docs = [r.content for r in candidates]
+        try:
+            reranked = self._rerank.rerank(query, docs)
+            if hasattr(reranked, "__await__"):
+                # coroutine returned (caller didn't await) — can't await
+                # here because we're in a sync thread. Skip rerank,
+                # return hybrid results.
+                logger.warning(
+                    "rerank.rerank returned coroutine without await; "
+                    "falling back to non-reranked results (query=%r)",
+                    query[:60],
+                )
+                return results
+            return [candidates[rr.index] for rr in reranked]
+        except Exception as e:
+            logger.warning("Rerank failed; falling back: %r", e)
+            return results
 
     def _hybrid_search(
         self,
@@ -221,30 +264,12 @@ class KnowledgeRetrievalService:
         # Deduplicate
         results = self._deduplicate_results(results)
 
-        # Rerank if available and top score is not already high
-        # NOTE: rerank() is async but _hybrid_search is sync (called from thread).
-        # If the rerank call returns a coroutine (caller forgot to await), fall
-        # back to non-reranked results rather than crashing the search. (fixed
-        # 2026-06-08 — was causing /v1/knowledge/search to 500)
-        if self._rerank and results:
-            top_score = results[0].score
-            if top_score < _HIGH_CONFIDENCE_THRESHOLD:
-                candidates = results[:_RERANK_CANDIDATE_K]
-                docs = [r.content for r in candidates]
-                try:
-                    reranked = self._rerank.rerank(query, docs)
-                    if hasattr(reranked, "__await__"):
-                        # coroutine returned (caller didn't await) — can't await here
-                        # because we're in a sync thread. Skip rerank, return hybrid results.
-                        logger.warning(
-                            "rerank.rerank returned coroutine without await; "
-                            "falling back to non-reranked results (query=%r)",
-                            query[:60],
-                        )
-                    else:
-                        results = [candidates[rr.index] for rr in reranked]
-                except Exception as e:
-                    logger.warning("Rerank failed; falling back: %r", e)
+        # Anthropic Contextual Retrieval (2026-06-19): always rerank when
+        # a rerank service is configured. The previous threshold-based
+        # short-circuit (`top_score < 0.85`) traded a tiny accuracy hit
+        # for one saved RTT. With Contextual Retrieval, the failure
+        # rate drops by 67% only if the reranker is always in the loop.
+        results = self._apply_rerank(results, query)
 
         return results[:limit]
 
