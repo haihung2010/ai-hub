@@ -12,6 +12,7 @@ import httpx
 
 from app.core.errors import OllamaUnavailable, UpstreamError, UpstreamTimeout, VramExhausted
 from app.models.chat import Message
+from app.services.observability import ObservabilityService
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +128,7 @@ class LlamaCppProvider:
             raise VramExhausted(resp.text)
         raise UpstreamError(f"llama.cpp {resp.status_code}: {resp.text[:200]}")
 
+    @ObservabilityService.instance().observe("llm.llama_cpp")
     async def complete(
         self,
         messages: list[Message],
