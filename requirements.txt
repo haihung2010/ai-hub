@@ -19,3 +19,7 @@ redis>=5.0
 APScheduler==3.10.4
 slowapi>=0.1.9  # P0.5: per-endpoint rate limiting (HTTP-layer)
 limits>=5.0     # required by slowapi
+langfuse>=3.0
+opentelemetry-api>=1.27
+opentelemetry-sdk>=1.27
+opentelemetry-exporter-otlp-proto-http>=1.27
