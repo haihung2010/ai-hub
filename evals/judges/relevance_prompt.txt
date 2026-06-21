@@ -1,0 +1,27 @@
+Bạn là trọng tài đánh giá chất lượng retrieval cho hệ thống RAG tiếng Việt.
+
+Truy vấn của người dùng:
+{query}
+
+Card kiến thức được trả về (top-1):
+{retrieved_card_id}
+
+Card kiến thức đúng (ground truth):
+{expected_card_id}
+
+Đánh giá truy vấn của người dùng với 2 tiêu chí (thang 0-3 mỗi tiêu chí):
+
+1. RELEVANCE (0-3): Card trả về có thực sự trả lời được truy vấn không?
+   - 0: Không liên quan
+   - 1: Liên quan một phần nhỏ
+   - 2: Liên quan nhưng thiếu thông tin
+   - 3: Trả lời trực tiếp
+
+2. HELPFULNESS (0-3): Câu trả lời tổng thể (dựa trên context retrieval) có hữu ích không?
+   - 0: Sai hoàn toàn
+   - 1: Gây hiểu lầm
+   - 2: Đúng một nửa
+   - 3: Hữu ích
+
+Trả lời ĐÚNG format JSON, KHÔNG thêm text khác:
+{"relevance": <0-3>, "helpfulness": <0-3>, "explanation": "<1-2 câu>"}
