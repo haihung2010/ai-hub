@@ -44,6 +44,7 @@ from app.core.database import _get_pool
 from app.utils.cost_calculator import calculate_cost_usd
 from app.utils.token_counter import count_messages_tokens, count_text_tokens
 from app.services.user_service import UserService
+from app.services.observability import ObservabilityService
 
 logger = logging.getLogger(__name__)
 
@@ -1738,10 +1739,19 @@ class AIService:
             )
         )
 
+    @ObservabilityService.instance().observe("chat.request")
     async def chat(self, req: ChatRequest, api_key_id: str | None = None) -> ChatResponse:
         started = time.perf_counter()
         user_id = self._resolve_user(req)
         session_id = self._resolve_session(req, user_id)
+
+        # Propagate multi-tenant metadata to the trace
+        ObservabilityService.instance().set_current_metadata(
+            tenant_id=req.tenant_id,
+            project_id=req.project_id,
+            user_id=user_id,
+            session_id=getattr(req, "session_id", None),
+        )
 
         # P1.5-followup (2026-06-12) — ctx overflow guard. On 16GB
         # GPUs the configured ctx is tight (default 6K after the
