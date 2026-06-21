@@ -1,0 +1,50 @@
+{"query": "Chính sách bảo hiểm xe ô tô của Vehix là gì?", "expected_card_id": "vehix_insurance_policy", "domain": "vehix"}
+{"query": "Điều kiện ký hợp đồng dịch vụ xe khách tại Hà Nội như thế nào?", "expected_card_id": "vehix_service_contract", "domain": "vehix"}
+{"query": "Phí bảo hiểm xe tải 5 tấn mỗi năm là bao nhiêu?", "expected_card_id": "vehix_insurance_premium", "domain": "vehix"}
+{"query": "Vehix hỗ trợ đăng ký xe máy điện ở tỉnh nào?", "expected_card_id": "vehix_ev_registration", "domain": "vehix"}
+{"query": "Quy trình nhận xe sửa chữa tại gara liên kết Vehix ra sao?", "expected_card_id": "vehix_garage_workflow", "domain": "vehix"}
+{"query": "Hợp đồng thuê xe dài hạn 12 tháng cần giấy tờ gì?", "expected_card_id": "vehix_long_term_rental", "domain": "vehix"}
+{"query": "Chính sách hoàn tiền khi hủy đơn bảo hiểm xe ô tô trong 14 ngày đầu", "expected_card_id": "vehix_insurance_refund", "domain": "vehix"}
+{"query": "Bảo hiểm TNDS bắt buộc cho xe máy giá bao nhiêu một năm?", "expected_card_id": "vehix_motorbike_tnds", "domain": "vehix"}
+{"query": "Vehix có hỗ trợ tư vấn pháp lý khi xảy ra tai nạn giao thông không?", "expected_card_id": "vehix_legal_support", "domain": "vehix"}
+{"query": "Hạn mức bồi thường tối đa cho xe khách 45 chỗ là bao nhiêu?", "expected_card_id": "vehix_compensation_limit", "domain": "vehix"}
+{"query": "Fanpage bot tự động trả lời tin nhắn Facebook như thế nào?", "expected_card_id": "fanpage_bot_overview", "domain": "fanpage"}
+{"query": "Cách cấu hình webhook Zalo OA để nhận tin nhắn từ khách hàng", "expected_card_id": "fanpage_zalo_webhook_setup", "domain": "fanpage"}
+{"query": "Bot có thể tự động trả lời inbox theo kịch bản có sẵn không?", "expected_card_id": "fanpage_auto_reply_script", "domain": "fanpage"}
+{"query": "Fanpage bot hỗ trợ tiếng Việt có dấu và tiếng Anh cùng lúc không?", "expected_card_id": "fanpage_multilingual", "domain": "fanpage"}
+{"query": "Tích hợp fanpage với Chatwoot để chuyển tiếp hội thoại sang nhân viên", "expected_card_id": "fanpage_chatwoot_handoff", "domain": "fanpage"}
+{"query": "Bot có phân biệt được tin nhắn quảng cáo và tin nhắn thật từ khách hàng không?", "expected_card_id": "fanpage_ad_filter", "domain": "fanpage"}
+{"query": "Cách đồng bộ hội thoại fanpage vào CRM để theo dõi khách hàng", "expected_card_id": "fanpage_crm_sync", "domain": "fanpage"}
+{"query": "Fanpage bot có thể gửi tin nhắn broadcast đến tất cả follower không?", "expected_card_id": "fanpage_broadcast", "domain": "fanpage"}
+{"query": "Cấu hình giờ trả lời tự động cho fanpage ngoài giờ hành chính", "expected_card_id": "fanpage_off_hours", "domain": "fanpage"}
+{"query": "Bot có tự động gắn tag khách hàng tiềm năng vào fanpage không?", "expected_card_id": "fanpage_lead_tagging", "domain": "fanpage"}
+{"query": "IHI cảm biến áp suất lốp model nào phù hợp cho xe tải 7 tấn?", "expected_card_id": "ihi_tire_sensor_7t", "domain": "ihi"}
+{"query": "Cảm biến nhiệt độ IHI hoạt động ở dải đo nào?", "expected_card_id": "ihi_temp_sensor_range", "domain": "ihi"}
+{"query": "Giao thức truyền dữ liệu của cảm biến IHI là CAN bus hay Modbus?", "expected_card_id": "ihi_sensor_protocol", "domain": "ihi"}
+{"query": "Cách kết nối cảm biến IHI với bộ điều khiển trung tâm IoT gateway", "expected_card_id": "ihi_iot_gateway_setup", "domain": "ihi"}
+{"query": "Tần suất lấy mẫu áp suất lốp của cảm biến IHI mặc định là bao nhiêu giây?", "expected_card_id": "ihi_sample_rate", "domain": "ihi"}
+{"query": "Cảm biến IHI có chống nước theo chuẩn IP67 không?", "expected_card_id": "ihi_ip67_rating", "domain": "ihi"}
+{"query": "Tuổi thọ pin của cảm biến áp suất lốp IHI là bao lâu?", "expected_card_id": "ihi_battery_life", "domain": "ihi"}
+{"query": "Dữ liệu cảm biến IHI có thể xuất ra định dạng JSON hay CSV?", "expected_card_id": "ihi_data_export_format", "domain": "ihi"}
+{"query": "Cảm biến rung IHI phù hợp đo độ rung cho máy bơm công nghiệp không?", "expected_card_id": "ihi_vibration_sensor", "domain": "ihi"}
+{"query": "Cách hiệu chuẩn cảm biến áp suất IHI sau khi thay pin", "expected_card_id": "ihi_calibration", "domain": "ihi"}
+{"query": "Đơn hàng ecommerce của tôi đang ở trạng thái vận chuyển, kiểm tra giúp tôi", "expected_card_id": "ecom_order_tracking", "domain": "ecommerce"}
+{"query": "Tỉ giá USD/VND hôm nay ảnh hưởng đến đơn hàng ecommerce nhập khẩu thế nào?", "expected_card_id": "ecom_fx_impact", "domain": "ecommerce"}
+{"query": "Chính sách đổi trả hàng trong vòng 7 ngày áp dụng khi nào?", "expected_card_id": "ecom_return_policy", "domain": "ecommerce"}
+{"query": "Phương thức thanh toán nào được hỗ trợ trên sàn ecommerce Việt Nam?", "expected_card_id": "ecom_payment_methods", "domain": "ecommerce"}
+{"query": "Đơn hàng trên 2 triệu đồng có được miễn phí vận chuyển không?", "expected_card_id": "ecom_free_shipping_threshold", "domain": "ecommerce"}
+{"query": "Cách hủy đơn hàng ecommerce khi đã thanh toán qua ví MoMo", "expected_card_id": "ecom_cancel_momo_order", "domain": "ecommerce"}
+{"query": "Thời gian giao hàng nội thành Hà Nội là bao lâu sau khi đặt?", "expected_card_id": "ecom_hanoi_delivery_time", "domain": "ecommerce"}
+{"query": "Tôi muốn đổi địa chỉ giao hàng sau khi đã đặt đơn ecommerce", "expected_card_id": "ecom_change_address", "domain": "ecommerce"}
+{"query": "Mã giảm giá FREESHIP có áp dụng cho đơn hàng Shopee không?", "expected_card_id": "ecom_voucher_freeship", "domain": "ecommerce"}
+{"query": "Sàn ecommerce nào hỗ trợ thanh toán COD cho khu vực miền Trung?", "expected_card_id": "ecom_cod_mientrung", "domain": "ecommerce"}
+{"query": "Bạn có thể giúp tôi tóm tắt cuộc trò chuyện trước đó không?", "expected_card_id": "default_conversation_summary", "domain": "default"}
+{"query": "Tôi muốn xóa lịch sử hội thoại cũ nhưng giữ lại kiến thức đã học", "expected_card_id": "default_clear_history_keep_memory", "domain": "default"}
+{"query": "Làm thế nào để đổi tên hiển thị trong hệ thống ai-hub?", "expected_card_id": "default_change_display_name", "domain": "default"}
+{"query": "Hệ thống có hỗ trợ đăng nhập bằng Google OAuth không?", "expected_card_id": "default_oauth_login", "domain": "default"}
+{"query": "Tôi có thể dùng API key để gọi từ server backend của tôi không?", "expected_card_id": "default_api_key_usage", "domain": "default"}
+{"query": "Cách bật chế độ streaming cho câu trả lời trong UI chính", "expected_card_id": "default_streaming_toggle", "domain": "default"}
+{"query": "Giới hạn tốc độ truy cập API là bao nhiêu request mỗi phút?", "expected_card_id": "default_rate_limit_info", "domain": "default"}
+{"query": "Tôi muốn xuất dữ liệu hội thoại của tôi ra file JSON để backup", "expected_card_id": "default_export_chat_json", "domain": "default"}
+{"query": "Làm sao để tạo session mới mà vẫn giữ lại bộ nhớ user?", "expected_card_id": "default_new_session_keep_memory", "domain": "default"}
+{"query": "Hệ thống hỗ trợ những ngôn ngữ nào ngoài tiếng Việt?", "expected_card_id": "default_supported_languages", "domain": "default"}
