@@ -27,11 +27,58 @@ Central router for per-project AI chat, optimized for local llama.cpp (Q8) with 
 
 ### RAG / Knowledge Base
 - Knowledge cards chunking (2000 chars/chunk default)
-- **Hybrid Search**: 70% Semantic (FastEmbed `paraphrase-multilingual-MiniLM-L12-v2` with `onnxruntime-gpu`) + 30% Token overlap
-- **Reranking**: `bge-reranker-v2-m3` via local llama.cpp (port 8082)
+- **Hybrid Search**: vector (pgvector) + FTS (tsvector) kết hợp bằng Reciprocal Rank Fusion (`_RRF_K=60`); 20 candidates mỗi path → rerank top 20
+- **Embedding**: FastEmbed `paraphrase-multilingual-MiniLM-L12-v2` với `onnxruntime-gpu`; cosine distance trên HNSW index
+- **Reranking**: `bge-reranker-v2-m3` qua local llama.cpp (port 8082), LUÔN rerank (Anthropic recipe — bỏ threshold cũ 0.85, xem plan 2026-06-19)
+- **Anthropic Contextual Retrieval** (2026-06-19, opt-in qua `ENABLE_LLM_CONTEXTUALIZER=true`): pre-generate 50-100 token semantic context per chunk qua E4B Q4 (port 8081), prepend vào chunk trước embed + FTS. Anthropic benchmark: −67% retrieval failure. Plan: `docs/PLAN_headroom_cascadeflow_integration.md` (cùng ngày) và TDD tests trong `tests/unit/test_contextualizer.py`, `tests/unit/test_ingestion_with_contextualizer.py`, `tests/unit/test_retrieval_rerank.py`
 - Domain-based organization, trust levels, versioning, tags
 - Endpoints: `POST /v1/knowledge/cards`, `GET /v1/knowledge/cards`, `POST /v1/knowledge/search`
-- **Admin Reindex**: `POST /v1/admin/knowledge/reindex` to backfill embeddings
+- **Admin Reindex**: `POST /v1/admin/knowledge/reindex?force=true&contextualize=true` để backfill embeddings (optionally qua LLM). Script: `scripts/reindex_knowledge.py --force --contextualize`
+- **A/B Benchmark**: `evals/build_knowledge_eval.py` (build JSONL từ knowledge cards) + `evals/bench_contextual_retrieval.py` (nDCG@10, MRR, hit_rate@5)
+
+### Observability
+- **Langfuse v3** (local stack via `docker/langfuse/docker-compose.yml`, MIT + `ee/` carve-out, 4 components: Postgres + ClickHouse + Redis/Valkey + MinIO S3)
+- Start local stack: `./scripts/start_langfuse.sh` (waits up to 60s for `/api/public/health`)
+- Health check: `./venv/bin/python scripts/langfuse_health.py`
+- OTLP/HTTP export to `/api/public/otel/v1/traces` (no gRPC)
+- `app/services/observability.py` — `ObservabilityService` singleton with `@observe()` decorator
+  - No-op when `LANGFUSE_ENABLED=false` (default) — existing tests + dev work without Langfuse
+  - `set_current_metadata(tenant_id, project_id, user_id, session_id)` propagates multi-tenant context to all child spans
+  - `flush()` called at app shutdown
+- Wired into:
+  - `app/services/ai_service.py` (`@observe("chat.request")`)
+  - `app/services/providers/llama_cpp.py` (`@observe("llm.llama_cpp")`)
+  - `app/services/knowledge_retrieval_service.py` (`@observe("retrieval.hybrid_search")`)
+  - `app/services/rerank_service.py` (`@observe("retrieval.rerank")`)
+  - `app/services/contextualizer.py` (`@observe("contextualize")`)
+  - `app/services/memory_extraction_service.py` (`@observe("memory.extract")`)
+- Admin endpoints: `app/routes/admin_langfuse.py` (prefix `/v1/admin/langfuse`)
+  - `GET /cost?days=7` — per-tenant cost summary (503 when disabled)
+  - `GET /latency?days=7` — p50/p95/p99 per route (503 when disabled)
+  - `GET /traces/{trace_id}` — fetch single trace (503 when disabled)
+  - `GET /health` — integration health check (200 with status=disabled|ok)
+
+### Eval Pipeline
+- **Vietnamese contextual retrieval dataset**: `evals/datasets/contextual_retrieval_vi.jsonl` (50 queries × 5 domains: vehix, fanpage, ihi, ecommerce, default — 10 each)
+- **Langfuse dataset sync**: `evals/langfuse_dataset_sync.py --dataset <name> --file <jsonl>` (requires `LANGFUSE_ENABLED=true`)
+- **LLM-as-judge**: `evals/judges/llm_judge_vi.py` — Vietnamese relevance/helpfulness scoring via E4B Q4 port 8081 (no OpenAI key required)
+  - Prompt: `evals/judges/relevance_prompt.txt`
+  - JSON-tolerant parser (handles markdown code fences)
+- **A/B benchmark**: `evals/bench_contextual_retrieval.py` now supports:
+  - `--judge` — runs LLM-as-judge on each result
+  - `--langfuse-dataset <name>` — pushes results to Langfuse as dataset experiment
+- **10-persona integration**: `scripts/test_10user_memory_quality.py` wrapped in `persona.{name}` spans
+- Run A/B: `./venv/bin/python evals/bench_contextual_retrieval.py --label after --output reports/ctx_after.json --judge --langfuse-dataset contextual_retrieval_vi`
+
+### Document Ingestion POC (2026-06-21)
+- **Status**: POC complete, awaiting integration decision
+- **Candidates evaluated**: Docling, Marker, Unstructured.io
+- **Eval runner**: `pocs/doc_ingestion/eval_runner.py` (unified CLI for 3 candidates)
+- **Results + decision**: `pocs/doc_ingestion/COMPARISON.md`
+- **Vietnamese fixtures**: `pocs/doc_ingestion/fixtures/` (vehix, fanpage, IHI)
+- **POC deps**: install in separate `venv_poc` (do NOT install in `./venv/` — would break ai-hub)
+  - `python -m venv venv_poc && ./venv_poc/bin/pip install -r pocs/doc_ingestion/requirements_poc.txt`
+- **Integration path**: drop-in replacement for current 2000-char fixed chunking in `app/services/knowledge_ingestion_service.py`
 
 ### Web Search
 - Backend: **MiniMax WebSearch MCP** (`minimax-coding-plan-mcp` package, runs locally via `uvx`)
