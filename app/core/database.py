@@ -656,12 +656,31 @@ def init_db() -> None:
             conn.execute("UPDATE knowledge_card_chunks SET content_tsv = to_tsvector('simple', COALESCE(content, '')) WHERE content_tsv IS NULL")
             conn.commit()
 
+        # Anthropic Contextual Retrieval (2026-06-19): LLM-generated context.
+        # `contextual_text` is the full text that gets embedded AND indexed
+        # in the FTS tsvector. The trigger below prefers it over raw `content`
+        # so lexical search (BM25) benefits from the semantic framing.
+        # Existing rows (pre-migration) leave contextual_text NULL → the
+        # COALESCE in the trigger falls back to raw content, preserving
+        # their current FTS index until the reindex job backfills.
+        if not _column_exists(conn, "knowledge_card_chunks", "contextual_text"):
+            logger.info("Adding contextual_text column to knowledge_card_chunks")
+            conn.execute("ALTER TABLE knowledge_card_chunks ADD COLUMN contextual_text TEXT NOT NULL DEFAULT ''")
+            conn.commit()
+        if not _column_exists(conn, "knowledge_card_chunks", "contextual_model_version"):
+            logger.info("Adding contextual_model_version column to knowledge_card_chunks")
+            conn.execute("ALTER TABLE knowledge_card_chunks ADD COLUMN contextual_model_version TEXT NOT NULL DEFAULT ''")
+            conn.commit()
+
         try:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_chunks_content_tsv ON knowledge_card_chunks USING gin(content_tsv)")
             conn.execute("""
                 CREATE OR REPLACE FUNCTION update_chunk_tsv() RETURNS trigger AS $$
                 BEGIN
-                  NEW.content_tsv := to_tsvector('simple', COALESCE(NEW.content, ''));
+                  -- Prefer LLM-generated contextual_text when set; otherwise
+                  -- fall back to raw chunk content (existing rows, ingestion
+                  -- with contextualizer disabled).
+                  NEW.content_tsv := to_tsvector('simple', COALESCE(NULLIF(NEW.contextual_text, ''), NEW.content, ''));
                   RETURN NEW;
                 END;
                 $$ LANGUAGE plpgsql
@@ -669,7 +688,7 @@ def init_db() -> None:
             conn.execute("DROP TRIGGER IF EXISTS trg_chunk_tsv ON knowledge_card_chunks")
             conn.execute("""
                 CREATE TRIGGER trg_chunk_tsv
-                BEFORE INSERT OR UPDATE OF content ON knowledge_card_chunks
+                BEFORE INSERT OR UPDATE OF content, contextual_text ON knowledge_card_chunks
                 FOR EACH ROW EXECUTE FUNCTION update_chunk_tsv()
             """)
             conn.commit()
