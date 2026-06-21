@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 import httpx
 
+from app.services.observability import ObservabilityService
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,6 +28,7 @@ class RerankService:
         self._client = client
         self._owns_client = client is None
 
+    @ObservabilityService.instance().observe("retrieval.rerank")
     async def rerank(self, query: str, documents: list[str]) -> list[RerankResult]:
         """Score documents against query. Returns sorted by score desc. Fallback: original order."""
         if not documents:
